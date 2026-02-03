@@ -66,11 +66,18 @@
 - [ ] Terraform modules
 - [ ] Multi-region support
 
+### gRPC API
+- [ ] Proto definitions for Admin API
+- [ ] gRPC server (tonic)
+- [ ] CreateUrl, GetUrl, UpdateUrl, DeleteUrl, ListUrls
+- [ ] Streaming metrics endpoint
+- [ ] CLI client using gRPC
+
 ### Integrations
 - [ ] Webhook notifications
 - [ ] Slack/Discord bot
 - [ ] Browser extension
-- [ ] CLI tool
+- [ ] CLI tool (gRPC-based)
 
 ---
 

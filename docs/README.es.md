@@ -77,6 +77,57 @@ services:
 6. Muestra página intersticial con cuenta regresiva
 7. Después de la cuenta regresiva, redirige a URL de destino
 
+## Endpoints
+
+| Endpoint | Auth | Descripción |
+|----------|------|-------------|
+| `GET /` | No | Página de inicio |
+| `GET /r/{hashid}` | No | Redirección con intersticial |
+| `GET /health` | No | Verificación de salud |
+| `GET /metrics` | Basic | Métricas Prometheus |
+| `GET /admin` | Session | Inicio de sesión del panel de administración |
+| `GET /admin/dashboard` | Session | Panel de administración |
+
+## Panel de Administración
+
+El servicio incluye un panel de administración opcional para monitorear métricas en tiempo real.
+
+### Configuración
+
+1. **Generar hash de contraseña:**
+
+```bash
+# Usando Rust
+cargo run --bin hash_password
+
+# O usando Python (pip install argon2-cffi)
+./scripts/hash_password.sh
+```
+
+2. **Agregar a config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # del paso 1
+```
+
+3. **Acceder al panel:**
+
+Abra `http://localhost:8080/admin` e inicie sesión con sus credenciales.
+
+### Características
+
+- Gráficos de RPS y latencia en tiempo real
+- Métricas del sistema (CPU, memoria, tiempo de actividad)
+- Monitoreo de tasa de aciertos de caché
+- Lista de redirecciones recientes
+- Simulación de carga para pruebas
+- Tres temas: Claro, Oscuro, Cálido
+
 ## Licencia
 
 Licencia MIT - ver [LICENSE](../LICENSE) para detalles.

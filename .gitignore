@@ -33,3 +33,7 @@ logs/
 *.profdata
 lcov.info
 coverage/
+
+# AI Tools
+.serena/
+.claude/

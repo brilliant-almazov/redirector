@@ -42,6 +42,55 @@ docker run -p 8080:8080 \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
+## Endpoint
+
+| Endpoint | Auth | Deskripsi |
+|----------|------|-----------|
+| `GET /` | Tidak | Halaman utama |
+| `GET /r/{hashid}` | Tidak | Pengalihan dengan halaman antara |
+| `GET /health` | Tidak | Pemeriksaan kesehatan |
+| `GET /metrics` | Basic | Metrik Prometheus |
+| `GET /admin` | Sesi | Login dasbor admin |
+| `GET /admin/dashboard` | Sesi | Dasbor admin |
+
+## Dasbor Admin
+
+Layanan ini mencakup dasbor admin opsional untuk memantau metrik secara langsung.
+
+### Pengaturan
+
+1. **Buat hash kata sandi:**
+
+```bash
+cargo run --bin hash_password
+# Masukkan kata sandi saat diminta, atau:
+cargo run --bin hash_password -- "kata-sandi-anda"
+```
+
+2. **Tambahkan ke config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # dari langkah 1
+```
+
+3. **Akses dasbor:**
+
+Buka `http://localhost:8080/admin` dan login dengan kredensial Anda.
+
+### Fitur
+
+- Grafik RPS dan latensi real-time
+- Metrik sistem (CPU, memori, uptime)
+- Pemantauan tingkat hit cache
+- Daftar pengalihan terbaru
+- Simulasi beban untuk pengujian
+- Tiga tema: Terang, Gelap, Hangat
+
 ## Cara Kerja
 
 1. Pengguna mengunjungi `/r/{hashid}` (mis. `/r/abc123`)

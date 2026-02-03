@@ -42,6 +42,55 @@ docker run -p 8080:8080 \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
+## Các Endpoint
+
+| Endpoint | Xác thực | Mô tả |
+|----------|----------|-------|
+| `GET /` | Không | Trang chủ |
+| `GET /r/{hashid}` | Không | Chuyển hướng với trang trung gian |
+| `GET /health` | Không | Kiểm tra sức khỏe |
+| `GET /metrics` | Basic | Metrics Prometheus |
+| `GET /admin` | Phiên | Đăng nhập bảng điều khiển admin |
+| `GET /admin/dashboard` | Phiên | Bảng điều khiển admin |
+
+## Bảng Điều Khiển Admin
+
+Dịch vụ bao gồm bảng điều khiển admin tùy chọn để theo dõi metrics theo thời gian thực.
+
+### Thiết lập
+
+1. **Tạo hash mật khẩu:**
+
+```bash
+cargo run --bin hash_password
+# Nhập mật khẩu khi được yêu cầu, hoặc:
+cargo run --bin hash_password -- "mật-khẩu-của-bạn"
+```
+
+2. **Thêm vào config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # từ bước 1
+```
+
+3. **Truy cập bảng điều khiển:**
+
+Mở `http://localhost:8080/admin` và đăng nhập bằng thông tin của bạn.
+
+### Tính năng
+
+- Biểu đồ RPS và độ trễ thời gian thực
+- Metrics hệ thống (CPU, bộ nhớ, thời gian hoạt động)
+- Theo dõi tỷ lệ trúng cache
+- Danh sách chuyển hướng gần đây
+- Mô phỏng tải để kiểm tra
+- Ba chủ đề: Sáng, Tối, Ấm
+
 ## Cách Hoạt động
 
 1. Người dùng truy cập `/r/{hashid}` (ví dụ: `/r/abc123`)

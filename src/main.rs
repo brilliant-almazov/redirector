@@ -1,4 +1,4 @@
-use axum::{extract::Extension, middleware as axum_middleware, routing::get, Router};
+use axum::{extract::Extension, middleware as axum_middleware, response::Redirect, routing::get, Router};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use redirector::{
     admin::{admin_routes, AdminState},
@@ -14,7 +14,7 @@ use redirector::{
 };
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tower_http::{compression::CompressionLayer, trace::TraceLayer};
+use tower_http::{compression::CompressionLayer, services::ServeDir, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 #[tokio::main]
@@ -96,6 +96,7 @@ async fn main() -> anyhow::Result<()> {
     let mut app = Router::new()
         .route("/", get(index_handler))
         .route("/r/{hashid}", get(redirect_handler))
+        .route("/d/{hashid}", get(redirect_handler))
         .merge(metrics_router)
         .with_state(redirect_state)
         .layer(axum_middleware::from_fn(rate_limit_middleware))
@@ -105,7 +106,10 @@ async fn main() -> anyhow::Result<()> {
 
     // Add admin routes if enabled
     if let Some(admin) = admin_router {
-        app = app.nest("/admin", admin);
+        app = app
+            .nest("/admin", admin)
+            .route("/admin/", get(|| async { Redirect::permanent("/admin") }))
+            .nest_service("/static", ServeDir::new("static"));
     }
 
     // Start server

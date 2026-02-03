@@ -42,6 +42,55 @@ docker run -p 8080:8080 \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
+## Endpointler
+
+| Endpoint | Yetki | Açıklama |
+|----------|-------|----------|
+| `GET /` | Hayır | Ana sayfa |
+| `GET /r/{hashid}` | Hayır | Ara sayfa ile yönlendirme |
+| `GET /health` | Hayır | Sağlık kontrolü |
+| `GET /metrics` | Basic | Prometheus metrikleri |
+| `GET /admin` | Oturum | Yönetim paneli girişi |
+| `GET /admin/dashboard` | Oturum | Yönetim paneli |
+
+## Yönetim Paneli
+
+Servis, canlı metrikleri izlemek için isteğe bağlı bir yönetim paneli içerir.
+
+### Kurulum
+
+1. **Şifre hash'i oluşturun:**
+
+```bash
+cargo run --bin hash_password
+# İstendiğinde şifreyi girin veya:
+cargo run --bin hash_password -- "şifreniz"
+```
+
+2. **config.yaml'a ekleyin:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # adım 1'den
+```
+
+3. **Panele erişin:**
+
+`http://localhost:8080/admin` adresini açın ve kimlik bilgilerinizle giriş yapın.
+
+### Özellikler
+
+- Gerçek zamanlı RPS ve gecikme grafikleri
+- Sistem metrikleri (CPU, bellek, çalışma süresi)
+- Önbellek isabet oranı izleme
+- Son yönlendirmeler listesi
+- Test için yük simülasyonu
+- Üç tema: Açık, Koyu, Sıcak
+
 ## Nasıl Çalışır
 
 1. Kullanıcı `/r/{hashid}` adresini ziyaret eder (ör. `/r/abc123`)

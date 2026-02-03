@@ -42,6 +42,55 @@ docker run -p 8080:8080 \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
+## Endpointy
+
+| Endpoint | Auth | Opis |
+|----------|------|------|
+| `GET /` | Nie | Strona główna |
+| `GET /r/{hashid}` | Nie | Przekierowanie ze stroną przejściową |
+| `GET /health` | Nie | Sprawdzenie stanu |
+| `GET /metrics` | Basic | Metryki Prometheus |
+| `GET /admin` | Sesja | Logowanie do panelu admina |
+| `GET /admin/dashboard` | Sesja | Panel administracyjny |
+
+## Panel Administracyjny
+
+Usługa zawiera opcjonalny panel administracyjny do monitorowania metryk w czasie rzeczywistym.
+
+### Konfiguracja
+
+1. **Wygeneruj hash hasła:**
+
+```bash
+cargo run --bin hash_password
+# Wprowadź hasło po wyświetleniu monitu, lub:
+cargo run --bin hash_password -- "twoje-hasło"
+```
+
+2. **Dodaj do config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # z kroku 1
+```
+
+3. **Uzyskaj dostęp do panelu:**
+
+Otwórz `http://localhost:8080/admin` i zaloguj się swoimi danymi.
+
+### Funkcje
+
+- Wykresy RPS i opóźnień w czasie rzeczywistym
+- Metryki systemu (CPU, pamięć, uptime)
+- Monitorowanie współczynnika trafień cache
+- Lista ostatnich przekierowań
+- Symulacja obciążenia do testów
+- Trzy motywy: Jasny, Ciemny, Ciepły
+
 ## Jak to Działa
 
 1. Użytkownik odwiedza `/r/{hashid}` (np. `/r/abc123`)
