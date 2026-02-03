@@ -50,6 +50,9 @@ where
                 "Redirect resolved"
             );
 
+            // Record for dashboard
+            crate::metrics::record_recent_redirect(hashid.clone(), resolved.full_url.clone());
+
             let template = InterstitialTemplate {
                 target_url: resolved.full_url,
                 target_domain: resolved.domain,
@@ -72,6 +75,7 @@ where
 
     let duration = start.elapsed();
     metrics::histogram!("request_duration_seconds").record(duration.as_secs_f64());
+    crate::metrics::record_request(duration.as_micros() as u64);
 
     result
 }

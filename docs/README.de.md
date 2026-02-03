@@ -77,6 +77,57 @@ services:
 6. Zwischenseite mit Countdown anzeigen
 7. Nach Countdown zur Ziel-URL weiterleiten
 
+## Endpoints
+
+| Endpoint | Auth | Beschreibung |
+|----------|------|--------------|
+| `GET /` | Nein | Startseite |
+| `GET /r/{hashid}` | Nein | Weiterleitung mit Zwischenseite |
+| `GET /health` | Nein | Health-Check |
+| `GET /metrics` | Basic | Prometheus-Metriken |
+| `GET /admin` | Session | Admin-Dashboard Login |
+| `GET /admin/dashboard` | Session | Admin-Dashboard |
+
+## Admin-Dashboard
+
+Der Service enthält ein optionales Admin-Dashboard zur Echtzeit-Überwachung von Metriken.
+
+### Einrichtung
+
+1. **Passwort-Hash generieren:**
+
+```bash
+# Mit Rust
+cargo run --bin hash_password
+
+# Oder mit Python (pip install argon2-cffi)
+./scripts/hash_password.sh
+```
+
+2. **Zu config.yaml hinzufügen:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # aus Schritt 1
+```
+
+3. **Dashboard öffnen:**
+
+Öffnen Sie `http://localhost:8080/admin` und melden Sie sich mit Ihren Zugangsdaten an.
+
+### Funktionen
+
+- Echtzeit RPS- und Latenz-Diagramme
+- Systemmetriken (CPU, Speicher, Betriebszeit)
+- Cache-Trefferquoten-Überwachung
+- Liste der letzten Weiterleitungen
+- Lastsimulation für Tests
+- Drei Themes: Hell, Dunkel, Warm
+
 ## Lizenz
 
 MIT-Lizenz - siehe [LICENSE](../LICENSE) für Details.

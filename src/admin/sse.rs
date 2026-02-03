@@ -82,10 +82,8 @@ pub async fn events_handler(
                 total_requests,
             };
 
-            // Get recent redirects
-            let recent: Vec<RecentRedirectJson> = state
-                .get_recent_redirects()
-                .await
+            // Get recent redirects from global metrics
+            let recent: Vec<RecentRedirectJson> = crate::metrics::get_recent_redirects()
                 .into_iter()
                 .take(10)
                 .map(|r| RecentRedirectJson {
@@ -138,18 +136,16 @@ fn calculate_rps(
     (total, rps, Some((total, now)))
 }
 
-// Placeholder functions - will be connected to actual metrics
+// Get metrics from global counters
 fn get_total_requests() -> u64 {
-    // TODO: Get from prometheus metrics
-    0
+    crate::metrics::get_total_requests()
 }
 
 fn get_latency_percentile(_percentile: f64) -> f64 {
-    // TODO: Get from prometheus histogram
-    0.0
+    // Using average latency as approximation (proper percentiles need histogram)
+    crate::metrics::get_avg_latency_ms()
 }
 
 fn get_cache_hit_rate() -> f64 {
-    // TODO: Calculate from cache_hits / (cache_hits + cache_misses)
-    0.0
+    crate::metrics::get_cache_hit_rate()
 }

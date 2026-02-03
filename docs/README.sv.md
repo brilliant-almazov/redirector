@@ -42,6 +42,55 @@ docker run -p 8080:8080 \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
+## Slutpunkter
+
+| Slutpunkt | Auth | Beskrivning |
+|-----------|------|-------------|
+| `GET /` | Nej | Startsida |
+| `GET /r/{hashid}` | Nej | Omdirigering med mellansida |
+| `GET /health` | Nej | Hälsokontroll |
+| `GET /metrics` | Basic | Prometheus-mätvärden |
+| `GET /admin` | Session | Admin-dashboard inloggning |
+| `GET /admin/dashboard` | Session | Admin-dashboard |
+
+## Admin-Dashboard
+
+Tjänsten inkluderar en valfri admin-dashboard för att övervaka live-mätvärden.
+
+### Konfiguration
+
+1. **Generera lösenords-hash:**
+
+```bash
+cargo run --bin hash_password
+# Ange lösenord vid uppmaning, eller:
+cargo run --bin hash_password -- "ditt-lösenord"
+```
+
+2. **Lägg till i config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # från steg 1
+```
+
+3. **Öppna dashboard:**
+
+Öppna `http://localhost:8080/admin` och logga in med dina uppgifter.
+
+### Funktioner
+
+- Realtids-RPS och latensdiagram
+- Systemmätvärden (CPU, minne, drifttid)
+- Övervakning av cache-träffar
+- Lista över senaste omdirigeringar
+- Belastningssimulering för testning
+- Tre teman: Ljust, Mörkt, Varmt
+
 ## Hur Det Fungerar
 
 1. Användare besöker `/r/{hashid}` (t.ex. `/r/abc123`)

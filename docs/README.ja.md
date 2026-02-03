@@ -77,6 +77,57 @@ services:
 6. カウントダウン付きのインタースティシャルページを表示
 7. カウントダウン後、ターゲットURLにリダイレクト
 
+## エンドポイント
+
+| エンドポイント | 認証 | 説明 |
+|----------|------|-------------|
+| `GET /` | なし | インデックスページ |
+| `GET /r/{hashid}` | なし | インタースティシャル付きリダイレクト |
+| `GET /health` | なし | ヘルスチェック |
+| `GET /metrics` | Basic | Prometheusメトリクス |
+| `GET /admin` | Session | 管理パネルログイン |
+| `GET /admin/dashboard` | Session | 管理パネル |
+
+## 管理パネル
+
+サービスにはリアルタイムメトリクス監視用のオプションの管理パネルが含まれています。
+
+### セットアップ
+
+1. **パスワードハッシュを生成：**
+
+```bash
+# Rustを使用
+cargo run --bin hash_password
+
+# またはPythonを使用 (pip install argon2-cffi)
+./scripts/hash_password.sh
+```
+
+2. **config.yamlに追加：**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # ステップ1から
+```
+
+3. **パネルにアクセス：**
+
+`http://localhost:8080/admin`を開き、認証情報でログインします。
+
+### 機能
+
+- リアルタイムRPSとレイテンシグラフ
+- システムメトリクス（CPU、メモリ、稼働時間）
+- キャッシュヒット率監視
+- 最近のリダイレクト一覧
+- テスト用負荷シミュレーション
+- 3つのテーマ：ライト、ダーク、ウォーム
+
 ## ライセンス
 
 MITライセンス - 詳細は [LICENSE](../LICENSE) を参照。

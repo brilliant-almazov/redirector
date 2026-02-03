@@ -77,6 +77,57 @@ services:
 6. 카운트다운이 있는 인터스티셜 페이지 표시
 7. 카운트다운 후 대상 URL로 리다이렉트
 
+## 엔드포인트
+
+| 엔드포인트 | 인증 | 설명 |
+|----------|------|-------------|
+| `GET /` | 없음 | 인덱스 페이지 |
+| `GET /r/{hashid}` | 없음 | 인터스티셜과 함께 리다이렉트 |
+| `GET /health` | 없음 | 상태 확인 |
+| `GET /metrics` | Basic | Prometheus 메트릭 |
+| `GET /admin` | Session | 관리자 패널 로그인 |
+| `GET /admin/dashboard` | Session | 관리자 패널 |
+
+## 관리자 패널
+
+서비스에는 실시간 메트릭 모니터링을 위한 선택적 관리자 패널이 포함되어 있습니다.
+
+### 설정
+
+1. **비밀번호 해시 생성:**
+
+```bash
+# Rust 사용
+cargo run --bin hash_password
+
+# 또는 Python 사용 (pip install argon2-cffi)
+./scripts/hash_password.sh
+```
+
+2. **config.yaml에 추가:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # 1단계에서
+```
+
+3. **패널 접속:**
+
+`http://localhost:8080/admin`을 열고 자격 증명으로 로그인합니다.
+
+### 기능
+
+- 실시간 RPS 및 지연 시간 차트
+- 시스템 메트릭 (CPU, 메모리, 가동 시간)
+- 캐시 적중률 모니터링
+- 최근 리다이렉트 목록
+- 테스트용 부하 시뮬레이션
+- 세 가지 테마: 라이트, 다크, 웜
+
 ## 라이선스
 
 MIT 라이선스 - 자세한 내용은 [LICENSE](../LICENSE) 참조.

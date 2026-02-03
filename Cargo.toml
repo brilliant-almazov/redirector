@@ -14,8 +14,10 @@ categories = ["web-programming"]
 # Web framework
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
+parking_lot = "0.12"
 tower = "0.5"
-tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip", "normalize-path", "fs"] }
+minify-html = "0.15"
 
 # Templates
 askama = { version = "0.12", features = ["with-axum"] }
@@ -87,6 +89,10 @@ path = "tools/gen_hashids.rs"
 [[bin]]
 name = "hash_password"
 path = "tools/hash_password.rs"
+
+[[bin]]
+name = "gen_simulation_data"
+path = "tools/gen_simulation_data.rs"
 
 [profile.release]
 lto = true

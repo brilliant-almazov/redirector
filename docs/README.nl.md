@@ -42,6 +42,55 @@ docker run -p 8080:8080 \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
+## Eindpunten
+
+| Eindpunt | Auth | Beschrijving |
+|----------|------|--------------|
+| `GET /` | Nee | Startpagina |
+| `GET /r/{hashid}` | Nee | Omleiding met tussenpagina |
+| `GET /health` | Nee | Gezondheidscontrole |
+| `GET /metrics` | Basic | Prometheus metrics |
+| `GET /admin` | Sessie | Admin dashboard login |
+| `GET /admin/dashboard` | Sessie | Admin dashboard |
+
+## Admin Dashboard
+
+De service bevat een optioneel admin dashboard voor het monitoren van live metrics.
+
+### Instellen
+
+1. **Wachtwoord-hash genereren:**
+
+```bash
+cargo run --bin hash_password
+# Voer wachtwoord in wanneer gevraagd, of:
+cargo run --bin hash_password -- "jouw-wachtwoord"
+```
+
+2. **Toevoegen aan config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # van stap 1
+```
+
+3. **Dashboard openen:**
+
+Open `http://localhost:8080/admin` en log in met je gegevens.
+
+### Functies
+
+- Real-time RPS en latentie grafieken
+- Systeemmetrics (CPU, geheugen, uptime)
+- Cache hit rate monitoring
+- Lijst van recente omleidingen
+- Belastingssimulatie voor testen
+- Drie thema's: Licht, Donker, Warm
+
 ## Hoe Het Werkt
 
 1. Gebruiker bezoekt `/r/{hashid}` (bijv. `/r/abc123`)
