@@ -55,6 +55,9 @@ Das Teilen langer URLs ist unpraktisch. URL-Verkürzer existieren, leiten aber o
 |------|--------|------|------|
 | ![Dashboard Hell](screenshots/dashboard-light.png) | ![Dashboard Dunkel](screenshots/dashboard-dark.png) | ![Dashboard Grau](screenshots/dashboard-gray.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
 | ![Login Hell](screenshots/login-light.png) | ![Login Dunkel](screenshots/login-dark.png) | ![Login Grau](screenshots/login-gray.png) | ![Login Warm](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Lasttest-Modal
 

@@ -55,6 +55,9 @@
 |--------|-------|------|-------|
 | ![Дашборд світла](screenshots/dashboard-light.png) | ![Дашборд темна](screenshots/dashboard-dark.png) | ![Дашборд сіра](screenshots/dashboard-gray.png) | ![Дашборд тепла](screenshots/dashboard-warm.png) |
 | ![Логін світла](screenshots/login-light.png) | ![Логін темна](screenshots/login-dark.png) | ![Логін сіра](screenshots/login-gray.png) | ![Логін тепла](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Модалка навантажувального тестування
 

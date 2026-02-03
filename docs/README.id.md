@@ -55,6 +55,9 @@ Berbagi URL panjang tidak praktis. Pemendek URL ada tetapi sering langsung menga
 |--------|-------|---------|--------|
 | ![Dashboard Terang](screenshots/dashboard-light.png) | ![Dashboard Gelap](screenshots/dashboard-dark.png) | ![Dashboard Abu-abu](screenshots/dashboard-gray.png) | ![Dashboard Hangat](screenshots/dashboard-warm.png) |
 | ![Login Terang](screenshots/login-light.png) | ![Login Gelap](screenshots/login-dark.png) | ![Login Abu-abu](screenshots/login-gray.png) | ![Login Hangat](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Modal Uji Beban
 

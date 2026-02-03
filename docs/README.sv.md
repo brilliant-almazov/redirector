@@ -55,6 +55,9 @@ Att dela långa URL:er är opraktiskt. URL-förkortare finns men omdirigerar oft
 |------|------|-----|------|
 | ![Dashboard Ljus](screenshots/dashboard-light.png) | ![Dashboard Mörk](screenshots/dashboard-dark.png) | ![Dashboard Grå](screenshots/dashboard-gray.png) | ![Dashboard Varm](screenshots/dashboard-warm.png) |
 | ![Login Ljus](screenshots/login-light.png) | ![Login Mörk](screenshots/login-dark.png) | ![Login Grå](screenshots/login-gray.png) | ![Login Varm](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Lasttest-modal
 

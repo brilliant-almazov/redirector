@@ -55,6 +55,9 @@ Chia sẻ URL dài rất bất tiện. Các công cụ rút gọn URL tồn tạ
 |------|-----|-----|-----|
 | ![Dashboard Sáng](screenshots/dashboard-light.png) | ![Dashboard Tối](screenshots/dashboard-dark.png) | ![Dashboard Xám](screenshots/dashboard-gray.png) | ![Dashboard Ấm](screenshots/dashboard-warm.png) |
 | ![Đăng nhập Sáng](screenshots/login-light.png) | ![Đăng nhập Tối](screenshots/login-dark.png) | ![Đăng nhập Xám](screenshots/login-gray.png) | ![Đăng nhập Ấm](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Modal kiểm tra tải
 

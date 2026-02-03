@@ -55,6 +55,9 @@ Udostępnianie długich adresów URL jest niewygodne. Skracacze URL istnieją, a
 |-------|--------|-------|--------|
 | ![Dashboard Jasny](screenshots/dashboard-light.png) | ![Dashboard Ciemny](screenshots/dashboard-dark.png) | ![Dashboard Szary](screenshots/dashboard-gray.png) | ![Dashboard Ciepły](screenshots/dashboard-warm.png) |
 | ![Logowanie Jasny](screenshots/login-light.png) | ![Logowanie Ciemny](screenshots/login-dark.png) | ![Logowanie Szary](screenshots/login-gray.png) | ![Logowanie Ciepły](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Modal testu obciążenia
 

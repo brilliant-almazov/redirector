@@ -55,6 +55,9 @@
 |--------|------|--------|-----|
 | ![대시보드 라이트](screenshots/dashboard-light.png) | ![대시보드 다크](screenshots/dashboard-dark.png) | ![대시보드 그레이](screenshots/dashboard-gray.png) | ![대시보드 웜](screenshots/dashboard-warm.png) |
 | ![로그인 라이트](screenshots/login-light.png) | ![로그인 다크](screenshots/login-dark.png) | ![로그인 그레이](screenshots/login-gray.png) | ![로그인 웜](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### 부하 테스트 모달
 
