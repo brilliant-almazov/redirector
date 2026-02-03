@@ -152,28 +152,13 @@ rate_limit:
 
 - `CONFIG_FILE` - Путь к файлу конфигурации (по умолчанию: `config.yaml`)
 
-## Схема базы данных
+## База данных
 
-Сервис ожидает следующую схему PostgreSQL:
+Сервису нужна простая связь: **ID → URL**
 
-```sql
-CREATE SCHEMA dictionary;
+Сейчас использует встроенный запрос для таблиц `dictionary.urls` + `dictionary.domains`.
 
-CREATE TABLE dictionary.domains (
-    id BIGSERIAL PRIMARY KEY,
-    hash VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE dictionary.urls (
-    id BIGSERIAL PRIMARY KEY,
-    domain_id BIGINT NOT NULL REFERENCES dictionary.domains(id),
-    hash VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255) NOT NULL
-);
-
-CREATE INDEX idx_urls_id ON dictionary.urls(id);
-```
+> **Скоро**: Конфигурируемая структура запроса. Можно будет декларативно указать свои колонки ID и URL, независимо от схемы БД.
 
 ## Эндпоинты
 
@@ -186,24 +171,39 @@ CREATE INDEX idx_urls_id ON dictionary.urls(id);
 
 ## Метрики
 
-Сервис предоставляет Prometheus метрики:
+Сервис предоставляет Prometheus метрики на `/metrics` (требуется Basic Auth):
 
+### Метрики сервиса
 ```
-# Всего запросов на редирект
-redirect_requests_total
+redirector_up 1
+redirector_build_info{version="0.1.0"} 1
+redirector_uptime_seconds 3600.5
+```
 
-# Запросов "не найдено"
-not_found_requests_total
+### Метрики запросов
+```
+redirect_requests_total 150000
+not_found_requests_total 50
+request_duration_seconds{quantile="0.5"} 0.040
+request_duration_seconds{quantile="0.99"} 0.081
+```
 
-# Запросов к БД
-db_queries_total
+### Метрики кэша
+```
+cache_hits_total 140000
+cache_misses_total 10000
+cache_get_duration_seconds{quantile="0.5"} 0.002
+cache_set_duration_seconds{quantile="0.5"} 0.002
+```
 
-# Превышений rate limit
-rate_limit_exceeded_total
-db_rate_limit_exceeded_total
-
-# Отклонений circuit breaker
-circuit_breaker_rejections_total
+### Метрики БД
+```
+db_queries_total 10000
+db_hits_total 9950
+db_misses_total 50
+db_query_duration_seconds{quantile="0.5"} 0.035
+db_rate_limit_exceeded_total 0
+circuit_breaker_rejections_total 0
 ```
 
 ## Как это работает

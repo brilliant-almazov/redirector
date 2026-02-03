@@ -152,28 +152,13 @@ All config values support `${VAR}` substitution. Additionally:
 
 - `CONFIG_FILE` - Path to config file (default: `config.yaml`)
 
-## Database Schema
+## Database
 
-The service expects the following PostgreSQL schema:
+The service needs a simple mapping: **ID → URL**
 
-```sql
-CREATE SCHEMA dictionary;
+Currently uses a built-in query for `dictionary.urls` + `dictionary.domains` tables.
 
-CREATE TABLE dictionary.domains (
-    id BIGSERIAL PRIMARY KEY,
-    hash VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE dictionary.urls (
-    id BIGSERIAL PRIMARY KEY,
-    domain_id BIGINT NOT NULL REFERENCES dictionary.domains(id),
-    hash VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255) NOT NULL
-);
-
-CREATE INDEX idx_urls_id ON dictionary.urls(id);
-```
+> **Coming soon**: Configurable query structure. You'll be able to specify your own ID and URL columns declaratively, regardless of your database schema.
 
 ## Endpoints
 
@@ -186,24 +171,45 @@ CREATE INDEX idx_urls_id ON dictionary.urls(id);
 
 ## Metrics
 
-The service exposes Prometheus metrics:
+The service exposes comprehensive Prometheus metrics at `/metrics` (requires Basic Auth):
 
+### Service Metrics
 ```
-# Total redirect requests
-redirect_requests_total
+redirector_up 1
+redirector_build_info{version="0.1.0"} 1
+redirector_uptime_seconds 3600.5
+```
 
-# Not found requests
-not_found_requests_total
+### Request Metrics
+```
+redirect_requests_total 150000
+not_found_requests_total 50
+request_duration_seconds{quantile="0.5"} 0.040
+request_duration_seconds{quantile="0.99"} 0.081
+```
 
-# Database queries
-db_queries_total
+### Cache Metrics
+```
+cache_hits_total 140000
+cache_misses_total 10000
+cache_get_duration_seconds{quantile="0.5"} 0.002
+cache_set_duration_seconds{quantile="0.5"} 0.002
+```
 
-# Rate limit exceeded events
-rate_limit_exceeded_total
-db_rate_limit_exceeded_total
+### Database Metrics
+```
+db_queries_total 10000
+db_hits_total 9950
+db_misses_total 50
+db_errors_total 0
+db_query_duration_seconds{quantile="0.5"} 0.035
+db_rate_limit_exceeded_total 0
+circuit_breaker_rejections_total 0
+```
 
-# Circuit breaker rejections
-circuit_breaker_rejections_total
+### Rate Limiting
+```
+rate_limit_exceeded_total 0
 ```
 
 ## How It Works
