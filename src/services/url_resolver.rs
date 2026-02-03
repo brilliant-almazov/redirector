@@ -38,11 +38,13 @@ where
         if let Some(url) = self.cache.get(id).await {
             tracing::debug!(id = %id, "Cache hit");
             metrics::counter!("cache_hits").increment(1);
+            crate::metrics::record_cache_hit();
             return Ok(ResolvedUrl::new(url));
         }
 
         tracing::debug!(id = %id, "Cache miss, querying storage");
         metrics::counter!("cache_misses").increment(1);
+        crate::metrics::record_cache_miss();
 
         let url = self
             .storage

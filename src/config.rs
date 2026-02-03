@@ -11,7 +11,11 @@ pub struct Config {
     pub metrics: MetricsConfig,
     #[serde(default)]
     pub rate_limit: RateLimitConfig,
+    #[serde(default)]
+    pub admin: AdminConfig,
 }
+
+pub type AppConfig = Config;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ServerConfig {
@@ -226,6 +230,43 @@ fn default_rps() -> u32 {
 
 fn default_burst() -> u32 {
     100
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AdminConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_session_secret")]
+    pub session_secret: String,
+    #[serde(default = "default_session_ttl")]
+    pub session_ttl_hours: u64,
+    #[serde(default)]
+    pub users: Vec<AdminUser>,
+}
+
+impl Default for AdminConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            session_secret: default_session_secret(),
+            session_ttl_hours: default_session_ttl(),
+            users: vec![],
+        }
+    }
+}
+
+fn default_session_secret() -> String {
+    "change-me-in-production-32-bytes!".to_string()
+}
+
+fn default_session_ttl() -> u64 {
+    24
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AdminUser {
+    pub username: String,
+    pub password_hash: String,
 }
 
 impl Config {
