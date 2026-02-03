@@ -14,9 +14,9 @@ Safe URL redirect service with interstitial pages and hashid-based short links.
 | 100% Cache Hit | **7,800+** | ~14ms | ~50ms |
 | Cache Miss (10K URLs) | **2,300+** | ~44ms | ~81ms |
 
-**Test conditions**: wrk -t4 -c100 -d30s, PostgreSQL 15, Dragonfly (Redis), macOS M1
+**Test conditions**: wrk -t4 -c100 -d30s, PostgreSQL 15, Dragonfly (Redis), macOS M1 (Docker)
 
-See [tests/loadtest/](tests/loadtest/) for load testing scripts and data.
+> ⚠️ Results are from Docker on macOS with VM overhead. Native Linux deployment expected to be **3-5x faster**.
 
 ## Problem
 

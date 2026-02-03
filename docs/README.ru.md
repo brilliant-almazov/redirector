@@ -14,9 +14,9 @@
 | 100% Cache Hit | **7,800+** | ~14ms | ~50ms |
 | Cache Miss (10K URLs) | **2,300+** | ~44ms | ~81ms |
 
-**Условия теста**: wrk -t4 -c100 -d30s, PostgreSQL 15, Dragonfly (Redis), macOS M1
+**Условия теста**: wrk -t4 -c100 -d30s, PostgreSQL 15, Dragonfly (Redis), macOS M1 (Docker)
 
-См. [tests/loadtest/](../tests/loadtest/) для скриптов нагрузочного тестирования.
+> ⚠️ Результаты получены в Docker на macOS с overhead виртуализации. На native Linux ожидается **в 3-5 раз быстрее**.
 
 ## Проблема
 
