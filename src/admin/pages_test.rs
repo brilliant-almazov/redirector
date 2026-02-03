@@ -12,7 +12,10 @@ mod tests {
     fn test_login_template_contains_form() {
         let content = fs::read_to_string("templates/login.html").unwrap();
 
-        assert!(content.contains("<form"), "login.html should contain a form");
+        assert!(
+            content.contains("<form"),
+            "login.html should contain a form"
+        );
         assert!(
             content.contains("action=\"/admin/login\""),
             "login.html should submit to /admin/login"
@@ -66,10 +69,7 @@ mod tests {
     #[test]
     fn test_dashboard_template_exists() {
         let content = fs::read_to_string("templates/dashboard.html");
-        assert!(
-            content.is_ok(),
-            "dashboard.html should exist in templates/"
-        );
+        assert!(content.is_ok(), "dashboard.html should exist in templates/");
     }
 
     #[test]

@@ -50,7 +50,10 @@ async fn simulate_handler() -> StatusCode {
 pub fn admin_routes(admin_state: AdminState) -> Router {
     let protected = Router::new()
         .route("/dashboard", get(dashboard_page))
-        .route("/dashboard/", get(|| async { Redirect::permanent("/admin/dashboard") }))
+        .route(
+            "/dashboard/",
+            get(|| async { Redirect::permanent("/admin/dashboard") }),
+        )
         .route("/events", get(events_handler))
         .route("/simulate", post(simulate_handler))
         .route_layer(middleware::from_fn_with_state(

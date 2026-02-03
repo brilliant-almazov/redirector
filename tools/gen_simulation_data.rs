@@ -22,7 +22,7 @@ fn main() {
     // First pass: count entries
     let entries: Vec<_> = reader
         .lines()
-        .filter_map(|line| line.ok())
+        .map_while(Result::ok)
         .filter(|line| !line.is_empty())
         .filter_map(|line| {
             let parts: Vec<&str> = line.splitn(2, '|').collect();
