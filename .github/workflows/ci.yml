@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, feature/*]
+    branches: [master, feature/*]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -126,7 +126,7 @@ jobs:
           echo "percent=$COVERAGE" >> $GITHUB_OUTPUT
 
       - name: Update coverage badge
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master'
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_TOKEN }}
@@ -323,7 +323,7 @@ jobs:
           echo "cache_hit_rate=$RATE" >> $GITHUB_OUTPUT
 
       - name: Update performance badges
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master'
         run: |
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
