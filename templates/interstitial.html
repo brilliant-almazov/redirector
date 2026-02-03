@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e6e6e6;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 500px;
+        }
+
+        .icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+
+        .icon-circle {
+            width: 100%;
+            height: 100%;
+            border: 4px solid rgba(233, 69, 96, 0.3);
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .icon-progress {
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-top-color: #e94560;
+            border-radius: 50%;
+            position: absolute;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .countdown {
+            font-size: 2.5rem;
+            font-weight: 700;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #e94560, #533483);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .domain {
+            font-size: 1.125rem;
+            color: #e94560;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            word-break: break-all;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, #e94560 0%, #533483 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(233, 69, 96, 0.5);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .security-note {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .security-note svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin-right: 4px;
+            fill: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            <div class="icon-circle"></div>
+            <div class="icon-progress"></div>
+            <span class="countdown" id="countdown">{{ delay_seconds }}</span>
+        </div>
+
+        <h1>You will be redirected to</h1>
+        <p class="domain">{{ target_domain }}</p>
+
+        <a href="{{ target_url }}" class="button" id="redirect-btn">
+            Go now
+        </a>
+
+        <p class="security-note">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+            </svg>
+            Verify the destination before proceeding
+        </p>
+    </div>
+
+    <script>
+        (function() {
+            const targetUrl = "{{ target_url }}";
+            let seconds = {{ delay_seconds }};
+            const countdownEl = document.getElementById('countdown');
+            const buttonEl = document.getElementById('redirect-btn');
+
+            function updateCountdown() {
+                countdownEl.textContent = seconds;
+
+                if (seconds <= 0) {
+                    window.location.href = targetUrl;
+                    return;
+                }
+
+                seconds--;
+                setTimeout(updateCountdown, 1000);
+            }
+
+            // Start countdown
+            setTimeout(updateCountdown, 1000);
+
+            // Track click
+            buttonEl.addEventListener('click', function() {
+                // Optional: send analytics event
+            });
+        })();
+    </script>
+</body>
+</html>
