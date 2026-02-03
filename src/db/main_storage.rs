@@ -8,7 +8,7 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 type FailurePolicy = failure_policy::ConsecutiveFailures<failsafe::backoff::Constant>;
 type CircuitBreaker = StateMachine<FailurePolicy, ()>;
@@ -100,13 +100,27 @@ impl UrlStorage for MainStorage {
 
         metrics::counter!("db_queries").increment(1);
 
+        let start = Instant::now();
         let result = self.query_url(id).await;
+        let duration = start.elapsed();
+
+        metrics::histogram!("db_query_duration_seconds").record(duration.as_secs_f64());
 
         {
             let cb = self.circuit_breaker.lock().await;
             match &result {
-                Ok(_) => cb.on_success(),
-                Err(_) => cb.on_error(),
+                Ok(Some(_)) => {
+                    cb.on_success();
+                    metrics::counter!("db_hits").increment(1);
+                }
+                Ok(None) => {
+                    cb.on_success();
+                    metrics::counter!("db_misses").increment(1);
+                }
+                Err(_) => {
+                    cb.on_error();
+                    metrics::counter!("db_errors").increment(1);
+                }
             }
         }
 

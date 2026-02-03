@@ -4,6 +4,7 @@ use redirector::{
     config::Config,
     db::MainStorage,
     handlers::{index_handler, metrics_handler, redirect_handler, RedirectState},
+    metrics as service_metrics,
     middleware::{
         basic_auth::basic_auth_middleware, rate_limit::rate_limit_middleware, BasicAuthLayer,
         RateLimitLayer,
@@ -36,6 +37,9 @@ async fn main() -> anyhow::Result<()> {
     let prometheus_handle = PrometheusBuilder::new()
         .install_recorder()
         .expect("Failed to install Prometheus recorder");
+
+    // Initialize service metrics
+    service_metrics::init();
 
     // Initialize services
     let hashid_service = Arc::new(HashidService::new(&config.hashids));

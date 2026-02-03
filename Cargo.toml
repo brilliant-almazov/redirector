@@ -67,6 +67,10 @@ reqwest = { version = "0.12", features = ["json"] }
 pretty_assertions = "1"
 rstest = "0.23"
 
+[[bin]]
+name = "gen_hashids"
+path = "tools/gen_hashids.rs"
+
 [profile.release]
 lto = true
 codegen-units = 1

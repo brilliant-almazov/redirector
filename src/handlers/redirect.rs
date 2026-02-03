@@ -6,6 +6,7 @@ use axum::{
     response::Html,
 };
 use std::sync::Arc;
+use std::time::Instant;
 
 #[derive(Template)]
 #[template(path = "interstitial.html")]
@@ -38,9 +39,10 @@ where
     C: Cache + 'static,
     S: UrlStorage + 'static,
 {
+    let start = Instant::now();
     metrics::counter!("redirect_requests").increment(1);
 
-    match state.resolver.resolve(&hashid).await {
+    let result = match state.resolver.resolve(&hashid).await {
         Ok(resolved) => {
             tracing::info!(
                 hashid = %hashid,
@@ -66,7 +68,12 @@ where
             Err(AppError::NotFound)
         }
         Err(e) => Err(e),
-    }
+    };
+
+    let duration = start.elapsed();
+    metrics::histogram!("request_duration_seconds").record(duration.as_secs_f64());
+
+    result
 }
 
 #[cfg(test)]
