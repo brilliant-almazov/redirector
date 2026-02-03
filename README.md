@@ -1,5 +1,7 @@
 # redirector
 
+> **High-performance URL shortener and redirect service** built with Rust, Axum, Redis, and PostgreSQL. Features secure interstitial pages, real-time admin dashboard, and enterprise-grade observability.
+
 **English** | [Русский](docs/README.ru.md) | [中文](docs/README.zh.md) | [हिंदी](docs/README.hi.md) | [Español](docs/README.es.md) | [Português](docs/README.pt.md) | [Français](docs/README.fr.md) | [Deutsch](docs/README.de.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Polski](docs/README.pl.md) | [Nederlands](docs/README.nl.md) | [Italiano](docs/README.it.md) | [Türkçe](docs/README.tr.md) | [Українська](docs/README.uk.md) | [Bahasa Indonesia](docs/README.id.md) | [Tiếng Việt](docs/README.vi.md) | [Svenska](docs/README.sv.md) | [Suomi](docs/README.fi.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
@@ -10,7 +12,9 @@
 [![Latency](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/latency.json)](https://github.com/brilliant-almazov/redirector)
 [![Cache Hit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/cache_hit_rate.json)](https://github.com/brilliant-almazov/redirector)
 
-Safe URL redirect service with interstitial pages and hashid-based short links.
+**Keywords**: url shortener, link shortener, redirect service, rust web service, axum framework, redis cache, postgresql, prometheus metrics, hashids, short links, interstitial pages, safe redirects, high performance, microservice
+
+Safe URL redirect service with interstitial pages and hashid-based short links. Perfect for internal tools, enterprise link management, and branded short URL services.
 
 ### Performance
 
@@ -40,8 +44,32 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 - 🛡️ **Circuit breaker** - Database protection against cascading failures
 - 🚦 **Rate limiting** - Both global and database-level rate limits
 - 📊 **Prometheus metrics** - Full observability with Basic Auth protection
-- 🎨 **Beautiful pages** - Clean 404 and index pages
+- 🎨 **Beautiful pages** - Clean 404 and index pages with 3 themes
 - 🔑 **Multiple salts** - Hashid salt rotation support for migration
+- 📱 **Admin Dashboard** - Real-time metrics monitoring with SSE
+
+## Screenshots
+
+| Light | Dark | Warm |
+|-------|------|------|
+| ![Dashboard Light](docs/screenshots/dashboard-light.png) | ![Dashboard Dark](docs/screenshots/dashboard-dark.png) | ![Dashboard Warm](docs/screenshots/dashboard-warm.png) |
+| ![Login Light](docs/screenshots/login-light.png) | ![Login Dark](docs/screenshots/login-dark.png) | ![Login Warm](docs/screenshots/login-warm.png) |
+| ![404 Light](docs/screenshots/not-found-light.png) | ![404 Dark](docs/screenshots/not-found-dark.png) | ![404 Warm](docs/screenshots/not-found-warm.png) |
+
+| Index Page | Interstitial |
+|------------|--------------|
+| ![Index](docs/screenshots/index.png) | ![Interstitial](docs/screenshots/interstitial.png) |
+
+## Tech Stack
+
+- **Language**: Rust (async with Tokio)
+- **Web Framework**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB, etc.)
+- **Database**: PostgreSQL (pluggable storage layer)
+- **Metrics**: Prometheus + metrics-rs
+- **Password Hashing**: Argon2
+
+> **Note**: The storage and cache layers are abstracted and can be replaced with any compatible data source. Currently in active development.
 
 ## Quick Start
 

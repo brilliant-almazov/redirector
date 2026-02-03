@@ -32,6 +32,29 @@ Udostępnianie długich adresów URL jest niewygodne. Skracacze URL istnieją, a
 - 🎨 **Piękne strony** - Czyste strony 404 i indeksu
 - 🔑 **Wiele soli** - Wsparcie rotacji soli hashid dla migracji
 
+## Zrzuty Ekranu
+
+| Jasny | Ciemny | Ciepły |
+|-------|--------|--------|
+| ![Dashboard Jasny](screenshots/dashboard-light.png) | ![Dashboard Ciemny](screenshots/dashboard-dark.png) | ![Dashboard Ciepły](screenshots/dashboard-warm.png) |
+| ![Login Jasny](screenshots/login-light.png) | ![Login Ciemny](screenshots/login-dark.png) | ![Login Ciepły](screenshots/login-warm.png) |
+| ![404 Jasny](screenshots/not-found-light.png) | ![404 Ciemny](screenshots/not-found-dark.png) | ![404 Ciepły](screenshots/not-found-warm.png) |
+
+| Strona Główna | Strona Przejściowa |
+|---------------|-------------------|
+| ![Indeks](screenshots/index.png) | ![Strona Przejściowa](screenshots/interstitial.png) |
+
+## Stos Technologiczny
+
+- **Język**: Rust (async z Tokio)
+- **Framework Web**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Baza Danych**: PostgreSQL (wymienna warstwa storage)
+- **Metryki**: Prometheus + metrics-rs
+- **Hashowanie Haseł**: Argon2
+
+> **Uwaga**: PostgreSQL jest używany jako domyślny backend storage. Warstwa storage jest abstrakcyjna i może być zastąpiona dowolnym źródłem danych. Obecnie w aktywnym rozwoju.
+
 ## Szybki Start
 
 ### Docker

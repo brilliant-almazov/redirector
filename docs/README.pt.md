@@ -32,6 +32,29 @@ Compartilhar URLs longas é inconveniente. Encurtadores de URL existem, mas freq
 - 🎨 **Páginas bonitas** - Páginas 404 e índice limpas
 - 🔑 **Múltiplos sais** - Suporte a rotação de sal hashid para migração
 
+## Capturas de Tela
+
+| Claro | Escuro | Quente |
+|-------|--------|--------|
+| ![Dashboard Claro](screenshots/dashboard-light.png) | ![Dashboard Escuro](screenshots/dashboard-dark.png) | ![Dashboard Quente](screenshots/dashboard-warm.png) |
+| ![Login Claro](screenshots/login-light.png) | ![Login Escuro](screenshots/login-dark.png) | ![Login Quente](screenshots/login-warm.png) |
+| ![404 Claro](screenshots/not-found-light.png) | ![404 Escuro](screenshots/not-found-dark.png) | ![404 Quente](screenshots/not-found-warm.png) |
+
+| Página Inicial | Intersticial |
+|----------------|--------------|
+| ![Índice](screenshots/index.png) | ![Intersticial](screenshots/interstitial.png) |
+
+## Stack Tecnológico
+
+- **Linguagem**: Rust (assíncrono com Tokio)
+- **Framework Web**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Banco de Dados**: PostgreSQL (camada de armazenamento plugável)
+- **Métricas**: Prometheus + metrics-rs
+- **Hash de Senha**: Argon2
+
+> **Nota**: PostgreSQL é usado como backend de armazenamento padrão. A camada de armazenamento é abstraída e pode ser substituída por qualquer fonte de dados. Atualmente em desenvolvimento ativo.
+
 ## Início Rápido
 
 ### Docker

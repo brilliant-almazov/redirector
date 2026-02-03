@@ -32,6 +32,29 @@ Het delen van lange URL's is onhandig. URL-verkorters bestaan, maar leiden vaak 
 - 🎨 **Mooie pagina's** - Schone 404- en indexpagina's
 - 🔑 **Meerdere salts** - Hashid salt-rotatie ondersteuning voor migratie
 
+## Schermafbeeldingen
+
+| Licht | Donker | Warm |
+|-------|--------|------|
+| ![Dashboard Licht](screenshots/dashboard-light.png) | ![Dashboard Donker](screenshots/dashboard-dark.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
+| ![Login Licht](screenshots/login-light.png) | ![Login Donker](screenshots/login-dark.png) | ![Login Warm](screenshots/login-warm.png) |
+| ![404 Licht](screenshots/not-found-light.png) | ![404 Donker](screenshots/not-found-dark.png) | ![404 Warm](screenshots/not-found-warm.png) |
+
+| Indexpagina | Tussenpagina |
+|-------------|--------------|
+| ![Index](screenshots/index.png) | ![Tussenpagina](screenshots/interstitial.png) |
+
+## Technologie Stack
+
+- **Taal**: Rust (async met Tokio)
+- **Web Framework**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Database**: PostgreSQL (pluggable opslaglaag)
+- **Metrics**: Prometheus + metrics-rs
+- **Wachtwoord Hashing**: Argon2
+
+> **Opmerking**: PostgreSQL wordt gebruikt als standaard opslagbackend. De opslaglaag is geabstraheerd en kan worden vervangen door elke gegevensbron. Momenteel in actieve ontwikkeling.
+
 ## Snel Starten
 
 ### Docker

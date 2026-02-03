@@ -32,6 +32,29 @@
 - 🎨 **아름다운 페이지** - 깔끔한 404 및 인덱스 페이지
 - 🔑 **다중 솔트** - 마이그레이션을 위한 hashid 솔트 로테이션 지원
 
+## 스크린샷
+
+| 라이트 | 다크 | 웜 |
+|--------|------|-----|
+| ![대시보드 라이트](screenshots/dashboard-light.png) | ![대시보드 다크](screenshots/dashboard-dark.png) | ![대시보드 웜](screenshots/dashboard-warm.png) |
+| ![로그인 라이트](screenshots/login-light.png) | ![로그인 다크](screenshots/login-dark.png) | ![로그인 웜](screenshots/login-warm.png) |
+| ![404 라이트](screenshots/not-found-light.png) | ![404 다크](screenshots/not-found-dark.png) | ![404 웜](screenshots/not-found-warm.png) |
+
+| 인덱스 페이지 | 인터스티셜 |
+|--------------|------------|
+| ![인덱스](screenshots/index.png) | ![인터스티셜](screenshots/interstitial.png) |
+
+## 기술 스택
+
+- **언어**: Rust (Tokio 비동기)
+- **웹 프레임워크**: Axum
+- **캐시**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **데이터베이스**: PostgreSQL (플러그형 스토리지 레이어)
+- **메트릭**: Prometheus + metrics-rs
+- **비밀번호 해싱**: Argon2
+
+> **참고**: PostgreSQL이 기본 스토리지 백엔드로 사용됩니다. 스토리지 레이어는 추상화되어 있으며 모든 데이터 소스로 대체할 수 있습니다. 현재 활발히 개발 중입니다.
+
 ## 빠른 시작
 
 ### Docker

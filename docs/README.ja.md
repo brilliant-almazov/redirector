@@ -32,6 +32,29 @@
 - 🎨 **美しいページ** - クリーンな404とインデックスページ
 - 🔑 **複数のソルト** - 移行用のhashidソルトローテーションサポート
 
+## スクリーンショット
+
+| ライト | ダーク | ウォーム |
+|--------|--------|----------|
+| ![ダッシュボード ライト](screenshots/dashboard-light.png) | ![ダッシュボード ダーク](screenshots/dashboard-dark.png) | ![ダッシュボード ウォーム](screenshots/dashboard-warm.png) |
+| ![ログイン ライト](screenshots/login-light.png) | ![ログイン ダーク](screenshots/login-dark.png) | ![ログイン ウォーム](screenshots/login-warm.png) |
+| ![404 ライト](screenshots/not-found-light.png) | ![404 ダーク](screenshots/not-found-dark.png) | ![404 ウォーム](screenshots/not-found-warm.png) |
+
+| インデックス | インタースティシャル |
+|--------------|----------------------|
+| ![インデックス](screenshots/index.png) | ![インタースティシャル](screenshots/interstitial.png) |
+
+## 技術スタック
+
+- **言語**: Rust（Tokioによる非同期）
+- **Webフレームワーク**: Axum
+- **キャッシュ**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **データベース**: PostgreSQL（プラグイン可能なストレージレイヤー）
+- **メトリクス**: Prometheus + metrics-rs
+- **パスワードハッシュ**: Argon2
+
+> **注意**: PostgreSQLがデフォルトのストレージバックエンドとして使用されています。ストレージレイヤーは抽象化されており、任意のデータソースに置き換えることができます。現在活発に開発中です。
+
 ## クイックスタート
 
 ### Docker

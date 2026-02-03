@@ -32,6 +32,29 @@ Partager de longues URLs est peu pratique. Les raccourcisseurs d'URL existent ma
 - 🎨 **Belles pages** - Pages 404 et index propres
 - 🔑 **Sels multiples** - Support de rotation de sel hashid pour la migration
 
+## Captures d'écran
+
+| Clair | Sombre | Chaud |
+|-------|--------|-------|
+| ![Tableau de bord Clair](screenshots/dashboard-light.png) | ![Tableau de bord Sombre](screenshots/dashboard-dark.png) | ![Tableau de bord Chaud](screenshots/dashboard-warm.png) |
+| ![Connexion Clair](screenshots/login-light.png) | ![Connexion Sombre](screenshots/login-dark.png) | ![Connexion Chaud](screenshots/login-warm.png) |
+| ![404 Clair](screenshots/not-found-light.png) | ![404 Sombre](screenshots/not-found-dark.png) | ![404 Chaud](screenshots/not-found-warm.png) |
+
+| Accueil | Interstitiel |
+|---------|--------------|
+| ![Accueil](screenshots/index.png) | ![Interstitiel](screenshots/interstitial.png) |
+
+## Stack Technologique
+
+- **Langage**: Rust (async avec Tokio)
+- **Framework Web**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Base de données**: PostgreSQL (couche de stockage modulaire)
+- **Métriques**: Prometheus + metrics-rs
+- **Hachage de mot de passe**: Argon2
+
+> **Note**: PostgreSQL est utilisé comme backend de stockage par défaut. La couche de stockage est abstraite et peut être remplacée par n'importe quelle source de données. En développement actif.
+
 ## Démarrage Rapide
 
 ### Docker

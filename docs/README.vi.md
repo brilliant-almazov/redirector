@@ -32,6 +32,29 @@ Chia sẻ URL dài rất bất tiện. Các công cụ rút gọn URL tồn tạ
 - 🎨 **Trang đẹp** - Các trang 404 và trang chủ gọn gàng
 - 🔑 **Nhiều salt** - Hỗ trợ xoay salt hashid để di chuyển
 
+## Ảnh Chụp Màn Hình
+
+| Sáng | Tối | Ấm |
+|------|-----|-----|
+| ![Dashboard Sáng](screenshots/dashboard-light.png) | ![Dashboard Tối](screenshots/dashboard-dark.png) | ![Dashboard Ấm](screenshots/dashboard-warm.png) |
+| ![Đăng nhập Sáng](screenshots/login-light.png) | ![Đăng nhập Tối](screenshots/login-dark.png) | ![Đăng nhập Ấm](screenshots/login-warm.png) |
+| ![404 Sáng](screenshots/not-found-light.png) | ![404 Tối](screenshots/not-found-dark.png) | ![404 Ấm](screenshots/not-found-warm.png) |
+
+| Trang Chủ | Trang Trung Gian |
+|-----------|------------------|
+| ![Trang chủ](screenshots/index.png) | ![Trang trung gian](screenshots/interstitial.png) |
+
+## Công Nghệ Sử Dụng
+
+- **Ngôn ngữ**: Rust (async với Tokio)
+- **Framework Web**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Cơ sở dữ liệu**: PostgreSQL (lớp lưu trữ có thể thay thế)
+- **Metrics**: Prometheus + metrics-rs
+- **Băm mật khẩu**: Argon2
+
+> **Ghi chú**: PostgreSQL được sử dụng làm backend lưu trữ mặc định. Lớp lưu trữ được trừu tượng hóa và có thể thay thế bằng bất kỳ nguồn dữ liệu nào. Hiện đang trong quá trình phát triển tích cực.
+
 ## Bắt đầu Nhanh
 
 ### Docker
