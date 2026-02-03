@@ -1,16 +1,32 @@
 # redirector
 
-[English](../README.md) | [Русский](README.ru.md) | [中文](README.zh.md) | [हिंदी](README.hi.md) | **Español** | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Polski](README.pl.md) | [Nederlands](README.nl.md) | [Italiano](README.it.md) | [Türkçe](README.tr.md) | [Українська](README.uk.md) | [Bahasa Indonesia](README.id.md) | [Tiếng Việt](README.vi.md) | [Svenska](README.sv.md) | [Suomi](README.fi.md)
+> **Acortador de URL y servicio de redirección de alto rendimiento** construido con Rust, Axum, Redis y PostgreSQL. Incluye páginas intersticiales seguras, panel de administración en tiempo real y observabilidad de nivel empresarial.
+
+[English](../README.md) | [Русский](README.ru.md) | [中文](README.zh.md) | [हिंदी](README.hi.md) | **Español** | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Polski](README.pl.md) | [Nederlands](README.nl.md) | [Italiano](README.it.md) | [Türkçe](README.tr.md) | [Українська](README.uk.md) | [עברית](README.he.md) | [Bahasa Indonesia](README.id.md) | [Tiếng Việt](README.vi.md) | [Svenska](README.sv.md) | [Suomi](README.fi.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
+[![Docker Image Size](https://ghcr-badge.egpl.dev/brilliant-almazov/redirector/size)](https://github.com/brilliant-almazov/redirector/pkgs/container/redirector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![RPS](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/rps.json)](https://github.com/brilliant-almazov/redirector)
 [![Latency](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/latency.json)](https://github.com/brilliant-almazov/redirector)
 [![Cache Hit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/cache_hit_rate.json)](https://github.com/brilliant-almazov/redirector)
 
-Servicio de redirección de URL seguro con páginas intersticiales y enlaces cortos basados en hashid.
+**Palabras clave**: acortador de URL, acortador de enlaces, servicio de redirección, servicio web Rust, framework Axum, caché Redis, PostgreSQL, métricas Prometheus, hashids, enlaces cortos, páginas intersticiales, redirecciones seguras, alto rendimiento, microservicio
+
+Servicio de redirección de URL seguro con páginas intersticiales y enlaces cortos basados en hashid. Perfecto para herramientas internas, gestión de enlaces empresariales y servicios de URL cortas de marca.
+
+### Rendimiento
+
+| Escenario | RPS | Latencia Avg | Latencia P99 |
+|-----------|-----|--------------|--------------|
+| 100% Cache Hit | **7,800+** | ~14ms | ~50ms |
+| Cache Miss (10K URLs) | **2,300+** | ~44ms | ~81ms |
+
+**Condiciones de prueba**: wrk -t4 -c100 -d30s, PostgreSQL 15, Dragonfly (Redis), macOS M1 (Docker)
+
+> ⚠️ Los resultados son de Docker en macOS con sobrecarga de VM. Se espera que el despliegue en Linux nativo sea **3-5x más rápido**.
 
 ## Problema
 
@@ -19,20 +35,21 @@ Compartir URLs largas es inconveniente. Los acortadores de URL existen, pero a m
 **redirector** proporciona redirecciones seguras con:
 - Página intersticial que muestra la URL de destino antes de redirigir
 - Temporizador de cuenta regresiva para la conciencia del usuario
-- Páginas hermosas y con marca
+- Páginas hermosas y personalizadas
 
 ## Características
 
 - 🔗 **URLs Hashid** - IDs cortos, únicos y no secuenciales (ej. `/r/abc123`)
-- ⏱️ **Página intersticial** - Temporizador muestra URL de destino antes de redirigir
+- ⏱️ **Página intersticial** - Temporizador de cuenta regresiva muestra la URL de destino antes de redirigir
 - ⚡ **Caché Redis** - Búsquedas rápidas con TTL configurable
 - 🛡️ **Circuit breaker** - Protección de base de datos contra fallos en cascada
-- 🚦 **Limitación de tasa** - Límites globales y a nivel de base de datos
+- 🚦 **Limitación de velocidad** - Límites de velocidad globales y a nivel de base de datos
 - 📊 **Métricas Prometheus** - Observabilidad completa con protección Basic Auth
-- 🎨 **Páginas hermosas** - Páginas 404 e índice limpias
+- 🎨 **Páginas hermosas** - Páginas 404 e índice limpias con 3 temas
 - 🔑 **Múltiples sales** - Soporte de rotación de sal hashid para migración
+- 📱 **Panel de administración** - Monitoreo de métricas en tiempo real con SSE
 
-## Capturas de Pantalla
+## Capturas de pantalla
 
 | Claro | Oscuro | Cálido |
 |-------|--------|--------|
@@ -40,22 +57,22 @@ Compartir URLs largas es inconveniente. Los acortadores de URL existen, pero a m
 | ![Login Claro](screenshots/login-light.png) | ![Login Oscuro](screenshots/login-dark.png) | ![Login Cálido](screenshots/login-warm.png) |
 | ![404 Claro](screenshots/not-found-light.png) | ![404 Oscuro](screenshots/not-found-dark.png) | ![404 Cálido](screenshots/not-found-warm.png) |
 
-| Inicio | Intersticial |
-|--------|--------------|
-| ![Inicio](screenshots/index.png) | ![Intersticial](screenshots/interstitial.png) |
+| Página principal | Intersticial |
+|------------------|--------------|
+| ![Página principal](screenshots/index.png) | ![Intersticial](screenshots/interstitial.png) |
 
-## Stack Tecnológico
+## Stack tecnológico
 
 - **Lenguaje**: Rust (async con Tokio)
-- **Framework Web**: Axum
-- **Caché**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
-- **Base de datos**: PostgreSQL (capa de almacenamiento modular)
+- **Framework web**: Axum
+- **Caché**: Compatible con Redis (Redis, Dragonfly, Valkey, KeyDB, etc.)
+- **Base de datos**: PostgreSQL (capa de almacenamiento intercambiable)
 - **Métricas**: Prometheus + metrics-rs
 - **Hash de contraseñas**: Argon2
 
-> **Nota**: PostgreSQL se usa como backend de almacenamiento por defecto. La capa de almacenamiento está abstraída y puede reemplazarse con cualquier fuente de datos. En desarrollo activo.
+> **Nota**: Las capas de almacenamiento y caché son abstractas y pueden ser reemplazadas por cualquier fuente de datos compatible. Actualmente en desarrollo activo.
 
-## Inicio Rápido
+## Inicio rápido
 
 ### Docker
 
@@ -90,28 +107,29 @@ services:
     image: redis:7-alpine
 ```
 
-## Cómo Funciona
+## Cómo funciona
 
 1. El usuario visita `/r/{hashid}` (ej. `/r/abc123`)
-2. El servicio decodifica hashid a ID numérico
-3. Verifica caché Redis para URL
+2. El servicio decodifica el hashid a ID numérico
+3. Verifica la caché Redis para la URL
 4. En caso de fallo de caché, consulta PostgreSQL
-5. Almacena resultado en Redis
+5. Almacena el resultado en caché Redis
 6. Muestra página intersticial con cuenta regresiva
-7. Después de la cuenta regresiva, redirige a URL de destino
+7. Después de la cuenta regresiva, redirige a la URL de destino
 
 ## Endpoints
 
 | Endpoint | Auth | Descripción |
 |----------|------|-------------|
-| `GET /` | No | Página de inicio |
-| `GET /r/{hashid}` | No | Redirección con intersticial |
+| `GET /` | No | Página principal |
+| `GET /r/{hashid}` | No | Redirección con página intersticial |
+| `GET /d/{hashid}` | No | Redirección demo (prueba de carga sintética) |
 | `GET /health` | No | Verificación de salud |
 | `GET /metrics` | Basic | Métricas Prometheus |
 | `GET /admin` | Session | Inicio de sesión del panel de administración |
 | `GET /admin/dashboard` | Session | Panel de administración |
 
-## Panel de Administración
+## Panel de administración
 
 El servicio incluye un panel de administración opcional para monitorear métricas en tiempo real.
 
@@ -120,11 +138,9 @@ El servicio incluye un panel de administración opcional para monitorear métric
 1. **Generar hash de contraseña:**
 
 ```bash
-# Usando Rust
 cargo run --bin hash_password
-
-# O usando Python (pip install argon2-cffi)
-./scripts/hash_password.sh
+# Ingrese contraseña, o:
+cargo run --bin hash_password -- "your-password"
 ```
 
 2. **Agregar a config.yaml:**
@@ -154,3 +170,13 @@ Abra `http://localhost:8080/admin` e inicie sesión con sus credenciales.
 ## Licencia
 
 Licencia MIT - ver [LICENSE](../LICENSE) para detalles.
+
+## Contribuir
+
+¡Las contribuciones son bienvenidas! Por favor:
+
+1. Haga fork del repositorio
+2. Cree una rama de características
+3. Envíe un Pull Request
+
+La rama master protegida requiere revisión de PR.
