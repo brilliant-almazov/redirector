@@ -3,614 +3,678 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Redirector Admin | Real-time Metrics</title>
-    <meta name="description" content="Real-time monitoring dashboard for Redirector. View RPS, latency, cache hit rates, and recent redirect activity.">
+    <title>Dashboard - Redirector</title>
     <meta name="robots" content="noindex, nofollow">
-    <meta property="og:title" content="Redirector Admin Dashboard">
-    <meta property="og:description" content="Monitor URL redirect service performance in real-time.">
-    <meta property="og:type" content="website">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2'%3E%3Cpath d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2'%3E%3Cpath d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'/%3E%3C/svg%3E">
     <script src="/static/tailwind.min.js"></script>
     <script src="/static/chart.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'SF Mono', 'monospace'],
-                    },
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        *, *::before, *::after { box-sizing: border-box; }
 
-        /* Theme variables */
         :root {
-            --bg-primary: #f8fafc;
-            --bg-secondary: #ffffff;
-            --bg-tertiary: #f1f5f9;
-            --bg-hover: #e2e8f0;
-            --border-color: rgba(148, 163, 184, 0.2);
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --accent-secondary: #6366f1;
-            --accent-glow: rgba(59, 130, 246, 0.15);
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --chart-grid: rgba(226, 232, 240, 0.8);
+            --bg-base: #050505;
+            --bg-surface: #0a0a0a;
+            --bg-elevated: #111111;
+            --bg-hover: #1a1a1a;
+            --border: rgba(255, 255, 255, 0.06);
+            --border-bright: rgba(255, 255, 255, 0.1);
+            --text-primary: #e5e5e5;
+            --text-secondary: #888888;
+            --text-muted: #555555;
+            --accent: #10b981;
+            --accent-dim: rgba(16, 185, 129, 0.15);
+            --accent-glow: rgba(16, 185, 129, 0.4);
+            --cyan: #06b6d4;
+            --amber: #f59e0b;
+            --rose: #f43f5e;
+            --violet: #8b5cf6;
         }
 
-        .dark {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-tertiary: #334155;
-            --bg-hover: #475569;
-            --border-color: rgba(148, 163, 184, 0.1);
-            --text-primary: #f8fafc;
-            --text-secondary: #cbd5e1;
-            --text-muted: #64748b;
-            --accent: #60a5fa;
-            --accent-secondary: #818cf8;
-            --accent-glow: rgba(96, 165, 250, 0.15);
-            --chart-grid: rgba(51, 65, 85, 0.5);
+        html.theme-light {
+            --bg-base: #fafafa;
+            --bg-surface: #ffffff;
+            --bg-elevated: #f5f5f5;
+            --bg-hover: #eeeeee;
+            --border: rgba(0, 0, 0, 0.06);
+            --border-bright: rgba(0, 0, 0, 0.1);
+            --text-primary: #171717;
+            --text-secondary: #525252;
+            --text-muted: #a3a3a3;
+            --accent: #059669;
+            --accent-dim: rgba(5, 150, 105, 0.1);
+            --accent-glow: rgba(5, 150, 105, 0.3);
         }
 
-        .theme-warm {
-            --bg-primary: #1c1917;
-            --bg-secondary: #292524;
-            --bg-tertiary: #44403c;
-            --bg-hover: #57534e;
-            --border-color: rgba(168, 162, 158, 0.15);
+        html.theme-warm {
+            --bg-base: #0c0a09;
+            --bg-surface: #1c1917;
+            --bg-elevated: #292524;
+            --bg-hover: #44403c;
+            --border: rgba(255, 255, 255, 0.05);
+            --border-bright: rgba(255, 255, 255, 0.08);
             --text-primary: #fafaf9;
-            --text-secondary: #d6d3d1;
-            --text-muted: #78716c;
-            --accent: #f59e0b;
-            --accent-secondary: #f97316;
-            --accent-glow: rgba(245, 158, 11, 0.15);
-            --success: #22c55e;
-            --warning: #fbbf24;
-            --danger: #f87171;
-            --chart-grid: rgba(68, 64, 60, 0.5);
+            --text-secondary: #a8a29e;
+            --text-muted: #57534e;
+            --accent: #f97316;
+            --accent-dim: rgba(249, 115, 22, 0.15);
+            --accent-glow: rgba(249, 115, 22, 0.4);
+            --cyan: #fb923c;
+            --amber: #fbbf24;
+            --rose: #fb7185;
+            --violet: #c084fc;
         }
 
-        /* Smooth transitions */
-        * { transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease; }
+        html.theme-gray {
+            --bg-base: #18181b;
+            --bg-surface: #27272a;
+            --bg-elevated: #3f3f46;
+            --bg-hover: #52525b;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-bright: rgba(255, 255, 255, 0.12);
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent: #a1a1aa;
+            --accent-dim: rgba(161, 161, 170, 0.15);
+            --accent-glow: rgba(161, 161, 170, 0.4);
+            --cyan: #67e8f9;
+            --amber: #fcd34d;
+            --rose: #fda4af;
+            --violet: #c4b5fd;
+        }
 
-        /* Background */
-        .bg-app {
-            background-color: var(--bg-primary);
-            background-image:
-                radial-gradient(at 0% 0%, var(--accent-glow) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, var(--accent-glow) 0px, transparent 50%);
+        body {
+            font-family: 'Outfit', system-ui, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
             min-height: 100vh;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Header glass effect */
-        .header-glass {
-            background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-color);
+        .font-mono {
+            font-family: 'Geist Mono', 'SF Mono', monospace;
         }
 
-        /* Card styling */
+        /* Grain overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.02;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        /* Cards */
         .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
         }
 
-        .card-highlight {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
-            border: none;
-            box-shadow: 0 8px 32px -8px var(--accent-glow);
-        }
-
-        /* Stat card hover */
-        .stat-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Icon containers */
-        .icon-container {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .icon-violet { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
-        .icon-orange { background: rgba(249, 115, 22, 0.15); color: #f97316; }
-        .icon-cyan { background: rgba(6, 182, 212, 0.15); color: #06b6d4; }
-        .icon-emerald { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .icon-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-
-        .theme-warm .icon-violet { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
-        .theme-warm .icon-orange { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
-        .theme-warm .icon-cyan { background: rgba(253, 186, 116, 0.15); color: #fdba74; }
-        .theme-warm .icon-emerald { background: rgba(163, 230, 53, 0.15); color: #a3e635; }
-        .theme-warm .icon-blue { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-
-        /* Progress bar */
-        .progress-bar {
-            background: var(--bg-tertiary);
-            border-radius: 999px;
+        .card-glow {
+            position: relative;
             overflow: hidden;
         }
 
-        .progress-fill {
-            background: linear-gradient(90deg, var(--success) 0%, #34d399 100%);
-            border-radius: 999px;
-            position: relative;
-        }
-
-        .progress-shimmer::after {
+        .card-glow::before {
             content: '';
             position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shimmer 2s infinite;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.5;
         }
 
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        /* Stat values */
+        .stat-value {
+            font-family: 'Geist Mono', monospace;
+            font-weight: 600;
+            font-size: 1.75rem;
+            letter-spacing: -0.02em;
+            line-height: 1;
         }
 
-        /* Live indicator */
-        .live-dot {
-            width: 8px;
-            height: 8px;
+        .stat-label {
+            font-size: 0.6875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        /* Live pulse */
+        .live-pulse {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
             border-radius: 50%;
-            background: var(--success);
-            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 0 0 var(--accent-glow);
+            animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
+            0% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            70% { box-shadow: 0 0 0 8px transparent; }
+            100% { box-shadow: 0 0 0 0 transparent; }
         }
 
-        /* Theme button */
+        /* Progress bar */
+        .progress-track {
+            height: 6px;
+            background: var(--bg-elevated);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--cyan));
+            border-radius: 3px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Theme buttons */
         .theme-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: var(--text-muted);
-            transition: all 0.2s ease;
+            transition: all 0.15s;
+            cursor: pointer;
+            border: none;
+            background: transparent;
         }
 
         .theme-btn:hover {
             color: var(--text-primary);
-            background: var(--bg-tertiary);
-        }
-
-        .theme-btn-active {
-            background: var(--accent-glow) !important;
-            color: var(--accent) !important;
-        }
-
-        /* Simulation controls */
-        .sim-control {
-            background: var(--bg-tertiary);
-            border-radius: 12px;
-            padding: 8px 12px;
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            background: transparent;
-            width: 100%;
-        }
-
-        input[type="range"]::-webkit-slider-track {
-            height: 4px;
-            border-radius: 2px;
             background: var(--bg-hover);
         }
 
-        input[type="range"]::-webkit-slider-thumb {
+        .theme-btn.active {
+            color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        /* Simulation control */
+        .sim-slider {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
+            appearance: none;
+            height: 4px;
+            background: var(--bg-elevated);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .sim-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
             background: var(--accent);
-            margin-top: -6px;
+            border-radius: 50%;
             cursor: pointer;
-            transition: transform 0.15s ease;
+            transition: transform 0.15s;
         }
 
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
+        .sim-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
         }
 
-        /* Button */
-        .btn-primary {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-            color: white;
+        .btn {
+            font-family: 'Geist Mono', monospace;
+            font-size: 0.75rem;
             font-weight: 500;
-            padding: 6px 14px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
         }
 
         .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px -2px rgba(16, 185, 129, 0.4);
+            filter: brightness(1.1);
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            background: var(--rose);
         }
 
-        .btn-danger:hover {
-            box-shadow: 0 4px 12px -2px rgba(239, 68, 68, 0.4);
-        }
-
-        /* Recent redirects item */
+        /* Redirect items */
         .redirect-item {
-            background: var(--bg-tertiary);
-            border-radius: 12px;
-            padding: 12px;
-            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            background: var(--bg-elevated);
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            transition: background 0.15s;
+            text-decoration: none;
         }
 
         .redirect-item:hover {
             background: var(--bg-hover);
         }
 
-        /* Custom scrollbar */
+        .redirect-item code {
+            font-family: 'Geist Mono', monospace;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-        /* Fade in animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        /* Animations */
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
+        .animate-in {
+            animation: fade-up 0.4s ease-out forwards;
         }
 
-        .animate-delay-1 { animation-delay: 0.05s; opacity: 0; }
-        .animate-delay-2 { animation-delay: 0.1s; opacity: 0; }
-        .animate-delay-3 { animation-delay: 0.15s; opacity: 0; }
-        .animate-delay-4 { animation-delay: 0.2s; opacity: 0; }
+        .delay-1 { animation-delay: 50ms; }
+        .delay-2 { animation-delay: 100ms; }
+        .delay-3 { animation-delay: 150ms; }
+        .delay-4 { animation-delay: 200ms; }
+
+        /* Icon colors */
+        .icon-box {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-violet { background: rgba(139, 92, 246, 0.15); color: var(--violet); }
+        .icon-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); }
+        .icon-cyan { background: rgba(6, 182, 212, 0.15); color: var(--cyan); }
+        .icon-accent { background: var(--accent-dim); color: var(--accent); }
+
+        .input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+            transition: all 0.15s;
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+
+        .input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Number input spinners */
+        .input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .input[type="number"]::-webkit-outer-spin-button,
+        .input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .spin-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .spin-btn:hover {
+            background: var(--bg-hover);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .spin-btn:active {
+            transform: scale(0.95);
+        }
     </style>
     <script>
-        function getTheme() {
-            return localStorage.getItem('theme') || 'light';
-        }
-
-        function applyTheme(theme) {
-            document.documentElement.classList.remove('dark', 'theme-warm');
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else if (theme === 'warm') {
-                document.documentElement.classList.add('dark', 'theme-warm');
-            }
-            localStorage.setItem('theme', theme);
-            updateThemeButtons(theme);
+        const getTheme = () => localStorage.getItem('theme') || 'dark';
+        const setTheme = (t) => {
+            const themeClasses = { light: 'theme-light', warm: 'theme-warm', gray: 'theme-gray' };
+            document.documentElement.className = themeClasses[t] || '';
+            localStorage.setItem('theme', t);
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
             if (typeof updateChartColors === 'function') updateChartColors();
-        }
-
-        function updateThemeButtons(theme) {
-            document.querySelectorAll('.theme-btn').forEach(btn => {
-                btn.classList.remove('theme-btn-active');
-                if (btn.dataset.theme === theme) {
-                    btn.classList.add('theme-btn-active');
-                }
-            });
-        }
-
-        applyTheme(getTheme());
-        document.addEventListener('DOMContentLoaded', () => updateThemeButtons(getTheme()));
+        };
+        setTheme(getTheme());
     </script>
 </head>
-<body class="bg-app">
-    <!-- Header -->
-    <header class="header-glass sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-            <div class="flex items-center justify-between">
-                <!-- Logo & Title -->
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+<body>
+    <header class="header">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" style="color: var(--accent)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                    </svg>
+                    <span class="font-mono text-sm font-medium">redirector</span>
+                </div>
+                <div class="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-full" style="background: var(--accent-dim)">
+                    <span class="live-pulse"></span>
+                    <span class="text-xs font-medium" style="color: var(--accent)">LIVE</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Simulation -->
+                <button id="sim-toggle-btn" onclick="openSimModal()" class="btn btn-primary flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span id="sim-btn-text">LOAD TEST</span>
+                </button>
+
+                <!-- Theme -->
+                <div class="flex gap-0.5 p-0.5 rounded-lg" style="background: var(--bg-elevated)">
+                    <button onclick="setTheme('light')" data-theme="light" class="theme-btn" title="Light">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="4" stroke-width="2"/>
+                            <path stroke-linecap="round" stroke-width="2" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
                         </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-semibold leading-tight" style="color: var(--text-primary)">redirector</h1>
-                        <span class="text-xs" style="color: var(--text-muted)">admin dashboard</span>
-                    </div>
-                    <!-- Live indicator -->
-                    <div class="hidden sm:flex items-center gap-2 ml-4 px-3 py-1.5 rounded-full" style="background: rgba(16, 185, 129, 0.1)">
-                        <span class="live-dot"></span>
-                        <span class="text-xs font-medium" style="color: var(--success)">Live</span>
-                    </div>
+                    </button>
+                    <button onclick="setTheme('dark')" data-theme="dark" class="theme-btn" title="Dark">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                        </svg>
+                    </button>
+                    <button onclick="setTheme('gray')" data-theme="gray" class="theme-btn" title="Gray">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <button onclick="setTheme('warm')" data-theme="warm" class="theme-btn" title="Warm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                        </svg>
+                    </button>
                 </div>
 
-                <!-- Controls -->
-                <div class="flex items-center gap-3">
-                    <!-- Simulate Load -->
-                    <div class="hidden md:flex items-center gap-3 sim-control">
-                        <svg class="w-4 h-4" style="color: var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                <!-- Logout -->
+                <form action="/admin/logout" method="POST">
+                    <button type="submit" class="theme-btn" title="Logout">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        <input type="range" id="sim-rps" min="100" max="5000" value="1000" step="100" class="w-24">
-                        <span id="sim-rps-label" class="text-xs font-mono w-16 text-right" style="color: var(--text-secondary)">1000 rps</span>
-                        <button id="sim-btn" onclick="toggleSimulation()" class="btn-primary flex items-center gap-1.5">
-                            <svg class="w-3.5 h-3.5" id="sim-icon-play" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            <svg class="w-3.5 h-3.5 hidden" id="sim-icon-stop" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
-                            <span id="sim-text">Start</span>
-                        </button>
-                    </div>
-
-                    <!-- Theme toggle -->
-                    <div class="flex gap-1 p-1 rounded-xl" style="background: var(--bg-tertiary)">
-                        <button onclick="applyTheme('light')" data-theme="light" class="theme-btn p-2 rounded-lg" title="Light">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <circle cx="12" cy="12" r="4" stroke-width="2"/>
-                                <path stroke-linecap="round" stroke-width="2" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
-                            </svg>
-                        </button>
-                        <button onclick="applyTheme('dark')" data-theme="dark" class="theme-btn p-2 rounded-lg" title="Dark">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
-                            </svg>
-                        </button>
-                        <button onclick="applyTheme('warm')" data-theme="warm" class="theme-btn p-2 rounded-lg" title="Warm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Logout -->
-                    <form action="/admin/logout" method="POST">
-                        <button type="submit" class="p-2 rounded-lg transition-all hover:bg-red-500/10" style="color: var(--text-muted)" title="Logout">
-                            <svg class="w-5 h-5 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
-                        </button>
-                    </form>
-                </div>
+                    </button>
+                </form>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Uptime -->
-            <div class="card stat-card p-5 animate-fade-in animate-delay-1">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="icon-container icon-violet">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <main class="max-w-6xl mx-auto px-4 py-6 space-y-4">
+        <!-- Stats -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="card p-4 animate-in delay-1" style="opacity: 0">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="icon-box icon-violet">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                     </div>
-                    <span class="text-sm font-medium" style="color: var(--text-muted)">Uptime</span>
+                    <span class="stat-label">Uptime</span>
                 </div>
-                <div class="text-2xl font-bold" style="color: var(--text-primary)" id="stat-uptime">--</div>
+                <div class="stat-value" id="stat-uptime">--</div>
             </div>
 
-            <!-- CPU -->
-            <div class="card stat-card p-5 animate-fade-in animate-delay-2">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="icon-container icon-orange">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="card p-4 animate-in delay-2" style="opacity: 0">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="icon-box icon-amber">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                         </svg>
                     </div>
-                    <span class="text-sm font-medium" style="color: var(--text-muted)">CPU</span>
+                    <span class="stat-label">CPU</span>
                 </div>
-                <div class="text-2xl font-bold" style="color: var(--text-primary)">
-                    <span id="stat-cpu">--</span><span class="text-lg" style="color: var(--text-muted)">%</span>
-                </div>
+                <div class="stat-value"><span id="stat-cpu">--</span><span class="text-base ml-0.5" style="color: var(--text-muted)">%</span></div>
             </div>
 
-            <!-- Memory -->
-            <div class="card stat-card p-5 animate-fade-in animate-delay-3">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="icon-container icon-cyan">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="card p-4 animate-in delay-3" style="opacity: 0">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="icon-box icon-cyan">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                         </svg>
                     </div>
-                    <span class="text-sm font-medium" style="color: var(--text-muted)">Memory</span>
+                    <span class="stat-label">Memory</span>
                 </div>
-                <div class="text-2xl font-bold" style="color: var(--text-primary)">
-                    <span id="stat-memory">--</span><span class="text-lg ml-1" style="color: var(--text-muted)">MB</span>
-                </div>
+                <div class="stat-value"><span id="stat-memory">--</span><span class="text-base ml-0.5" style="color: var(--text-muted)">MB</span></div>
             </div>
 
-            <!-- RPS (Highlighted) -->
-            <div class="card card-highlight stat-card p-5 animate-fade-in animate-delay-4">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="icon-container" style="background: rgba(255,255,255,0.2)">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="card card-glow p-4 animate-in delay-4" style="opacity: 0; background: linear-gradient(135deg, var(--bg-surface), var(--bg-elevated))">
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="icon-box icon-accent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                     </div>
-                    <span class="text-sm font-medium text-white/80">RPS</span>
+                    <span class="stat-label" style="color: var(--accent)">RPS</span>
                 </div>
-                <div class="text-2xl font-bold text-white" id="stat-rps">--</div>
+                <div class="stat-value" style="color: var(--accent)" id="stat-rps">--</div>
             </div>
         </div>
 
-        <!-- Charts Row -->
-        <div class="grid lg:grid-cols-2 gap-4">
-            <!-- RPS Chart -->
-            <div class="card p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-semibold" style="color: var(--text-primary)">Requests per Second</h3>
-                    <span class="text-xs" style="color: var(--text-muted)">Last 60 seconds</span>
+        <!-- Charts -->
+        <div class="grid lg:grid-cols-2 gap-3">
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-medium">Requests / sec</span>
+                    <span class="text-xs" style="color: var(--text-muted)">60s</span>
                 </div>
-                <div class="h-64">
+                <div class="h-52">
                     <canvas id="rpsChart"></canvas>
                 </div>
             </div>
 
-            <!-- Latency Chart -->
-            <div class="card p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-semibold" style="color: var(--text-primary)">Response Latency</h3>
+            <div class="card p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-medium">Latency</span>
                     <div class="flex items-center gap-3 text-xs" style="color: var(--text-muted)">
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background: var(--success)"></span>p50</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background: var(--warning)"></span>p95</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background: var(--danger)"></span>p99</span>
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full" style="background: var(--accent)"></span>p50</span>
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full" style="background: var(--amber)"></span>p95</span>
+                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full" style="background: var(--rose)"></span>p99</span>
                     </div>
                 </div>
-                <div class="h-64">
+                <div class="h-52">
                     <canvas id="latencyChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Cache Hit Rate -->
-        <div class="card p-5">
-            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="icon-container icon-emerald">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Cache -->
+        <div class="card p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <div class="icon-box icon-accent">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                         </svg>
                     </div>
-                    <span class="text-sm font-semibold" style="color: var(--text-primary)">Cache Hit Rate</span>
+                    <span class="text-sm font-medium">Cache Hit Rate</span>
                 </div>
                 <div class="flex-1">
-                    <div class="progress-bar h-3">
-                        <div id="cache-bar" class="progress-fill progress-shimmer h-full transition-all duration-500" style="width: 0%"></div>
+                    <div class="progress-track">
+                        <div id="cache-bar" class="progress-bar" style="width: 0%"></div>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <span class="text-2xl font-bold" style="color: var(--success)" id="stat-cache">0%</span>
+                    <span class="stat-value text-xl" style="color: var(--accent)" id="stat-cache">0%</span>
                     <div class="text-right">
-                        <div class="text-xs" style="color: var(--text-muted)">Total requests</div>
-                        <div class="text-sm font-semibold" style="color: var(--text-secondary)" id="stat-total">0</div>
+                        <div class="stat-label">Total</div>
+                        <div class="font-mono text-sm" id="stat-total">0</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Redirects -->
-        <div class="card p-5">
-            <div class="flex items-center gap-3 mb-4">
-                <div class="icon-container icon-blue">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                    </svg>
-                </div>
-                <h3 class="text-sm font-semibold" style="color: var(--text-primary)">Recent Redirects</h3>
+        <!-- Recent (hidden by default) -->
+        <div id="recent-card" class="card p-4 hidden">
+            <div class="flex items-center gap-2 mb-3">
+                <svg class="w-4 h-4" style="color: var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                <span class="text-sm font-medium">Recent Redirects</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2" id="recent-list">
-                <div class="text-sm p-3" style="color: var(--text-muted)">No recent redirects</div>
-            </div>
+            <div class="flex flex-col gap-1.5 h-64 overflow-y-auto" id="recent-list"></div>
         </div>
     </main>
 
-    <!-- Mobile simulation controls -->
-    <div class="md:hidden fixed bottom-4 left-4 right-4 card p-4 shadow-xl">
-        <div class="flex items-center gap-3">
-            <svg class="w-4 h-4 shrink-0" style="color: var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            <input type="range" id="sim-rps-mobile" min="100" max="5000" value="1000" step="100" class="flex-1">
-            <span id="sim-rps-label-mobile" class="text-xs font-mono w-12 text-right" style="color: var(--text-secondary)">1000</span>
-            <button id="sim-btn-mobile" onclick="toggleSimulation()" class="btn-primary px-4 py-2">
-                Start
-            </button>
+    <!-- Simulation Modal -->
+    <div id="sim-modal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+        <div class="card p-6 w-80 animate-in" style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="icon-box icon-accent">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <span class="font-medium">Load Test</span>
+            </div>
+
+            <div class="mb-4">
+                <label class="stat-label mb-2 block">Requests per second</label>
+                <div class="flex items-center gap-2">
+                    <button onclick="adjustRps(-100)" class="spin-btn" title="-100">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                        </svg>
+                    </button>
+                    <input type="number" id="sim-rps-input" class="input font-mono text-center text-lg flex-1" value="1000" min="1" max="100000" step="100">
+                    <button onclick="adjustRps(100)" class="spin-btn" title="+100">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="closeSimModal()" class="btn flex-1" style="background: var(--bg-elevated); color: var(--text-secondary);">
+                    CANCEL
+                </button>
+                <button id="sim-action-btn" onclick="toggleSimulation()" class="btn btn-primary flex-1">
+                    START
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Chart setup
         const maxDataPoints = 60;
         const rpsData = { labels: [], data: [] };
         const latencyData = { labels: [], p50: [], p95: [], p99: [] };
 
-        function getCSSVar(name) {
-            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-        }
+        const getCSSVar = (name) => getComputedStyle(document.body).getPropertyValue(name).trim();
 
-        function getChartColors() {
-            return {
-                text: getCSSVar('--text-muted'),
-                grid: getCSSVar('--chart-grid'),
-                accent: getCSSVar('--accent'),
-                accentGlow: getCSSVar('--accent-glow'),
-                success: getCSSVar('--success'),
-                warning: getCSSVar('--warning'),
-                danger: getCSSVar('--danger'),
-            };
-        }
+        const getChartColors = () => ({
+            text: getCSSVar('--text-muted'),
+            grid: getCSSVar('--border'),
+            accent: getCSSVar('--accent'),
+            accentDim: getCSSVar('--accent-dim'),
+            amber: getCSSVar('--amber'),
+            rose: getCSSVar('--rose'),
+        });
 
         let colors = getChartColors();
+
+        const chartDefaults = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#111',
+                    titleColor: '#e5e5e5',
+                    bodyColor: '#888',
+                    padding: 8,
+                    cornerRadius: 4,
+                    titleFont: { family: 'Geist Mono', size: 10 },
+                    bodyFont: { family: 'Geist Mono', size: 11 },
+                    displayColors: false,
+                }
+            },
+            scales: {
+                x: { display: false },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: colors.grid, drawBorder: false },
+                    ticks: { color: colors.text, font: { family: 'Geist Mono', size: 10 } },
+                    border: { display: false }
+                }
+            }
+        };
 
         const rpsChart = new Chart(document.getElementById('rpsChart'), {
             type: 'line',
             data: {
                 labels: rpsData.labels,
                 datasets: [{
-                    label: 'RPS',
                     data: rpsData.data,
                     borderColor: colors.accent,
-                    backgroundColor: colors.accentGlow,
+                    backgroundColor: colors.accentDim,
                     fill: true,
-                    tension: 0.4,
+                    tension: 0.3,
                     pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHitRadius: 20,
-                    borderWidth: 2,
+                    borderWidth: 1.5,
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
+                ...chartDefaults,
                 plugins: {
-                    legend: { display: false },
+                    ...chartDefaults.plugins,
                     tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                        titleColor: '#f8fafc',
-                        bodyColor: '#e2e8f0',
-                        padding: 12,
-                        cornerRadius: 8,
-                        displayColors: false,
-                        callbacks: {
-                            title: () => 'Requests per Second',
-                            label: (ctx) => `${ctx.parsed.y.toFixed(0)} req/s`
-                        }
-                    }
-                },
-                scales: {
-                    x: { display: false },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: colors.grid, drawBorder: false },
-                        ticks: { color: colors.text, font: { size: 11 } },
-                        border: { display: false }
+                        ...chartDefaults.plugins.tooltip,
+                        callbacks: { title: () => 'RPS', label: (ctx) => ctx.parsed.y.toFixed(0) }
                     }
                 }
             }
@@ -621,37 +685,23 @@
             data: {
                 labels: latencyData.labels,
                 datasets: [
-                    { label: 'p50', data: latencyData.p50, borderColor: colors.success, backgroundColor: 'transparent', tension: 0.4, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 },
-                    { label: 'p95', data: latencyData.p95, borderColor: colors.warning, backgroundColor: 'transparent', tension: 0.4, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 },
-                    { label: 'p99', data: latencyData.p99, borderColor: colors.danger, backgroundColor: 'transparent', tension: 0.4, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 },
+                    { label: 'p50', data: latencyData.p50, borderColor: colors.accent, tension: 0.3, pointRadius: 0, borderWidth: 1.5 },
+                    { label: 'p95', data: latencyData.p95, borderColor: colors.amber, tension: 0.3, pointRadius: 0, borderWidth: 1.5 },
+                    { label: 'p99', data: latencyData.p99, borderColor: colors.rose, tension: 0.3, pointRadius: 0, borderWidth: 1.5 },
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
+                ...chartDefaults,
                 plugins: {
-                    legend: { display: false },
+                    ...chartDefaults.plugins,
                     tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                        titleColor: '#f8fafc',
-                        bodyColor: '#e2e8f0',
-                        padding: 12,
-                        cornerRadius: 8,
-                        callbacks: {
-                            title: () => 'Response Latency',
-                            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} ms`
-                        }
+                        ...chartDefaults.plugins.tooltip,
+                        callbacks: { title: () => 'Latency', label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}ms` }
                     }
                 },
                 scales: {
-                    x: { display: false },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: colors.grid, drawBorder: false },
-                        ticks: { color: colors.text, font: { size: 11 }, callback: (v) => v + ' ms' },
-                        border: { display: false }
-                    }
+                    ...chartDefaults.scales,
+                    y: { ...chartDefaults.scales.y, ticks: { ...chartDefaults.scales.y.ticks, callback: (v) => v + 'ms' } }
                 }
             }
         });
@@ -659,166 +709,141 @@
         function updateChartColors() {
             colors = getChartColors();
             rpsChart.data.datasets[0].borderColor = colors.accent;
-            rpsChart.data.datasets[0].backgroundColor = colors.accentGlow;
+            rpsChart.data.datasets[0].backgroundColor = colors.accentDim;
             rpsChart.options.scales.y.grid.color = colors.grid;
             rpsChart.options.scales.y.ticks.color = colors.text;
-
-            latencyChart.data.datasets[0].borderColor = colors.success;
-            latencyChart.data.datasets[1].borderColor = colors.warning;
-            latencyChart.data.datasets[2].borderColor = colors.danger;
+            latencyChart.data.datasets[0].borderColor = colors.accent;
+            latencyChart.data.datasets[1].borderColor = colors.amber;
+            latencyChart.data.datasets[2].borderColor = colors.rose;
             latencyChart.options.scales.y.grid.color = colors.grid;
             latencyChart.options.scales.y.ticks.color = colors.text;
-
             rpsChart.update('none');
             latencyChart.update('none');
         }
 
-        // Format uptime
-        function formatUptime(secs) {
-            const days = Math.floor(secs / 86400);
-            const hours = Math.floor((secs % 86400) / 3600);
-            const mins = Math.floor((secs % 3600) / 60);
-            if (days > 0) return `${days}d ${hours}h`;
-            if (hours > 0) return `${hours}h ${mins}m`;
-            return `${mins}m`;
-        }
+        const formatUptime = (s) => {
+            const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+            return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
+        };
 
-        // Format URL for display
-        function formatUrl(url, maxLen = 45) {
-            try {
-                const u = new URL(url);
-                const display = u.hostname + u.pathname;
-                return display.length <= maxLen ? display : display.substring(0, maxLen) + '...';
-            } catch {
-                return url.length <= maxLen ? url : url.substring(0, maxLen) + '...';
-            }
-        }
+        const formatUrl = (url) => url;
 
-        // SSE connection
         const evtSource = new EventSource('/admin/events');
-
-        evtSource.onmessage = function(event) {
-            const data = JSON.parse(event.data);
+        evtSource.onmessage = (e) => {
+            const d = JSON.parse(e.data);
             const now = new Date().toLocaleTimeString('en-US', { hour12: false });
 
-            // Update stats
-            document.getElementById('stat-uptime').textContent = formatUptime(data.system.uptime_secs);
-            document.getElementById('stat-cpu').textContent = data.system.cpu_percent.toFixed(1);
-            document.getElementById('stat-memory').textContent = data.system.memory_mb;
-            document.getElementById('stat-rps').textContent = data.app.rps.toFixed(0);
+            document.getElementById('stat-uptime').textContent = formatUptime(d.system.uptime_secs);
+            document.getElementById('stat-cpu').textContent = d.system.cpu_percent.toFixed(1);
+            document.getElementById('stat-memory').textContent = d.system.memory_mb;
+            document.getElementById('stat-rps').textContent = d.app.rps.toFixed(0);
 
-            const cacheRate = (data.app.cache_hit_rate * 100).toFixed(1);
-            document.getElementById('stat-cache').textContent = cacheRate + '%';
-            document.getElementById('cache-bar').style.width = cacheRate + '%';
-            document.getElementById('stat-total').textContent = data.app.total_requests.toLocaleString();
+            const rate = (d.app.cache_hit_rate * 100).toFixed(1);
+            document.getElementById('stat-cache').textContent = rate + '%';
+            document.getElementById('cache-bar').style.width = rate + '%';
+            document.getElementById('stat-total').textContent = d.app.total_requests.toLocaleString();
 
-            // Update RPS chart
             rpsData.labels.push(now);
-            rpsData.data.push(data.app.rps);
-            if (rpsData.labels.length > maxDataPoints) {
-                rpsData.labels.shift();
-                rpsData.data.shift();
-            }
+            rpsData.data.push(d.app.rps);
+            if (rpsData.labels.length > maxDataPoints) { rpsData.labels.shift(); rpsData.data.shift(); }
             rpsChart.update('none');
 
-            // Update latency chart
             latencyData.labels.push(now);
-            latencyData.p50.push(data.app.latency_p50_ms);
-            latencyData.p95.push(data.app.latency_p95_ms);
-            latencyData.p99.push(data.app.latency_p99_ms);
+            latencyData.p50.push(d.app.latency_p50_ms);
+            latencyData.p95.push(d.app.latency_p95_ms);
+            latencyData.p99.push(d.app.latency_p99_ms);
             if (latencyData.labels.length > maxDataPoints) {
-                latencyData.labels.shift();
-                latencyData.p50.shift();
-                latencyData.p95.shift();
-                latencyData.p99.shift();
+                latencyData.labels.shift(); latencyData.p50.shift(); latencyData.p95.shift(); latencyData.p99.shift();
             }
             latencyChart.update('none');
 
-            // Update recent redirects
-            if (data.recent && data.recent.length > 0) {
-                const list = document.getElementById('recent-list');
-                list.innerHTML = data.recent.map(r => `
-                    <a href="/d/${r.hashid}" target="_blank" class="redirect-item group flex items-center gap-3">
-                        <code class="text-sm font-mono font-medium group-hover:underline" style="color: var(--accent)">${r.hashid}</code>
-                        <svg class="w-4 h-4 shrink-0" style="color: var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            // Update simulation status from SSE
+            if (d.simulation) {
+                updateSimUI(d.simulation.running);
+            }
+
+            // Show/hide recent redirects block based on data
+            const recentCard = document.getElementById('recent-card');
+            const recentList = document.getElementById('recent-list');
+
+            if (d.recent?.length > 0) {
+                recentCard.classList.remove('hidden');
+                recentList.innerHTML = d.recent.map(r => `
+                    <a href="/d/${r.hashid}" target="_blank" class="redirect-item">
+                        <code>${r.hashid}</code>
+                        <svg class="w-3 h-3" style="color: var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                         </svg>
-                        <span class="text-sm truncate" style="color: var(--text-secondary)" title="${r.url}">${formatUrl(r.url)}</span>
+                        <span style="color: var(--text-secondary)" title="${r.url}">${formatUrl(r.url)}</span>
                     </a>
                 `).join('');
-            }
-        };
-
-        evtSource.onerror = function() {
-            console.error('SSE connection lost, reconnecting...');
-        };
-
-        // Simulation controls
-        let simRunning = false;
-        let simTimeout = null;
-
-        const simRpsInput = document.getElementById('sim-rps');
-        const simRpsMobile = document.getElementById('sim-rps-mobile');
-        const simRpsLabel = document.getElementById('sim-rps-label');
-        const simRpsLabelMobile = document.getElementById('sim-rps-label-mobile');
-        const simBtn = document.getElementById('sim-btn');
-        const simBtnMobile = document.getElementById('sim-btn-mobile');
-        const simIconPlay = document.getElementById('sim-icon-play');
-        const simIconStop = document.getElementById('sim-icon-stop');
-        const simText = document.getElementById('sim-text');
-
-        function updateRpsLabel(value) {
-            simRpsLabel.textContent = value + ' rps';
-            simRpsLabelMobile.textContent = value;
-        }
-
-        simRpsInput.addEventListener('input', () => {
-            simRpsMobile.value = simRpsInput.value;
-            updateRpsLabel(simRpsInput.value);
-        });
-
-        simRpsMobile.addEventListener('input', () => {
-            simRpsInput.value = simRpsMobile.value;
-            updateRpsLabel(simRpsMobile.value);
-        });
-
-        function getSimParams() {
-            const rps = parseInt(simRpsInput.value);
-            return { interval: 1000 / Math.min(rps, 100), batchSize: Math.ceil(rps / 100) };
-        }
-
-        async function runSimulationStep() {
-            if (!simRunning) return;
-            const { interval, batchSize } = getSimParams();
-            const promises = [];
-            for (let i = 0; i < batchSize; i++) {
-                promises.push(fetch('/admin/simulate', { method: 'POST' }).catch(() => {}));
-            }
-            await Promise.all(promises);
-            if (simRunning) simTimeout = setTimeout(runSimulationStep, interval);
-        }
-
-        function toggleSimulation() {
-            if (simRunning) {
-                simRunning = false;
-                if (simTimeout) clearTimeout(simTimeout);
-                simText.textContent = 'Start';
-                simBtnMobile.textContent = 'Start';
-                simIconPlay.classList.remove('hidden');
-                simIconStop.classList.add('hidden');
-                simBtn.classList.remove('btn-danger');
-                simBtnMobile.classList.remove('btn-danger');
             } else {
-                simRunning = true;
-                simText.textContent = 'Stop';
-                simBtnMobile.textContent = 'Stop';
-                simIconPlay.classList.add('hidden');
-                simIconStop.classList.remove('hidden');
-                simBtn.classList.add('btn-danger');
-                simBtnMobile.classList.add('btn-danger');
-                runSimulationStep();
+                recentCard.classList.add('hidden');
             }
+        };
+
+        let simRunning = false;
+        const simModal = document.getElementById('sim-modal');
+        const simRpsInput = document.getElementById('sim-rps-input');
+        const simToggleBtn = document.getElementById('sim-toggle-btn');
+        const simBtnText = document.getElementById('sim-btn-text');
+        const simActionBtn = document.getElementById('sim-action-btn');
+
+        function openSimModal() {
+            simModal.classList.remove('hidden');
+            simModal.classList.add('flex');
+            simActionBtn.textContent = simRunning ? 'STOP' : 'START';
+            simActionBtn.classList.toggle('btn-danger', simRunning);
+            if (!simRunning) simRpsInput.focus();
         }
+
+        function adjustRps(delta) {
+            const current = parseInt(simRpsInput.value) || 1000;
+            simRpsInput.value = Math.max(1, Math.min(100000, current + delta));
+        }
+
+        function closeSimModal() {
+            simModal.classList.add('hidden');
+            simModal.classList.remove('flex');
+        }
+
+        // Close modal on backdrop click
+        simModal.addEventListener('click', (e) => {
+            if (e.target === simModal) closeSimModal();
+        });
+
+        // Close modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !simModal.classList.contains('hidden')) closeSimModal();
+        });
+
+        function updateSimUI(running) {
+            simRunning = running;
+            simBtnText.textContent = running ? 'RUNNING' : 'LOAD TEST';
+            simToggleBtn.classList.toggle('btn-danger', running);
+            simActionBtn.textContent = running ? 'STOP' : 'START';
+            simActionBtn.classList.toggle('btn-danger', running);
+        }
+
+        async function toggleSimulation() {
+            const rps = parseInt(simRpsInput.value) || 1000;
+            if (simRunning) {
+                await fetch('/admin/simulate/stop', { method: 'POST', credentials: 'include' });
+            } else {
+                await fetch('/admin/simulate/start', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rps })
+                });
+            }
+            closeSimModal();
+            // UI will be updated via SSE
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === getTheme()));
+        });
     </script>
 </body>
 </html>

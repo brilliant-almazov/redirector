@@ -11,12 +11,8 @@ use std::sync::LazyLock;
 static NOT_FOUND_HTML: &str = include_str!("../templates/not_found.html");
 
 #[cfg(not(debug_assertions))]
-static NOT_FOUND_MINIFIED: LazyLock<String> = LazyLock::new(|| {
-    use minify_html::{minify, Cfg};
-    let cfg = Cfg::spec_compliant();
-    String::from_utf8(minify(NOT_FOUND_HTML.as_bytes(), &cfg))
-        .unwrap_or_else(|_| NOT_FOUND_HTML.to_string())
-});
+static NOT_FOUND_MINIFIED: LazyLock<String> =
+    LazyLock::new(|| crate::minify_html_str(NOT_FOUND_HTML));
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -46,7 +42,7 @@ fn not_found_page() -> Html<String> {
     #[cfg(debug_assertions)]
     {
         match std::fs::read_to_string("templates/not_found.html") {
-            Ok(content) => Html(content),
+            Ok(content) => Html(crate::minify_html_str(&content)),
             Err(e) => Html(format!(
                 "<h1>404 - Not Found</h1><p>Error loading template: {}</p>",
                 e

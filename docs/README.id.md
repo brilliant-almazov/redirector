@@ -45,21 +45,25 @@ Berbagi URL panjang tidak praktis. Pemendek URL ada tetapi sering langsung menga
 - 🛡️ **Circuit breaker** - Perlindungan database terhadap kegagalan berantai
 - 🚦 **Rate limiting** - Batas rate global dan tingkat database
 - 📊 **Metrik Prometheus** - Observabilitas penuh dengan perlindungan Basic Auth
-- 🎨 **Halaman indah** - Halaman 404 dan indeks yang bersih dengan 3 tema
+- 🎨 **Halaman indah** - Halaman 404 dan indeks yang bersih dengan 4 tema
 - 🔑 **Multiple salt** - Dukungan rotasi salt hashid untuk migrasi
 - 📱 **Dasbor admin** - Pemantauan metrik real-time dengan SSE
 
 ## Tangkapan Layar
 
-| Terang | Gelap | Hangat |
-|--------|-------|--------|
-| ![Dashboard Terang](screenshots/dashboard-light.png) | ![Dashboard Gelap](screenshots/dashboard-dark.png) | ![Dashboard Hangat](screenshots/dashboard-warm.png) |
-| ![Login Terang](screenshots/login-light.png) | ![Login Gelap](screenshots/login-dark.png) | ![Login Hangat](screenshots/login-warm.png) |
-| ![404 Terang](screenshots/not-found-light.png) | ![404 Gelap](screenshots/not-found-dark.png) | ![404 Hangat](screenshots/not-found-warm.png) |
+| Terang | Gelap | Abu-abu | Hangat |
+|--------|-------|---------|--------|
+| ![Dashboard Terang](screenshots/dashboard-light.png) | ![Dashboard Gelap](screenshots/dashboard-dark.png) | ![Dashboard Abu-abu](screenshots/dashboard-gray.png) | ![Dashboard Hangat](screenshots/dashboard-warm.png) |
+| ![Login Terang](screenshots/login-light.png) | ![Login Gelap](screenshots/login-dark.png) | ![Login Abu-abu](screenshots/login-gray.png) | ![Login Hangat](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| Halaman Indeks | Halaman Antara |
-|----------------|----------------|
-| ![Indeks](screenshots/index.png) | ![Antara](screenshots/interstitial.png) |
+### Modal Uji Beban
+
+| Terang | Gelap | Abu-abu | Hangat |
+|--------|-------|---------|--------|
+| ![Modal Terang](screenshots/dashboard-modal-light.png) | ![Modal Gelap](screenshots/dashboard-modal-dark.png) | ![Modal Abu-abu](screenshots/dashboard-modal-gray.png) | ![Modal Hangat](screenshots/dashboard-modal-warm.png) |
 
 ## Stack Teknologi
 

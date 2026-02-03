@@ -45,21 +45,25 @@ Uzun URL'leri paylaşmak zahmetlidir. URL kısaltıcılar mevcut ancak çoğu za
 - 🛡️ **Circuit breaker** - Kademeli arızalara karşı veritabanı koruması
 - 🚦 **Hız sınırlama** - Global ve veritabanı düzeyinde hız sınırları
 - 📊 **Prometheus metrikleri** - Basic Auth korumalı tam gözlemlenebilirlik
-- 🎨 **Güzel sayfalar** - 3 tema ile temiz 404 ve dizin sayfaları
+- 🎨 **Güzel sayfalar** - 4 tema ile temiz 404 ve dizin sayfaları
 - 🔑 **Çoklu salt** - Geçiş için hashid salt rotasyonu desteği
 - 📱 **Yönetim paneli** - SSE ile gerçek zamanlı metrik izleme
 
 ## Ekran Görüntüleri
 
-| Açık | Koyu | Sıcak |
-|------|------|-------|
-| ![Dashboard Açık](screenshots/dashboard-light.png) | ![Dashboard Koyu](screenshots/dashboard-dark.png) | ![Dashboard Sıcak](screenshots/dashboard-warm.png) |
-| ![Giriş Açık](screenshots/login-light.png) | ![Giriş Koyu](screenshots/login-dark.png) | ![Giriş Sıcak](screenshots/login-warm.png) |
-| ![404 Açık](screenshots/not-found-light.png) | ![404 Koyu](screenshots/not-found-dark.png) | ![404 Sıcak](screenshots/not-found-warm.png) |
+| Açık | Koyu | Gri | Sıcak |
+|------|------|-----|-------|
+| ![Dashboard Açık](screenshots/dashboard-light.png) | ![Dashboard Koyu](screenshots/dashboard-dark.png) | ![Dashboard Gri](screenshots/dashboard-gray.png) | ![Dashboard Sıcak](screenshots/dashboard-warm.png) |
+| ![Giriş Açık](screenshots/login-light.png) | ![Giriş Koyu](screenshots/login-dark.png) | ![Giriş Gri](screenshots/login-gray.png) | ![Giriş Sıcak](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| Ana Sayfa | Ara Sayfa |
-|-----------|-----------|
-| ![Ana Sayfa](screenshots/index.png) | ![Ara Sayfa](screenshots/interstitial.png) |
+### Yük Testi Modalı
+
+| Açık | Koyu | Gri | Sıcak |
+|------|------|-----|-------|
+| ![Modal Açık](screenshots/dashboard-modal-light.png) | ![Modal Koyu](screenshots/dashboard-modal-dark.png) | ![Modal Gri](screenshots/dashboard-modal-gray.png) | ![Modal Sıcak](screenshots/dashboard-modal-warm.png) |
 
 ## Teknoloji Yığını
 

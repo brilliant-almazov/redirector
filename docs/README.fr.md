@@ -45,21 +45,25 @@ Partager de longues URLs est peu pratique. Les raccourcisseurs d'URL existent ma
 - 🛡️ **Circuit breaker** - Protection de base de données contre les pannes en cascade
 - 🚦 **Limitation de débit** - Limites globales et au niveau base de données
 - 📊 **Métriques Prometheus** - Observabilité complète avec protection Basic Auth
-- 🎨 **Belles pages** - Pages 404 et index propres avec 3 thèmes
+- 🎨 **Belles pages** - Pages 404 et index propres avec 4 thèmes
 - 🔑 **Sels multiples** - Support de rotation de sel hashid pour migration
 - 📱 **Tableau de bord admin** - Surveillance des métriques en temps réel avec SSE
 
 ## Captures d'écran
 
-| Clair | Sombre | Chaud |
-|-------|--------|-------|
-| ![Dashboard Clair](screenshots/dashboard-light.png) | ![Dashboard Sombre](screenshots/dashboard-dark.png) | ![Dashboard Chaud](screenshots/dashboard-warm.png) |
-| ![Login Clair](screenshots/login-light.png) | ![Login Sombre](screenshots/login-dark.png) | ![Login Chaud](screenshots/login-warm.png) |
-| ![404 Clair](screenshots/not-found-light.png) | ![404 Sombre](screenshots/not-found-dark.png) | ![404 Chaud](screenshots/not-found-warm.png) |
+| Clair | Sombre | Gris | Chaud |
+|-------|--------|------|-------|
+| ![Dashboard Clair](screenshots/dashboard-light.png) | ![Dashboard Sombre](screenshots/dashboard-dark.png) | ![Dashboard Gris](screenshots/dashboard-gray.png) | ![Dashboard Chaud](screenshots/dashboard-warm.png) |
+| ![Login Clair](screenshots/login-light.png) | ![Login Sombre](screenshots/login-dark.png) | ![Login Gris](screenshots/login-gray.png) | ![Login Chaud](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| Page d'accueil | Interstitielle |
-|----------------|----------------|
-| ![Page d'accueil](screenshots/index.png) | ![Interstitielle](screenshots/interstitial.png) |
+### Modal de test de charge
+
+| Clair | Sombre | Gris | Chaud |
+|-------|--------|------|-------|
+| ![Modal Clair](screenshots/dashboard-modal-light.png) | ![Modal Sombre](screenshots/dashboard-modal-dark.png) | ![Modal Gris](screenshots/dashboard-modal-gray.png) | ![Modal Chaud](screenshots/dashboard-modal-warm.png) |
 
 ## Stack technologique
 
