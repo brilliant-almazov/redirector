@@ -32,6 +32,29 @@ Compartir URLs largas es inconveniente. Los acortadores de URL existen, pero a m
 - 🎨 **Páginas hermosas** - Páginas 404 e índice limpias
 - 🔑 **Múltiples sales** - Soporte de rotación de sal hashid para migración
 
+## Capturas de Pantalla
+
+| Claro | Oscuro | Cálido |
+|-------|--------|--------|
+| ![Dashboard Claro](screenshots/dashboard-light.png) | ![Dashboard Oscuro](screenshots/dashboard-dark.png) | ![Dashboard Cálido](screenshots/dashboard-warm.png) |
+| ![Login Claro](screenshots/login-light.png) | ![Login Oscuro](screenshots/login-dark.png) | ![Login Cálido](screenshots/login-warm.png) |
+| ![404 Claro](screenshots/not-found-light.png) | ![404 Oscuro](screenshots/not-found-dark.png) | ![404 Cálido](screenshots/not-found-warm.png) |
+
+| Inicio | Intersticial |
+|--------|--------------|
+| ![Inicio](screenshots/index.png) | ![Intersticial](screenshots/interstitial.png) |
+
+## Stack Tecnológico
+
+- **Lenguaje**: Rust (async con Tokio)
+- **Framework Web**: Axum
+- **Caché**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Base de datos**: PostgreSQL (capa de almacenamiento modular)
+- **Métricas**: Prometheus + metrics-rs
+- **Hash de contraseñas**: Argon2
+
+> **Nota**: PostgreSQL se usa como backend de almacenamiento por defecto. La capa de almacenamiento está abstraída y puede reemplazarse con cualquier fuente de datos. En desarrollo activo.
+
 ## Inicio Rápido
 
 ### Docker

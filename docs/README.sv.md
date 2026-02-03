@@ -32,6 +32,29 @@ Att dela långa URL:er är opraktiskt. URL-förkortare finns men omdirigerar oft
 - 🎨 **Vackra sidor** - Rena 404- och indexsidor
 - 🔑 **Flera salter** - Hashid-saltrotationsstöd för migrering
 
+## Skärmdumpar
+
+| Ljust | Mörkt | Varmt |
+|-------|-------|-------|
+| ![Dashboard Ljust](screenshots/dashboard-light.png) | ![Dashboard Mörkt](screenshots/dashboard-dark.png) | ![Dashboard Varmt](screenshots/dashboard-warm.png) |
+| ![Inloggning Ljust](screenshots/login-light.png) | ![Inloggning Mörkt](screenshots/login-dark.png) | ![Inloggning Varmt](screenshots/login-warm.png) |
+| ![404 Ljust](screenshots/not-found-light.png) | ![404 Mörkt](screenshots/not-found-dark.png) | ![404 Varmt](screenshots/not-found-warm.png) |
+
+| Startsida | Mellansida |
+|-----------|------------|
+| ![Startsida](screenshots/index.png) | ![Mellansida](screenshots/interstitial.png) |
+
+## Teknikstack
+
+- **Språk**: Rust (asynkron med Tokio)
+- **Webbramverk**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Databas**: PostgreSQL (pluggbart lagringslager)
+- **Mätvärden**: Prometheus + metrics-rs
+- **Lösenordshashning**: Argon2
+
+> **Observera**: PostgreSQL används som standardlagring. Lagringslagret är abstraherat och kan ersättas med vilken datakälla som helst. För närvarande under aktiv utveckling.
+
 ## Snabbstart
 
 ### Docker
