@@ -77,20 +77,63 @@ Client → Redirect Handler → INSERT raw click into PG → Response
 
 Simple synchronous insert in the redirect handler. At low traffic (+2-3ms per redirect) this is acceptable. Consumer service normalizes data asynchronously.
 
-### Phase 2: RabbitMQ (when needed)
+### Phase 2: RabbitMQ with in-memory buffer (when needed)
 
 ```
-Client → Redirect Handler → basic_publish to RabbitMQ → Response
+Client → Redirect Handler → push to buffer (Vec) → Response
+                                       ↓
+                            Background flush task
+                         (every 500ms or 100 events)
+                                       ↓
+                         batch publish to RabbitMQ
                                        ↓
                               Consumer service
                                        ↓
                          Normalize + INSERT into PG
 ```
 
-- Redirector publishes a raw message and forgets
+- Redirect handler pushes raw event into `Vec` behind `Mutex` — nanoseconds, zero impact on latency
+- Background task flushes buffer to RabbitMQ by threshold (e.g. 100 events) or by timer (e.g. 500ms) — whichever comes first
+- One batch = one Rabbit message with array of events, not per-click publishing
+- Buffer memory footprint is negligible — 1000 clicks ~50 KB
 - Consumer service handles normalization and writes to PG
 - RabbitMQ is already in infrastructure
-- Zero data loss — messages persist in queue across crashes
+
+**Trade-off**: events in buffer are lost on crash. At low traffic and flush every 500ms — worst case loss is a few hundred clicks. Acceptable for analytics.
+
+```rust
+struct ClickBuffer {
+    events: Mutex<Vec<RawClickEvent>>,
+    flush_notify: Notify,
+}
+
+impl ClickBuffer {
+    fn push(&self, event: RawClickEvent) {
+        let mut events = self.events.lock().unwrap();
+        events.push(event);
+        if events.len() >= BATCH_SIZE {
+            self.flush_notify.notify_one();
+        }
+    }
+}
+
+// Background task
+async fn flush_loop(buffer: Arc<ClickBuffer>, rabbit: Channel) {
+    loop {
+        tokio::select! {
+            _ = buffer.flush_notify.notified() => {},
+            _ = tokio::time::sleep(FLUSH_INTERVAL) => {},
+        }
+        let batch = {
+            let mut events = buffer.events.lock().unwrap();
+            std::mem::take(&mut *events)
+        };
+        if !batch.is_empty() {
+            rabbit.basic_publish(serialize_batch(&batch)).await;
+        }
+    }
+}
+```
 
 ## Click Event Structure (raw, from redirector)
 
