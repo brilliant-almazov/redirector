@@ -78,6 +78,40 @@ pub struct DatabaseConfig {
     pub rate_limit: DbRateLimitConfig,
     #[serde(default)]
     pub circuit_breaker: CircuitBreakerConfig,
+    #[serde(default)]
+    pub query: QueryConfig,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct QueryConfig {
+    #[serde(default = "default_table")]
+    pub table: String,
+    #[serde(default = "default_id_column")]
+    pub id_column: String,
+    #[serde(default = "default_url_column")]
+    pub url_column: String,
+}
+
+impl Default for QueryConfig {
+    fn default() -> Self {
+        Self {
+            table: default_table(),
+            id_column: default_id_column(),
+            url_column: default_url_column(),
+        }
+    }
+}
+
+fn default_table() -> String {
+    "dictionary.urls".to_string()
+}
+
+fn default_id_column() -> String {
+    "id".to_string()
+}
+
+fn default_url_column() -> String {
+    "name".to_string()
 }
 
 #[derive(Debug, Deserialize, Clone)]

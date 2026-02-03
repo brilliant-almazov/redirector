@@ -66,4 +66,19 @@ mod tests {
     fn test_default_rate_limit_burst() {
         assert_eq!(RateLimitConfig::default().burst, 100);
     }
+
+    #[test]
+    fn test_default_query_table() {
+        assert_eq!(QueryConfig::default().table, "dictionary.urls");
+    }
+
+    #[test]
+    fn test_default_query_id_column() {
+        assert_eq!(QueryConfig::default().id_column, "id");
+    }
+
+    #[test]
+    fn test_default_query_url_column() {
+        assert_eq!(QueryConfig::default().url_column, "name");
+    }
 }

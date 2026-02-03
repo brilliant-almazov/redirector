@@ -7,6 +7,17 @@
 
 Safe URL redirect service with interstitial pages and hashid-based short links.
 
+### Performance
+
+| Scenario | RPS | Avg Latency | P99 Latency |
+|----------|-----|-------------|-------------|
+| 100% Cache Hit | **7,800+** | ~14ms | ~50ms |
+| Cache Miss (10K URLs) | **2,300+** | ~44ms | ~81ms |
+
+**Test conditions**: wrk -t4 -c100 -d30s, PostgreSQL 15, Dragonfly (Redis), macOS M1
+
+See [tests/loadtest/](tests/loadtest/) for load testing scripts and data.
+
 ## Problem
 
 Sharing long URLs is inconvenient. URL shorteners exist but often redirect immediately, which can be a security risk. Users should see where they're going before being redirected.
@@ -91,6 +102,10 @@ database:
   circuit_breaker:
     failure_threshold: 3
     reset_timeout_seconds: 60
+  query:
+    table: "dictionary.urls"    # Your table name
+    id_column: "id"             # ID column
+    url_column: "name"          # URL column
 
 interstitial:
   delay_seconds: 5            # Countdown before redirect

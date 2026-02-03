@@ -15,6 +15,7 @@ type CircuitBreaker = StateMachine<FailurePolicy, ()>;
 
 pub struct MainStorage {
     pool: PgPool,
+    query: String,
     rate_limiter: Arc<
         RateLimiter<
             governor::state::NotKeyed,
@@ -33,6 +34,13 @@ impl MainStorage {
             .connect(&config.url)
             .await?;
 
+        // Build query from configuration
+        let query = format!(
+            "SELECT {} FROM {} WHERE {} = $1",
+            config.query.url_column, config.query.table, config.query.id_column
+        );
+        tracing::info!(query = %query, "Database query configured");
+
         let quota = Quota::per_second(
             NonZeroU32::new(config.rate_limit.max_requests_per_second)
                 .unwrap_or(NonZeroU32::new(50).unwrap()),
@@ -50,25 +58,19 @@ impl MainStorage {
 
         Ok(Self {
             pool,
+            query,
             rate_limiter,
             circuit_breaker: Arc::new(tokio::sync::Mutex::new(circuit_breaker)),
         })
     }
 
     async fn query_url(&self, id: i64) -> Result<Option<String>> {
-        let record: Option<(String, String)> = sqlx::query_as(
-            r#"
-            SELECT d.name as domain, u.name as path
-            FROM dictionary.urls u
-            JOIN dictionary.domains d ON u.domain_id = d.id
-            WHERE u.id = $1
-            "#,
-        )
-        .bind(id)
-        .fetch_optional(&self.pool)
-        .await?;
+        let record: Option<(String,)> = sqlx::query_as(&self.query)
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?;
 
-        Ok(record.map(|(domain, path)| format!("{}{}", domain, path)))
+        Ok(record.map(|(url,)| url))
     }
 
     pub async fn health_check(&self) -> Result<()> {
