@@ -8,7 +8,13 @@ pub mod state;
 #[cfg(test)]
 mod auth_test;
 #[cfg(test)]
+mod handlers_test;
+#[cfg(test)]
 mod pages_test;
+#[cfg(test)]
+mod simulation_test;
+#[cfg(test)]
+mod sse_test;
 #[cfg(test)]
 mod state_test;
 
@@ -40,7 +46,7 @@ pub struct SimulationStatusResponse {
 }
 
 /// Start background simulation
-async fn simulation_start_handler(
+pub(crate) async fn simulation_start_handler(
     State(admin_state): State<AdminState>,
     Json(req): Json<SimulationStartRequest>,
 ) -> Json<SimulationStatusResponse> {
@@ -51,7 +57,7 @@ async fn simulation_start_handler(
 }
 
 /// Stop background simulation
-async fn simulation_stop_handler(
+pub(crate) async fn simulation_stop_handler(
     State(admin_state): State<AdminState>,
 ) -> Json<SimulationStatusResponse> {
     admin_state.stop_simulation();
@@ -62,7 +68,7 @@ async fn simulation_stop_handler(
 }
 
 /// Get simulation status
-async fn simulation_status_handler(
+pub(crate) async fn simulation_status_handler(
     State(admin_state): State<AdminState>,
 ) -> Json<SimulationStatusResponse> {
     Json(SimulationStatusResponse {
@@ -72,7 +78,7 @@ async fn simulation_status_handler(
 }
 
 /// Simulate a single redirect request (for manual testing)
-async fn simulate_handler() -> StatusCode {
+pub(crate) async fn simulate_handler() -> StatusCode {
     // Generate random latency between 1-50ms
     let latency = rand::random::<u64>() % 50000 + 1000; // 1-50ms in micros
     crate::metrics::record_request(latency);
@@ -118,31 +124,4 @@ pub fn admin_routes(admin_state: AdminState) -> Router {
         .route("/logout", post(auth::logout_handler))
         .merge(protected)
         .with_state(admin_state)
-}
-
-#[cfg(test)]
-mod simulate_tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_simulate_handler_returns_ok() {
-        let status = simulate_handler().await;
-        assert_eq!(status, StatusCode::OK);
-    }
-
-    #[tokio::test]
-    async fn test_simulate_handler_records_metrics() {
-        let before = crate::metrics::get_total_requests();
-        let _ = simulate_handler().await;
-        let after = crate::metrics::get_total_requests();
-        assert!(after > before);
-    }
-
-    #[tokio::test]
-    async fn test_simulate_handler_multiple_calls() {
-        for _ in 0..10 {
-            let status = simulate_handler().await;
-            assert_eq!(status, StatusCode::OK);
-        }
-    }
 }
