@@ -45,21 +45,25 @@ Chia sẻ URL dài rất bất tiện. Các công cụ rút gọn URL tồn tạ
 - 🛡️ **Circuit breaker** - Bảo vệ cơ sở dữ liệu chống lỗi dây chuyền
 - 🚦 **Giới hạn tốc độ** - Giới hạn tốc độ toàn cục và cấp cơ sở dữ liệu
 - 📊 **Metrics Prometheus** - Khả năng quan sát đầy đủ với bảo vệ Basic Auth
-- 🎨 **Trang đẹp** - Trang 404 và index sạch với 3 chủ đề
+- 🎨 **Trang đẹp** - Trang 404 và index sạch với 4 chủ đề
 - 🔑 **Nhiều salt** - Hỗ trợ xoay vòng salt hashid để di chuyển
 - 📱 **Bảng điều khiển admin** - Giám sát metrics thời gian thực với SSE
 
 ## Ảnh chụp màn hình
 
-| Sáng | Tối | Ấm |
-|------|-----|-----|
-| ![Dashboard Sáng](screenshots/dashboard-light.png) | ![Dashboard Tối](screenshots/dashboard-dark.png) | ![Dashboard Ấm](screenshots/dashboard-warm.png) |
-| ![Đăng nhập Sáng](screenshots/login-light.png) | ![Đăng nhập Tối](screenshots/login-dark.png) | ![Đăng nhập Ấm](screenshots/login-warm.png) |
-| ![404 Sáng](screenshots/not-found-light.png) | ![404 Tối](screenshots/not-found-dark.png) | ![404 Ấm](screenshots/not-found-warm.png) |
+| Sáng | Tối | Xám | Ấm |
+|------|-----|-----|-----|
+| ![Dashboard Sáng](screenshots/dashboard-light.png) | ![Dashboard Tối](screenshots/dashboard-dark.png) | ![Dashboard Xám](screenshots/dashboard-gray.png) | ![Dashboard Ấm](screenshots/dashboard-warm.png) |
+| ![Đăng nhập Sáng](screenshots/login-light.png) | ![Đăng nhập Tối](screenshots/login-dark.png) | ![Đăng nhập Xám](screenshots/login-gray.png) | ![Đăng nhập Ấm](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| Trang chủ | Trang trung gian |
-|-----------|------------------|
-| ![Trang chủ](screenshots/index.png) | ![Trung gian](screenshots/interstitial.png) |
+### Modal kiểm tra tải
+
+| Sáng | Tối | Xám | Ấm |
+|------|-----|-----|-----|
+| ![Modal Sáng](screenshots/dashboard-modal-light.png) | ![Modal Tối](screenshots/dashboard-modal-dark.png) | ![Modal Xám](screenshots/dashboard-modal-gray.png) | ![Modal Ấm](screenshots/dashboard-modal-warm.png) |
 
 ## Stack công nghệ
 

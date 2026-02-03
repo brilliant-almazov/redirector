@@ -51,15 +51,19 @@
 
 ## {SCREENSHOTS_TITLE}
 
-| {LIGHT} | {DARK} | {WARM} |
-|-------|------|------|
-| ![Dashboard {LIGHT}](screenshots/dashboard-light.png) | ![Dashboard {DARK}](screenshots/dashboard-dark.png) | ![Dashboard {WARM}](screenshots/dashboard-warm.png) |
-| ![{LOGIN} {LIGHT}](screenshots/login-light.png) | ![{LOGIN} {DARK}](screenshots/login-dark.png) | ![{LOGIN} {WARM}](screenshots/login-warm.png) |
-| ![404 {LIGHT}](screenshots/not-found-light.png) | ![404 {DARK}](screenshots/not-found-dark.png) | ![404 {WARM}](screenshots/not-found-warm.png) |
+| {LIGHT} | {DARK} | {GRAY} | {WARM} |
+|---------|--------|--------|--------|
+| ![Dashboard {LIGHT}](screenshots/dashboard-light.png) | ![Dashboard {DARK}](screenshots/dashboard-dark.png) | ![Dashboard {GRAY}](screenshots/dashboard-gray.png) | ![Dashboard {WARM}](screenshots/dashboard-warm.png) |
+| ![{LOGIN} {LIGHT}](screenshots/login-light.png) | ![{LOGIN} {DARK}](screenshots/login-dark.png) | ![{LOGIN} {GRAY}](screenshots/login-gray.png) | ![{LOGIN} {WARM}](screenshots/login-warm.png) |
+| ![{INDEX} {LIGHT}](screenshots/index-light.png) | ![{INDEX} {DARK}](screenshots/index-dark.png) | ![{INDEX} {GRAY}](screenshots/index-gray.png) | ![{INDEX} {WARM}](screenshots/index-warm.png) |
+| ![{INTERSTITIAL} {LIGHT}](screenshots/interstitial-light.png) | ![{INTERSTITIAL} {DARK}](screenshots/interstitial-dark.png) | ![{INTERSTITIAL} {GRAY}](screenshots/interstitial-gray.png) | ![{INTERSTITIAL} {WARM}](screenshots/interstitial-warm.png) |
+| ![404 {LIGHT}](screenshots/404-light.png) | ![404 {DARK}](screenshots/404-dark.png) | ![404 {GRAY}](screenshots/404-gray.png) | ![404 {WARM}](screenshots/404-warm.png) |
 
-| {INDEX_PAGE} | {INTERSTITIAL_PAGE} |
-|------------|--------------|
-| ![{INDEX}](screenshots/index.png) | ![{INTERSTITIAL}](screenshots/interstitial.png) |
+### {LOAD_TEST_MODAL_TITLE}
+
+| {LIGHT} | {DARK} | {GRAY} | {WARM} |
+|---------|--------|--------|--------|
+| ![{MODAL} {LIGHT}](screenshots/dashboard-modal-light.png) | ![{MODAL} {DARK}](screenshots/dashboard-modal-dark.png) | ![{MODAL} {GRAY}](screenshots/dashboard-modal-gray.png) | ![{MODAL} {WARM}](screenshots/dashboard-modal-warm.png) |
 
 ## {TECH_STACK_TITLE}
 

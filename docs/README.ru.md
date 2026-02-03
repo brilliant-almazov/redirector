@@ -45,21 +45,25 @@
 - 🛡️ **Circuit breaker** - Защита БД от каскадных сбоев
 - 🚦 **Rate limiting** - Глобальный и на уровне БД
 - 📊 **Prometheus метрики** - Полная наблюдаемость с Basic Auth защитой
-- 🎨 **Красивые страницы** - Чистые страницы 404 и индекса с 3 темами
+- 🎨 **Красивые страницы** - Чистые страницы 404 и индекса с 4 темами
 - 🔑 **Несколько солей** - Поддержка ротации соли hashid для миграции
 - 📱 **Админ-панель** - Мониторинг метрик в реальном времени через SSE
 
 ## Скриншоты
 
-| Светлая | Тёмная | Тёплая |
-|---------|--------|--------|
-| ![Дашборд светлая](screenshots/dashboard-light.png) | ![Дашборд тёмная](screenshots/dashboard-dark.png) | ![Дашборд тёплая](screenshots/dashboard-warm.png) |
-| ![Логин светлая](screenshots/login-light.png) | ![Логин тёмная](screenshots/login-dark.png) | ![Логин тёплая](screenshots/login-warm.png) |
-| ![404 светлая](screenshots/not-found-light.png) | ![404 тёмная](screenshots/not-found-dark.png) | ![404 тёплая](screenshots/not-found-warm.png) |
+| Светлая | Тёмная | Серая | Тёплая |
+|---------|--------|-------|--------|
+| ![Дашборд светлая](screenshots/dashboard-light.png) | ![Дашборд тёмная](screenshots/dashboard-dark.png) | ![Дашборд серая](screenshots/dashboard-gray.png) | ![Дашборд тёплая](screenshots/dashboard-warm.png) |
+| ![Логин светлая](screenshots/login-light.png) | ![Логин тёмная](screenshots/login-dark.png) | ![Логин серая](screenshots/login-gray.png) | ![Логин тёплая](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| Главная | Промежуточная |
-|---------|---------------|
-| ![Главная](screenshots/index.png) | ![Промежуточная](screenshots/interstitial.png) |
+### Модалка нагрузочного тестирования
+
+| Светлая | Тёмная | Серая | Тёплая |
+|---------|--------|-------|--------|
+| ![Модалка светлая](screenshots/dashboard-modal-light.png) | ![Модалка тёмная](screenshots/dashboard-modal-dark.png) | ![Модалка серая](screenshots/dashboard-modal-gray.png) | ![Модалка тёплая](screenshots/dashboard-modal-warm.png) |
 
 ## Стек технологий
 

@@ -16,7 +16,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -30,58 +29,80 @@
         body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
 
         :root {
-            --bg-primary: #f8fafc;
-            --bg-secondary: #ffffff;
+            --bg-base: #f8fafc;
+            --bg-card: #ffffff;
             --bg-tertiary: #f1f5f9;
             --border-color: rgba(148, 163, 184, 0.2);
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-muted: #94a3b8;
             --accent: #3b82f6;
+            --accent-secondary: #6366f1;
             --accent-glow: rgba(59, 130, 246, 0.15);
             --error: #ef4444;
+            --error-secondary: #f97316;
             --error-glow: rgba(239, 68, 68, 0.15);
         }
 
-        .dark {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
+        html.theme-dark {
+            --bg-base: #0f172a;
+            --bg-card: #1e293b;
             --bg-tertiary: #334155;
             --border-color: rgba(148, 163, 184, 0.1);
             --text-primary: #f8fafc;
             --text-secondary: #cbd5e1;
             --text-muted: #64748b;
             --accent: #60a5fa;
+            --accent-secondary: #818cf8;
             --accent-glow: rgba(96, 165, 250, 0.15);
             --error: #f87171;
+            --error-secondary: #fb923c;
             --error-glow: rgba(248, 113, 113, 0.2);
         }
 
-        .theme-warm {
-            --bg-primary: #1c1917;
-            --bg-secondary: #292524;
+        html.theme-gray {
+            --bg-base: #18181b;
+            --bg-card: #27272a;
+            --bg-tertiary: #3f3f46;
+            --border-color: rgba(161, 161, 170, 0.15);
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent: #a78bfa;
+            --accent-secondary: #c084fc;
+            --accent-glow: rgba(167, 139, 250, 0.15);
+            --error: #f472b6;
+            --error-secondary: #fb7185;
+            --error-glow: rgba(244, 114, 182, 0.2);
+        }
+
+        html.theme-warm {
+            --bg-base: #1c1917;
+            --bg-card: #292524;
             --bg-tertiary: #44403c;
             --border-color: rgba(168, 162, 158, 0.15);
             --text-primary: #fafaf9;
             --text-secondary: #d6d3d1;
             --text-muted: #78716c;
             --accent: #f59e0b;
+            --accent-secondary: #fbbf24;
             --accent-glow: rgba(245, 158, 11, 0.15);
             --error: #fb923c;
+            --error-secondary: #f97316;
             --error-glow: rgba(251, 146, 60, 0.2);
         }
 
         * { transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease; }
 
         .bg-pattern {
-            background-color: var(--bg-primary);
+            background-color: var(--bg-base);
             background-image:
                 radial-gradient(at 40% 20%, var(--error-glow) 0px, transparent 50%),
                 radial-gradient(at 80% 80%, var(--accent-glow) 0px, transparent 50%);
         }
 
         .card-glass {
-            background: var(--bg-secondary);
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
             box-shadow:
                 0 4px 6px -1px rgba(0, 0, 0, 0.05),
@@ -89,8 +110,9 @@
                 inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
         }
 
-        .dark .card-glass,
-        .theme-warm .card-glass {
+        html.theme-dark .card-glass,
+        html.theme-gray .card-glass,
+        html.theme-warm .card-glass {
             box-shadow:
                 0 4px 6px -1px rgba(0, 0, 0, 0.2),
                 0 10px 40px -15px rgba(0, 0, 0, 0.4),
@@ -98,7 +120,7 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, #6366f1) 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
             box-shadow: 0 4px 14px -3px var(--accent-glow);
         }
 
@@ -156,13 +178,8 @@
             return localStorage.getItem('theme') || 'light';
         }
 
-        function applyTheme(theme) {
-            document.documentElement.classList.remove('dark', 'theme-warm');
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else if (theme === 'warm') {
-                document.documentElement.classList.add('dark', 'theme-warm');
-            }
+        function setTheme(theme) {
+            document.documentElement.className = theme === 'light' ? '' : 'theme-' + theme;
             localStorage.setItem('theme', theme);
             updateThemeButtons(theme);
         }
@@ -176,7 +193,11 @@
             });
         }
 
-        applyTheme(getTheme());
+        // Apply theme immediately
+        (function() {
+            const theme = getTheme();
+            document.documentElement.className = theme === 'light' ? '' : 'theme-' + theme;
+        })();
         document.addEventListener('DOMContentLoaded', () => updateThemeButtons(getTheme()));
     </script>
 </head>
@@ -184,7 +205,7 @@
     <div class="w-full max-w-md">
         <div class="card-glass rounded-2xl p-8 animate-fade-in text-center">
             <!-- Icon -->
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 shadow-lg mb-6 logo-float">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl shadow-lg mb-6 logo-float" style="background: linear-gradient(135deg, var(--error), var(--error-secondary));">
                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                     <line x1="5" y1="5" x2="19" y2="19" stroke-width="2.5"/>
@@ -215,20 +236,27 @@
             <!-- Theme selector -->
             <div class="mt-8 pt-6" style="border-top: 1px solid var(--border-color)">
                 <div class="flex justify-center gap-2">
-                    <button onclick="applyTheme('light')" data-theme="light"
+                    <button onclick="setTheme('light')" data-theme="light"
                             class="theme-btn p-2.5 rounded-xl transition-all" title="Light theme">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="4" stroke-width="2"/>
                             <path stroke-linecap="round" stroke-width="2" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
                         </svg>
                     </button>
-                    <button onclick="applyTheme('dark')" data-theme="dark"
+                    <button onclick="setTheme('dark')" data-theme="dark"
                             class="theme-btn p-2.5 rounded-xl transition-all" title="Dark theme">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
                         </svg>
                     </button>
-                    <button onclick="applyTheme('warm')" data-theme="warm"
+                    <button onclick="setTheme('gray')" data-theme="gray"
+                            class="theme-btn p-2.5 rounded-xl transition-all" title="Gray theme">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                            <path stroke-width="2" d="M12 3a9 9 0 010 18" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button onclick="setTheme('warm')" data-theme="warm"
                             class="theme-btn p-2.5 rounded-xl transition-all" title="Warm theme">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>

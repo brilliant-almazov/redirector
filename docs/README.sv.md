@@ -45,21 +45,25 @@ Att dela långa URL:er är opraktiskt. URL-förkortare finns men omdirigerar oft
 - 🛡️ **Circuit breaker** - Databasskydd mot kaskadfel
 - 🚦 **Hastighetsbegränsning** - Både globala och databasnivåbegränsningar
 - 📊 **Prometheus-mätvärden** - Full observerbarhet med Basic Auth-skydd
-- 🎨 **Vackra sidor** - Rena 404- och indexsidor med 3 teman
+- 🎨 **Vackra sidor** - Rena 404- och indexsidor med 4 teman
 - 🔑 **Multipla salts** - Stöd för hashid salt-rotation för migrering
 - 📱 **Adminpanel** - Realtidsövervakning av mätvärden med SSE
 
 ## Skärmdumpar
 
-| Ljus | Mörk | Varm |
-|------|------|------|
-| ![Dashboard Ljus](screenshots/dashboard-light.png) | ![Dashboard Mörk](screenshots/dashboard-dark.png) | ![Dashboard Varm](screenshots/dashboard-warm.png) |
-| ![Login Ljus](screenshots/login-light.png) | ![Login Mörk](screenshots/login-dark.png) | ![Login Varm](screenshots/login-warm.png) |
-| ![404 Ljus](screenshots/not-found-light.png) | ![404 Mörk](screenshots/not-found-dark.png) | ![404 Varm](screenshots/not-found-warm.png) |
+| Ljus | Mörk | Grå | Varm |
+|------|------|-----|------|
+| ![Dashboard Ljus](screenshots/dashboard-light.png) | ![Dashboard Mörk](screenshots/dashboard-dark.png) | ![Dashboard Grå](screenshots/dashboard-gray.png) | ![Dashboard Varm](screenshots/dashboard-warm.png) |
+| ![Login Ljus](screenshots/login-light.png) | ![Login Mörk](screenshots/login-dark.png) | ![Login Grå](screenshots/login-gray.png) | ![Login Varm](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| Indexsida | Mellanliggande |
-|-----------|----------------|
-| ![Index](screenshots/index.png) | ![Mellanliggande](screenshots/interstitial.png) |
+### Lasttest-modal
+
+| Ljus | Mörk | Grå | Varm |
+|------|------|-----|------|
+| ![Modal Ljus](screenshots/dashboard-modal-light.png) | ![Modal Mörk](screenshots/dashboard-modal-dark.png) | ![Modal Grå](screenshots/dashboard-modal-gray.png) | ![Modal Varm](screenshots/dashboard-modal-warm.png) |
 
 ## Teknikstack
 
