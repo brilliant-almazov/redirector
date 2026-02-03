@@ -102,3 +102,66 @@ pub fn hash_password(password: &str) -> String {
         .expect("Failed to hash password")
         .to_string()
 }
+
+#[cfg(test)]
+mod verify_tests {
+    use super::*;
+
+    #[test]
+    fn test_verify_password_valid() {
+        let password = "test_password_123";
+        let hash = hash_password(password);
+        assert!(verify_password(password, &hash));
+    }
+
+    #[test]
+    fn test_verify_password_invalid() {
+        let hash = hash_password("correct_password");
+        assert!(!verify_password("wrong_password", &hash));
+    }
+
+    #[test]
+    fn test_verify_password_invalid_hash_format() {
+        assert!(!verify_password("password", "not_a_valid_hash"));
+    }
+
+    #[test]
+    fn test_verify_password_empty_password() {
+        let hash = hash_password("");
+        assert!(verify_password("", &hash));
+    }
+
+    #[test]
+    fn test_verify_password_special_chars() {
+        let password = "p@$$w0rd!#$%^&*()";
+        let hash = hash_password(password);
+        assert!(verify_password(password, &hash));
+    }
+
+    #[test]
+    fn test_verify_password_unicode() {
+        let password = "пароль密码";
+        let hash = hash_password(password);
+        assert!(verify_password(password, &hash));
+    }
+
+    #[test]
+    fn test_verify_password_wrong_hash_prefix() {
+        assert!(!verify_password("password", "$invalid$hash"));
+    }
+
+    #[test]
+    fn test_login_form_deserialize() {
+        let form = LoginForm {
+            username: "admin".to_string(),
+            password: "secret".to_string(),
+        };
+        assert_eq!(form.username, "admin");
+        assert_eq!(form.password, "secret");
+    }
+
+    #[test]
+    fn test_session_cookie_constant() {
+        assert_eq!(SESSION_COOKIE, "redirector_session");
+    }
+}
