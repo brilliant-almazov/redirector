@@ -54,11 +54,16 @@ async fn test_storage_get_existing_url() {
     let port = postgres.get_host_port_ipv4(5432).await.unwrap();
     let config = test_config(port);
 
-    let storage = MainStorage::new(&config).await.expect("Failed to create storage");
+    let storage = MainStorage::new(&config)
+        .await
+        .expect("Failed to create storage");
 
     let result = storage.get_url_by_id(1).await;
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), Some("https://example.com/page1".to_string()));
+    assert_eq!(
+        result.unwrap(),
+        Some("https://example.com/page1".to_string())
+    );
 }
 
 #[tokio::test]
@@ -72,7 +77,9 @@ async fn test_storage_get_another_url() {
     let port = postgres.get_host_port_ipv4(5432).await.unwrap();
     let config = test_config(port);
 
-    let storage = MainStorage::new(&config).await.expect("Failed to create storage");
+    let storage = MainStorage::new(&config)
+        .await
+        .expect("Failed to create storage");
 
     let result = storage.get_url_by_id(42).await;
     assert!(result.is_ok());
@@ -90,7 +97,9 @@ async fn test_storage_get_nonexistent_url() {
     let port = postgres.get_host_port_ipv4(5432).await.unwrap();
     let config = test_config(port);
 
-    let storage = MainStorage::new(&config).await.expect("Failed to create storage");
+    let storage = MainStorage::new(&config)
+        .await
+        .expect("Failed to create storage");
 
     let result = storage.get_url_by_id(99999).await;
     assert!(result.is_ok());
@@ -108,7 +117,9 @@ async fn test_storage_health_check() {
     let port = postgres.get_host_port_ipv4(5432).await.unwrap();
     let config = test_config(port);
 
-    let storage = MainStorage::new(&config).await.expect("Failed to create storage");
+    let storage = MainStorage::new(&config)
+        .await
+        .expect("Failed to create storage");
 
     let result = storage.health_check().await;
     assert!(result.is_ok());
@@ -125,7 +136,9 @@ async fn test_storage_multiple_queries() {
     let port = postgres.get_host_port_ipv4(5432).await.unwrap();
     let config = test_config(port);
 
-    let storage = MainStorage::new(&config).await.expect("Failed to create storage");
+    let storage = MainStorage::new(&config)
+        .await
+        .expect("Failed to create storage");
 
     // Query multiple IDs
     for id in [1, 2, 42, 12345] {
@@ -166,7 +179,9 @@ async fn test_storage_custom_table_config() {
         },
     };
 
-    let storage = MainStorage::new(&config).await.expect("Failed to create storage");
+    let storage = MainStorage::new(&config)
+        .await
+        .expect("Failed to create storage");
 
     let result = storage.get_url_by_id(100).await;
     assert!(result.is_ok());

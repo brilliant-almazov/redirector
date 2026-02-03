@@ -83,7 +83,10 @@ async fn test_cache_multiple_keys() {
 
     // Set multiple keys
     for id in 1..=10 {
-        cache.set(id, &format!("https://example.com/{}", id)).await.unwrap();
+        cache
+            .set(id, &format!("https://example.com/{}", id))
+            .await
+            .unwrap();
     }
 
     // Verify all keys

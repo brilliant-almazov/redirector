@@ -10,37 +10,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: Test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -58,8 +30,8 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-lint-
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -67,37 +39,63 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      - name: Run tests
-        run: cargo test --all-features --workspace
+  test-unit:
+    name: Unit Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-test-
+
+      - name: Run unit tests
+        run: cargo test --lib --all-features
+
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-integration-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-integration-
+
+      - name: Run integration tests
+        run: cargo test --test '*' --all-features
 
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
-    needs: test
-
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    needs: [lint, test-unit, test-integration]
 
     steps:
       - uses: actions/checkout@v4
@@ -141,18 +139,15 @@ jobs:
           minColorRange: 0
 
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
-    needs: test
+    needs: [lint, test-unit]
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact: redirector-linux-amd64
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact: redirector-macos-amd64
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact: redirector-macos-arm64
@@ -232,18 +227,53 @@ jobs:
             redis-cli SET "url:$i" "https://example.com/page$i" EX 3600
           done
 
+      - name: Create config
+        run: |
+          cat > config.yaml << 'EOF'
+          server:
+            host: "0.0.0.0"
+            port: 8080
+          hashids:
+            salts:
+              - "test-salt-for-ci"
+            min_length: 6
+          redis:
+            url: "redis://localhost:6379"
+            cache_ttl_seconds: 3600
+          database:
+            url: "postgresql://postgres:postgres@localhost:5432/test"
+            pool:
+              max_connections: 5
+              connect_timeout_seconds: 5
+            rate_limit:
+              max_requests_per_second: 10000
+            circuit_breaker:
+              failure_threshold: 5
+              reset_timeout_seconds: 30
+            query:
+              table: "dictionary.urls"
+              id_column: "id"
+              url_column: "name"
+          interstitial:
+            delay_seconds: 5
+          metrics:
+            basic_auth:
+              username: prometheus
+              password: secret
+          rate_limit:
+            requests_per_second: 50000
+            burst: 1000
+          EOF
+
       - name: Start service
         run: |
           chmod +x ./bin/redirector
-          DATABASE__URL="postgresql://postgres:postgres@localhost:5432/test" \
-          REDIS__URL="redis://localhost:6379" \
           ./bin/redirector &
           sleep 3
 
       - name: Generate test hashids
         run: |
           cd tests/loadtest
-          # Use pre-generated hashids
           cat sample_hashids_100.txt > cache_test.txt
           head -1000 sample_hashids_10000.txt > mixed_test.txt
 
@@ -270,41 +300,56 @@ jobs:
           RPS=$(echo "$RESULT" | grep "Requests/sec" | awk '{print $2}' | cut -d. -f1)
           echo "mixed_rps=$RPS" >> $GITHUB_OUTPUT
 
-      - name: Get cache hit rate
-        id: cache_rate
+      - name: Get metrics
+        id: metrics
         run: |
-          METRICS=$(curl -s http://localhost:8080/metrics)
-          HITS=$(echo "$METRICS" | grep 'cache_hits_total' | awk '{print $2}' || echo "0")
-          MISSES=$(echo "$METRICS" | grep 'cache_misses_total' | awk '{print $2}' || echo "0")
+          METRICS=$(curl -s -u prometheus:secret http://localhost:8080/metrics)
+          echo "$METRICS"
 
-          if [ "$HITS" != "0" ] || [ "$MISSES" != "0" ]; then
-            RATE=$(echo "scale=0; $HITS * 100 / ($HITS + $MISSES)" | bc)
+          HITS=$(echo "$METRICS" | grep '^cache_hits_total' | awk '{print $2}' || echo "0")
+          MISSES=$(echo "$METRICS" | grep '^cache_misses_total' | awk '{print $2}' || echo "0")
+
+          if [ -n "$HITS" ] && [ -n "$MISSES" ] && [ "$HITS" != "0" -o "$MISSES" != "0" ]; then
+            TOTAL=$((${HITS%.*} + ${MISSES%.*}))
+            if [ "$TOTAL" -gt 0 ]; then
+              RATE=$((${HITS%.*} * 100 / $TOTAL))
+            else
+              RATE=0
+            fi
           else
             RATE=0
           fi
 
-          echo "rate=$RATE" >> $GITHUB_OUTPUT
+          echo "cache_hit_rate=$RATE" >> $GITHUB_OUTPUT
 
       - name: Update performance badges
         if: github.ref == 'refs/heads/main'
         run: |
-          # Update RPS badge
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/gists/${{ secrets.BADGE_GIST_ID }} \
             -d "{\"files\":{\"rps.json\":{\"content\":\"{\\\"schemaVersion\\\":1,\\\"label\\\":\\\"RPS\\\",\\\"message\\\":\\\"${{ steps.cache_bench.outputs.cache_rps }}\\\",\\\"color\\\":\\\"blue\\\"}\"}}}"
 
-          # Update latency badge
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/gists/${{ secrets.BADGE_GIST_ID }} \
             -d "{\"files\":{\"latency.json\":{\"content\":\"{\\\"schemaVersion\\\":1,\\\"label\\\":\\\"latency\\\",\\\"message\\\":\\\"${{ steps.cache_bench.outputs.cache_latency }}\\\",\\\"color\\\":\\\"green\\\"}\"}}}"
 
-          # Update cache hit rate badge
           curl -X PATCH \
             -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             https://api.github.com/gists/${{ secrets.BADGE_GIST_ID }} \
-            -d "{\"files\":{\"cache_hit_rate.json\":{\"content\":\"{\\\"schemaVersion\\\":1,\\\"label\\\":\\\"cache hit\\\",\\\"message\\\":\\\"${{ steps.cache_rate.outputs.rate }}%\\\",\\\"color\\\":\\\"brightgreen\\\"}\"}}}"
+            -d "{\"files\":{\"cache_hit_rate.json\":{\"content\":\"{\\\"schemaVersion\\\":1,\\\"label\\\":\\\"cache hit\\\",\\\"message\\\":\\\"${{ steps.metrics.outputs.cache_hit_rate }}%\\\",\\\"color\\\":\\\"brightgreen\\\"}\"}}}"
+
+      - name: Print benchmark summary
+        run: |
+          echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Cache Hit RPS | ${{ steps.cache_bench.outputs.cache_rps }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cache Hit Latency | ${{ steps.cache_bench.outputs.cache_latency }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Mixed Load RPS | ${{ steps.mixed_bench.outputs.mixed_rps }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cache Hit Rate | ${{ steps.metrics.outputs.cache_hit_rate }}% |" >> $GITHUB_STEP_SUMMARY

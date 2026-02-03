@@ -11,7 +11,8 @@ pub fn init() {
     // Build info as gauge
     metrics::gauge!("redirector_build_info",
         "version" => env!("CARGO_PKG_VERSION")
-    ).set(1.0);
+    )
+    .set(1.0);
 
     // Service up indicator
     metrics::gauge!("redirector_up").set(1.0);
