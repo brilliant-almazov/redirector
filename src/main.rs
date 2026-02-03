@@ -1,6 +1,7 @@
 use axum::{extract::Extension, middleware as axum_middleware, routing::get, Router};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use redirector::{
+    admin::{admin_routes, AdminState},
     config::Config,
     db::MainStorage,
     handlers::{index_handler, metrics_handler, redirect_handler, RedirectState},
@@ -81,8 +82,18 @@ async fn main() -> anyhow::Result<()> {
         .layer(axum_middleware::from_fn(basic_auth_middleware))
         .layer(Extension(metrics_auth));
 
+    // Build admin router if enabled
+    let admin_router = if config.admin.enabled {
+        let admin_state =
+            AdminState::new(config.admin.session_ttl_hours, config.admin.users.clone());
+        tracing::info!("Admin dashboard enabled at /admin");
+        Some(admin_routes(admin_state))
+    } else {
+        None
+    };
+
     // Build main router
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/", get(index_handler))
         .route("/r/{hashid}", get(redirect_handler))
         .merge(metrics_router)
@@ -91,6 +102,11 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(rate_limiter))
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http());
+
+    // Add admin routes if enabled
+    if let Some(admin) = admin_router {
+        app = app.nest("/admin", admin);
+    }
 
     // Start server
     let addr = format!("{}:{}", config.server.host, config.server.port);

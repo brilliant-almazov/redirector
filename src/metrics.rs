@@ -26,3 +26,8 @@ pub fn update() {
     let uptime = START_TIME.elapsed().as_secs_f64();
     metrics::gauge!("redirector_uptime_seconds").set(uptime);
 }
+
+/// Get uptime in seconds
+pub fn uptime_secs() -> u64 {
+    START_TIME.elapsed().as_secs()
+}
