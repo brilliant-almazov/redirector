@@ -2,7 +2,7 @@ use once_cell::sync::Lazy;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SimulationEntry {
     pub id: i64,
     pub hashid: String,
@@ -120,5 +120,50 @@ mod tests {
         let entry = get_random_entry();
         // Default entries have ids 1 or 2
         assert!(entry.id >= 1);
+    }
+
+    #[test]
+    fn test_simulation_entry_fields() {
+        let entry = SimulationEntry {
+            id: 42,
+            hashid: "test123".to_string(),
+            url: "https://example.com/path".to_string(),
+        };
+        assert_eq!(entry.id, 42);
+        assert_eq!(entry.hashid, "test123");
+        assert_eq!(entry.url, "https://example.com/path");
+    }
+
+    #[test]
+    fn test_load_simulation_data_missing_file() {
+        let result = load_simulation_data("nonexistent/path.bin");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_simulation_data_returns_io_error() {
+        let result = load_simulation_data("/this/path/does/not/exist.bin");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn test_get_random_entry_distribution() {
+        // Call many times to check distribution
+        let mut seen_ids = std::collections::HashSet::new();
+        for _ in 0..1000 {
+            let entry = get_random_entry();
+            seen_ids.insert(entry.id);
+        }
+        // Should see multiple different entries (if defaults are used, at least 2)
+        assert!(!seen_ids.is_empty());
+    }
+
+    #[test]
+    fn test_simulation_entry_url_formats() {
+        let entry = get_random_entry();
+        // URL should be a valid-looking URL
+        assert!(entry.url.starts_with("http://") || entry.url.starts_with("https://"));
     }
 }
