@@ -20,6 +20,7 @@ Redirector does NOT normalize data — no UA dictionaries, no referrer parsing, 
 - Reads raw click events (from PG or RabbitMQ queue)
 - Normalizes User-Agent into dictionary
 - Extracts referrer domain
+- Resolves IP to geographic location (GeoIP via MaxMind)
 - Manages partitions
 - Builds aggregations if needed
 
@@ -62,9 +63,17 @@ CREATE TABLE analytics.user_agents (
     raw     TEXT NOT NULL UNIQUE
 );
 
--- Normalized click view (consumer adds ua_id, referrer_domain)
+CREATE TABLE analytics.geo_locations (
+    id      SERIAL PRIMARY KEY,
+    country TEXT NOT NULL,       -- ISO 3166-1 alpha-2 (e.g. "RU", "US")
+    city    TEXT,
+    raw     TEXT NOT NULL UNIQUE -- original lookup key for deduplication
+);
+
+-- Normalized click view (consumer adds ua_id, referrer_domain, geo_id)
 ALTER TABLE analytics.clicks ADD COLUMN ua_id INT REFERENCES analytics.user_agents(id);
 ALTER TABLE analytics.clicks ADD COLUMN referrer_domain TEXT;
+ALTER TABLE analytics.clicks ADD COLUMN geo_id INT REFERENCES analytics.geo_locations(id);
 ```
 
 ## Data Flow
@@ -172,6 +181,18 @@ Always UTC, no timezone conversion overhead. Both types are 8 bytes in PG, but `
 
 4 bytes (IPv4) / 16 bytes (IPv6), native subnet operators (`>>=`), GiST indexable.
 
+### GeoIP: MaxMind GeoLite2
+
+Geographic location resolved by consumer at write time — not stored in raw click, not looked up at read time. This keeps the redirector fast and avoids bundling a 60+ MB database into the service.
+
+- **Data source**: [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) (free, updated weekly)
+- **Rust crate**: `maxminddb` — mmdb reader, zero-copy lookups
+- **Lookup**: consumer resolves IP → country/city at INSERT time
+- **Storage**: dictionary table `analytics.geo_locations` — same approach as UA dictionary, UNIQUE on raw lookup key to deduplicate
+- **Update**: consumer periodically downloads fresh GeoLite2 database (weekly cron or on startup)
+
+Geo data is a reference/dictionary table — the click row stores only a foreign key (`geo_id`), not the full location string.
+
 ### No extensions on PostgreSQL
 
 All logic lives in the Rust consumer service — no TimescaleDB, no custom PG functions. Pure PostgreSQL:
@@ -181,6 +202,7 @@ All logic lives in the Rust consumer service — no TimescaleDB, no custom PG fu
 - **Compression** — PG TOAST handles strings automatically; if needed, consumer can pre-compress large fields before INSERT
 - **UA dictionary** — consumer normalizes, not PG triggers
 - **Referrer parsing** — consumer extracts domain before INSERT
+- **GeoIP** — consumer resolves via MaxMind, not PG extension (e.g. no `ip4r`)
 
 This keeps PG simple, portable, and free from extension dependencies.
 
@@ -235,7 +257,7 @@ DROP TABLE analytics.clicks_2025_01;
 
 - UA normalization / dictionary — consumer service
 - Referrer domain extraction — consumer service
-- Geographic data (GeoIP) — consumer service
+- GeoIP lookup (MaxMind) — consumer service
 - Analytics dashboard — separate service
 - Aggregation tables — consumer service
 - Export to CSV/JSON — standard `COPY` from partitions
