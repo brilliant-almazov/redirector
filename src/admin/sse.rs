@@ -37,6 +37,13 @@ pub struct RecentRedirectJson {
     pub at: u64,
 }
 
+/// Simulation status
+#[derive(Serialize)]
+pub struct SimulationStatus {
+    pub running: bool,
+    pub rps: u32,
+}
+
 /// Full metrics payload
 #[derive(Serialize)]
 pub struct MetricsPayload {
@@ -44,6 +51,7 @@ pub struct MetricsPayload {
     pub system: SystemMetrics,
     pub app: AppMetrics,
     pub recent: Vec<RecentRedirectJson>,
+    pub simulation: SimulationStatus,
 }
 
 /// SSE events handler
@@ -93,6 +101,12 @@ pub async fn events_handler(
                 })
                 .collect();
 
+            // Get simulation status
+            let simulation = SimulationStatus {
+                running: state.is_simulation_running(),
+                rps: state.get_simulation_rps(),
+            };
+
             let payload = MetricsPayload {
                 timestamp: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -101,6 +115,7 @@ pub async fn events_handler(
                 system,
                 app,
                 recent,
+                simulation,
             };
 
             let json = serde_json::to_string(&payload).unwrap_or_default();

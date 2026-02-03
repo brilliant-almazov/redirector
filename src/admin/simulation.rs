@@ -1,6 +1,11 @@
 use once_cell::sync::Lazy;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::sync::atomic::Ordering;
+use std::time::Duration;
+use tokio::time::interval;
+
+use crate::admin::state::AdminState;
 
 #[derive(Clone, Debug)]
 pub struct SimulationEntry {
@@ -75,6 +80,58 @@ fn load_simulation_data(path: &str) -> Result<Vec<SimulationEntry>, std::io::Err
 pub fn get_random_entry() -> &'static SimulationEntry {
     let idx = rand::random::<usize>() % SIMULATION_DATA.len();
     &SIMULATION_DATA[idx]
+}
+
+/// Spawn a background task that simulates traffic
+pub fn spawn_simulation_task(admin_state: AdminState) {
+    tracing::info!("Spawning simulation background task");
+    tokio::spawn(async move {
+        let mut tick_interval = interval(Duration::from_millis(10)); // Check every 10ms
+        let mut request_accumulator: f64 = 0.0;
+        let mut was_running = false;
+
+        loop {
+            tick_interval.tick().await;
+
+            let is_running = admin_state.simulation.running.load(Ordering::SeqCst);
+
+            if is_running && !was_running {
+                tracing::info!("Simulation started");
+            } else if !is_running && was_running {
+                tracing::info!("Simulation stopped");
+            }
+            was_running = is_running;
+
+            if !is_running {
+                // Not running, reset accumulator and wait
+                request_accumulator = 0.0;
+                continue;
+            }
+
+            let rps = admin_state.simulation.rps.load(Ordering::SeqCst) as f64;
+            // Calculate how many requests per 10ms tick
+            request_accumulator += rps / 100.0; // 100 ticks per second
+
+            while request_accumulator >= 1.0 {
+                request_accumulator -= 1.0;
+
+                // Generate simulated request
+                let latency = rand::random::<u64>() % 50000 + 1000; // 1-50ms in micros
+                crate::metrics::record_request(latency);
+
+                // 95% cache hit rate simulation
+                if rand::random::<u8>() < 243 {
+                    crate::metrics::record_cache_hit();
+                } else {
+                    crate::metrics::record_cache_miss();
+                }
+
+                // Record random redirect entry
+                let entry = get_random_entry();
+                crate::metrics::record_recent_redirect(entry.hashid.clone(), entry.url.clone());
+            }
+        }
+    });
 }
 
 #[cfg(test)]

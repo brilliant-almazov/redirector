@@ -45,21 +45,22 @@
 - 🛡️ **서킷 브레이커** - 연쇄 장애에 대한 데이터베이스 보호
 - 🚦 **속도 제한** - 전역 및 데이터베이스 수준 속도 제한
 - 📊 **Prometheus 메트릭** - Basic Auth 보호가 있는 완전한 관측성
-- 🎨 **아름다운 페이지** - 3가지 테마가 있는 깔끔한 404 및 인덱스 페이지
+- 🎨 **아름다운 페이지** - 4가지 테마가 있는 깔끔한 404 및 인덱스 페이지
 - 🔑 **다중 솔트** - 마이그레이션을 위한 hashid 솔트 로테이션 지원
 - 📱 **관리 대시보드** - SSE를 통한 실시간 메트릭 모니터링
 
 ## 스크린샷
 
-| 라이트 | 다크 | 웜 |
-|--------|------|-----|
-| ![대시보드 라이트](screenshots/dashboard-light.png) | ![대시보드 다크](screenshots/dashboard-dark.png) | ![대시보드 웜](screenshots/dashboard-warm.png) |
-| ![로그인 라이트](screenshots/login-light.png) | ![로그인 다크](screenshots/login-dark.png) | ![로그인 웜](screenshots/login-warm.png) |
-| ![404 라이트](screenshots/not-found-light.png) | ![404 다크](screenshots/not-found-dark.png) | ![404 웜](screenshots/not-found-warm.png) |
+| 라이트 | 다크 | 그레이 | 웜 |
+|--------|------|--------|-----|
+| ![대시보드 라이트](screenshots/dashboard-light.png) | ![대시보드 다크](screenshots/dashboard-dark.png) | ![대시보드 그레이](screenshots/dashboard-gray.png) | ![대시보드 웜](screenshots/dashboard-warm.png) |
+| ![로그인 라이트](screenshots/login-light.png) | ![로그인 다크](screenshots/login-dark.png) | ![로그인 그레이](screenshots/login-gray.png) | ![로그인 웜](screenshots/login-warm.png) |
 
-| 인덱스 페이지 | 인터스티셜 |
-|---------------|------------|
-| ![인덱스](screenshots/index.png) | ![인터스티셜](screenshots/interstitial.png) |
+### 부하 테스트 모달
+
+| 라이트 | 다크 | 그레이 | 웜 |
+|--------|------|--------|-----|
+| ![모달 라이트](screenshots/dashboard-modal-light.png) | ![모달 다크](screenshots/dashboard-modal-dark.png) | ![모달 그레이](screenshots/dashboard-modal-gray.png) | ![모달 웜](screenshots/dashboard-modal-warm.png) |
 
 ## 기술 스택
 

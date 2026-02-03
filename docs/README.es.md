@@ -45,21 +45,22 @@ Compartir URLs largas es inconveniente. Los acortadores de URL existen, pero a m
 - 🛡️ **Circuit breaker** - Protección de base de datos contra fallos en cascada
 - 🚦 **Limitación de velocidad** - Límites de velocidad globales y a nivel de base de datos
 - 📊 **Métricas Prometheus** - Observabilidad completa con protección Basic Auth
-- 🎨 **Páginas hermosas** - Páginas 404 e índice limpias con 3 temas
+- 🎨 **Páginas hermosas** - Páginas 404 e índice limpias con 4 temas
 - 🔑 **Múltiples sales** - Soporte de rotación de sal hashid para migración
 - 📱 **Panel de administración** - Monitoreo de métricas en tiempo real con SSE
 
 ## Capturas de pantalla
 
-| Claro | Oscuro | Cálido |
-|-------|--------|--------|
-| ![Dashboard Claro](screenshots/dashboard-light.png) | ![Dashboard Oscuro](screenshots/dashboard-dark.png) | ![Dashboard Cálido](screenshots/dashboard-warm.png) |
-| ![Login Claro](screenshots/login-light.png) | ![Login Oscuro](screenshots/login-dark.png) | ![Login Cálido](screenshots/login-warm.png) |
-| ![404 Claro](screenshots/not-found-light.png) | ![404 Oscuro](screenshots/not-found-dark.png) | ![404 Cálido](screenshots/not-found-warm.png) |
+| Claro | Oscuro | Gris | Cálido |
+|-------|--------|------|--------|
+| ![Dashboard Claro](screenshots/dashboard-light.png) | ![Dashboard Oscuro](screenshots/dashboard-dark.png) | ![Dashboard Gris](screenshots/dashboard-gray.png) | ![Dashboard Cálido](screenshots/dashboard-warm.png) |
+| ![Login Claro](screenshots/login-light.png) | ![Login Oscuro](screenshots/login-dark.png) | ![Login Gris](screenshots/login-gray.png) | ![Login Cálido](screenshots/login-warm.png) |
 
-| Página principal | Intersticial |
-|------------------|--------------|
-| ![Página principal](screenshots/index.png) | ![Intersticial](screenshots/interstitial.png) |
+### Modal de prueba de carga
+
+| Claro | Oscuro | Gris | Cálido |
+|-------|--------|------|--------|
+| ![Modal Claro](screenshots/dashboard-modal-light.png) | ![Modal Oscuro](screenshots/dashboard-modal-dark.png) | ![Modal Gris](screenshots/dashboard-modal-gray.png) | ![Modal Cálido](screenshots/dashboard-modal-warm.png) |
 
 ## Stack tecnológico
 
