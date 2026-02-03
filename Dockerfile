@@ -25,6 +25,10 @@ COPY templates ./templates
 RUN touch src/main.rs src/lib.rs && \
     cargo build --release --bin redirector
 
+# Compress with UPX
+RUN apk add --no-cache upx && \
+    upx --best --lzma /app/target/release/redirector
+
 # Runtime stage
 FROM alpine:3.20
 
