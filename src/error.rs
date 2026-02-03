@@ -136,4 +136,45 @@ mod tests {
             "Service unavailable"
         );
     }
+
+    #[test]
+    fn test_app_error_database_status() {
+        let error = AppError::Database(sqlx::Error::RowNotFound);
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_app_error_database_display() {
+        let error = AppError::Database(sqlx::Error::RowNotFound);
+        assert!(error.to_string().contains("Database error"));
+    }
+
+    #[test]
+    fn test_app_error_internal_display() {
+        let error = AppError::Internal(anyhow::anyhow!("something went wrong"));
+        assert!(error.to_string().contains("Internal error"));
+        assert!(error.to_string().contains("something went wrong"));
+    }
+
+    #[test]
+    fn test_app_error_debug() {
+        let error = AppError::NotFound;
+        let debug_str = format!("{:?}", error);
+        assert!(debug_str.contains("NotFound"));
+    }
+
+    #[test]
+    fn test_app_error_from_anyhow() {
+        let anyhow_err = anyhow::anyhow!("test");
+        let app_err: AppError = anyhow_err.into();
+        assert!(matches!(app_err, AppError::Internal(_)));
+    }
+
+    #[test]
+    fn test_app_error_from_sqlx() {
+        let sqlx_err = sqlx::Error::RowNotFound;
+        let app_err: AppError = sqlx_err.into();
+        assert!(matches!(app_err, AppError::Database(_)));
+    }
 }
