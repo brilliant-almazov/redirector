@@ -45,21 +45,25 @@ Condividere URL lunghi è scomodo. Gli accorciatori di URL esistono ma spesso re
 - 🛡️ **Circuit breaker** - Protezione del database contro guasti a cascata
 - 🚦 **Limitazione velocità** - Limiti di velocità globali e a livello database
 - 📊 **Metriche Prometheus** - Osservabilità completa con protezione Basic Auth
-- 🎨 **Pagine belle** - Pagine 404 e indice pulite con 3 temi
+- 🎨 **Pagine belle** - Pagine 404 e indice pulite con 4 temi
 - 🔑 **Salt multipli** - Supporto rotazione salt hashid per migrazione
 - 📱 **Dashboard admin** - Monitoraggio metriche in tempo reale con SSE
 
 ## Screenshot
 
-| Chiaro | Scuro | Caldo |
-|--------|-------|-------|
-| ![Dashboard Chiaro](screenshots/dashboard-light.png) | ![Dashboard Scuro](screenshots/dashboard-dark.png) | ![Dashboard Caldo](screenshots/dashboard-warm.png) |
-| ![Login Chiaro](screenshots/login-light.png) | ![Login Scuro](screenshots/login-dark.png) | ![Login Caldo](screenshots/login-warm.png) |
-| ![404 Chiaro](screenshots/not-found-light.png) | ![404 Scuro](screenshots/not-found-dark.png) | ![404 Caldo](screenshots/not-found-warm.png) |
+| Chiaro | Scuro | Grigio | Caldo |
+|--------|-------|--------|-------|
+| ![Dashboard Chiaro](screenshots/dashboard-light.png) | ![Dashboard Scuro](screenshots/dashboard-dark.png) | ![Dashboard Grigio](screenshots/dashboard-gray.png) | ![Dashboard Caldo](screenshots/dashboard-warm.png) |
+| ![Login Chiaro](screenshots/login-light.png) | ![Login Scuro](screenshots/login-dark.png) | ![Login Grigio](screenshots/login-gray.png) | ![Login Caldo](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| Pagina indice | Interstiziale |
-|---------------|---------------|
-| ![Indice](screenshots/index.png) | ![Interstiziale](screenshots/interstitial.png) |
+### Modal test di carico
+
+| Chiaro | Scuro | Grigio | Caldo |
+|--------|-------|--------|-------|
+| ![Modal Chiaro](screenshots/dashboard-modal-light.png) | ![Modal Scuro](screenshots/dashboard-modal-dark.png) | ![Modal Grigio](screenshots/dashboard-modal-gray.png) | ![Modal Caldo](screenshots/dashboard-modal-warm.png) |
 
 ## Stack tecnologico
 

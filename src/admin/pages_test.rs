@@ -49,7 +49,7 @@ mod tests {
         let content = fs::read_to_string("templates/login.html").unwrap();
 
         assert!(
-            content.contains("applyTheme"),
+            content.contains("setTheme"),
             "login.html should have theme switching function"
         );
         assert!(
@@ -59,6 +59,10 @@ mod tests {
         assert!(
             content.contains("data-theme=\"dark\""),
             "login.html should have dark theme option"
+        );
+        assert!(
+            content.contains("data-theme=\"gray\""),
+            "login.html should have gray theme option"
         );
         assert!(
             content.contains("data-theme=\"warm\""),
@@ -153,7 +157,7 @@ mod tests {
         let content = fs::read_to_string("templates/dashboard.html").unwrap();
 
         assert!(
-            content.contains("applyTheme"),
+            content.contains("setTheme"),
             "dashboard.html should have theme switching function"
         );
         assert!(
@@ -163,6 +167,10 @@ mod tests {
         assert!(
             content.contains("data-theme=\"dark\""),
             "dashboard.html should have dark theme option"
+        );
+        assert!(
+            content.contains("data-theme=\"gray\""),
+            "dashboard.html should have gray theme option"
         );
         assert!(
             content.contains("data-theme=\"warm\""),
@@ -185,7 +193,7 @@ mod tests {
         let content = fs::read_to_string("templates/dashboard.html").unwrap();
 
         assert!(
-            content.contains("--bg-primary"),
+            content.contains("--bg-base"),
             "dashboard.html should use CSS variables for theming"
         );
         assert!(
@@ -193,8 +201,12 @@ mod tests {
             "dashboard.html should have accent color variable"
         );
         assert!(
-            content.contains(".theme-warm"),
+            content.contains("html.theme-warm"),
             "dashboard.html should have warm theme styles"
+        );
+        assert!(
+            content.contains("html.theme-gray"),
+            "dashboard.html should have gray theme styles"
         );
     }
 
@@ -203,12 +215,16 @@ mod tests {
         let content = fs::read_to_string("templates/login.html").unwrap();
 
         assert!(
-            content.contains("--bg-primary"),
+            content.contains("--bg-base"),
             "login.html should use CSS variables for theming"
         );
         assert!(
-            content.contains(".theme-warm"),
+            content.contains("html.theme-warm"),
             "login.html should have warm theme styles"
+        );
+        assert!(
+            content.contains("html.theme-gray"),
+            "login.html should have gray theme styles"
         );
     }
 
@@ -220,6 +236,7 @@ mod tests {
         // Both should use the same theme names for consistency
         assert!(login.contains("'light'") && dashboard.contains("'light'"));
         assert!(login.contains("'dark'") && dashboard.contains("'dark'"));
+        assert!(login.contains("'gray'") && dashboard.contains("'gray'"));
         assert!(login.contains("'warm'") && dashboard.contains("'warm'"));
     }
 

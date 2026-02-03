@@ -3,72 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ name }}</title>
+    <title>{{ name }} - Safe URL Redirect Service</title>
+    <meta name="description" content="High-performance URL shortener and redirect service with secure interstitial pages, real-time monitoring, and enterprise-grade observability.">
+    <meta property="og:title" content="{{ name }}">
+    <meta property="og:description" content="Safe URL redirect service with interstitial pages and hashid-based short links.">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2'%3E%3Cpath d='M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1'/%3E%3C/svg%3E">
+    <script src="/static/tailwind.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+        :root {
+            --bg-base: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-tertiary: #f1f5f9;
+            --border-color: rgba(148, 163, 184, 0.2);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-secondary: #6366f1;
+            --accent-glow: rgba(59, 130, 246, 0.15);
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #e6e6e6;
+        html.theme-dark {
+            --bg-base: #0f172a;
+            --bg-card: #1e293b;
+            --bg-tertiary: #334155;
+            --border-color: rgba(148, 163, 184, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #64748b;
+            --accent: #60a5fa;
+            --accent-secondary: #818cf8;
+            --accent-glow: rgba(96, 165, 250, 0.15);
         }
 
-        .container {
-            text-align: center;
-            padding: 2rem;
+        html.theme-gray {
+            --bg-base: #18181b;
+            --bg-card: #27272a;
+            --bg-tertiary: #3f3f46;
+            --border-color: rgba(161, 161, 170, 0.15);
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent: #a78bfa;
+            --accent-secondary: #c084fc;
+            --accent-glow: rgba(167, 139, 250, 0.15);
         }
 
-        .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 1.5rem;
-            background: linear-gradient(135deg, #e94560 0%, #533483 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 40px rgba(233, 69, 96, 0.3);
+        html.theme-warm {
+            --bg-base: #1c1917;
+            --bg-card: #292524;
+            --bg-tertiary: #44403c;
+            --border-color: rgba(168, 162, 158, 0.15);
+            --text-primary: #fafaf9;
+            --text-secondary: #d6d3d1;
+            --text-muted: #78716c;
+            --accent: #f59e0b;
+            --accent-secondary: #fbbf24;
+            --accent-glow: rgba(245, 158, 11, 0.15);
         }
 
-        .logo svg {
-            width: 40px;
-            height: 40px;
-            fill: white;
+        * { transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease; }
+
+        .bg-pattern {
+            background-color: var(--bg-base);
+            background-image:
+                radial-gradient(at 40% 20%, var(--accent-glow) 0px, transparent 50%),
+                radial-gradient(at 80% 80%, rgba(99, 102, 241, 0.1) 0px, transparent 50%);
         }
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #e94560, #533483);
+        .card-glass {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow:
+                0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                0 10px 40px -15px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+
+        html.theme-dark .card-glass,
+        html.theme-gray .card-glass,
+        html.theme-warm .card-glass {
+            box-shadow:
+                0 4px 6px -1px rgba(0, 0, 0, 0.2),
+                0 10px 40px -15px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+        }
+
+        .theme-btn {
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+        }
+
+        .theme-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .theme-btn-active {
+            background: var(--accent-glow) !important;
+            color: var(--accent) !important;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .logo-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        .title-gradient {
+            background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .version {
-            font-size: 0.875rem;
-            color: #888;
+        .logo-gradient {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+            box-shadow: 0 10px 40px var(--accent-glow);
         }
     </style>
+    <script>
+        function getTheme() {
+            return localStorage.getItem('theme') || 'light';
+        }
+
+        function setTheme(theme) {
+            document.documentElement.className = theme === 'light' ? '' : 'theme-' + theme;
+            localStorage.setItem('theme', theme);
+            updateThemeButtons(theme);
+        }
+
+        function updateThemeButtons(theme) {
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('theme-btn-active');
+                if (btn.dataset.theme === theme) {
+                    btn.classList.add('theme-btn-active');
+                }
+            });
+        }
+
+        // Apply theme immediately
+        (function() {
+            const theme = getTheme();
+            document.documentElement.className = theme === 'light' ? '' : 'theme-' + theme;
+        })();
+        document.addEventListener('DOMContentLoaded', () => updateThemeButtons(getTheme()));
+    </script>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zm-2 16H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h6V3z"/>
-            </svg>
+<body class="min-h-screen bg-pattern flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="card-glass rounded-2xl p-8 animate-fade-in text-center">
+            <!-- Logo -->
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl logo-gradient mb-6 logo-float">
+                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7zm-2 16H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h6V3z"/>
+                </svg>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-3xl font-bold mb-2 title-gradient">{{ name }}</h1>
+
+            <!-- Version -->
+            <p class="text-sm mb-6" style="color: var(--text-muted)">v{{ version }}</p>
+
+            <!-- Description -->
+            <p class="mb-6" style="color: var(--text-secondary)">
+                Safe URL redirect service with interstitial pages and hashid-based short links
+            </p>
+
+            <!-- Features -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="p-3 rounded-xl" style="background: var(--bg-tertiary)">
+                    <div class="text-2xl mb-1">7.8k+</div>
+                    <div class="text-xs" style="color: var(--text-muted)">RPS</div>
+                </div>
+                <div class="p-3 rounded-xl" style="background: var(--bg-tertiary)">
+                    <div class="text-2xl mb-1">&lt;50ms</div>
+                    <div class="text-xs" style="color: var(--text-muted)">P99 Latency</div>
+                </div>
+            </div>
+
+            <!-- Theme selector -->
+            <div class="pt-6" style="border-top: 1px solid var(--border-color)">
+                <div class="flex justify-center gap-2">
+                    <button onclick="setTheme('light')" data-theme="light"
+                            class="theme-btn p-2.5 rounded-xl transition-all" title="Light theme">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="4" stroke-width="2"/>
+                            <path stroke-linecap="round" stroke-width="2" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/>
+                        </svg>
+                    </button>
+                    <button onclick="setTheme('dark')" data-theme="dark"
+                            class="theme-btn p-2.5 rounded-xl transition-all" title="Dark theme">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+                        </svg>
+                    </button>
+                    <button onclick="setTheme('gray')" data-theme="gray"
+                            class="theme-btn p-2.5 rounded-xl transition-all" title="Gray theme">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                            <path stroke-width="2" d="M12 3a9 9 0 010 18" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    <button onclick="setTheme('warm')" data-theme="warm"
+                            class="theme-btn p-2.5 rounded-xl transition-all" title="Warm theme">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </div>
-        <h1>{{ name }}</h1>
-        <p class="version">v{{ version }}</p>
+
+        <!-- Footer -->
+        <p class="text-center mt-6 text-sm" style="color: var(--text-muted)">
+            Secure URL redirect service
+        </p>
     </div>
 </body>
 </html>

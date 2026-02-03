@@ -125,4 +125,88 @@ mod tests {
 
         assert!(state.validate_session(&token).await.is_some());
     }
+
+    #[test]
+    fn test_start_simulation() {
+        let state = create_test_state();
+        assert!(!state.is_simulation_running());
+        assert_eq!(state.get_simulation_rps(), 0);
+
+        state.start_simulation(500);
+        assert!(state.is_simulation_running());
+        assert_eq!(state.get_simulation_rps(), 500);
+    }
+
+    #[test]
+    fn test_stop_simulation() {
+        let state = create_test_state();
+        state.start_simulation(100);
+        assert!(state.is_simulation_running());
+
+        state.stop_simulation();
+        assert!(!state.is_simulation_running());
+    }
+
+    #[test]
+    fn test_simulation_rps_update() {
+        let state = create_test_state();
+        state.start_simulation(100);
+        assert_eq!(state.get_simulation_rps(), 100);
+
+        // Start again with different RPS
+        state.start_simulation(999);
+        assert_eq!(state.get_simulation_rps(), 999);
+        assert!(state.is_simulation_running());
+    }
+
+    #[test]
+    fn test_simulation_default_state() {
+        let state = create_test_state();
+        assert!(!state.is_simulation_running());
+        assert_eq!(state.get_simulation_rps(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_recent_redirects_max_capacity() {
+        let state = create_test_state();
+
+        // Fill beyond max_recent (50)
+        for i in 0..60 {
+            state
+                .record_redirect(format!("hash{}", i), format!("https://url{}.com", i))
+                .await;
+        }
+
+        let recent = state.get_recent_redirects().await;
+        assert_eq!(recent.len(), 50);
+        // Most recent should be hash59
+        assert_eq!(recent[0].hashid, "hash59");
+    }
+
+    #[tokio::test]
+    async fn test_empty_recent_redirects() {
+        let state = create_test_state();
+        let recent = state.get_recent_redirects().await;
+        assert!(recent.is_empty());
+    }
+
+    #[test]
+    fn test_admin_state_clone() {
+        let state = create_test_state();
+        state.start_simulation(42);
+
+        let cloned = state.clone();
+        assert!(cloned.is_simulation_running());
+        assert_eq!(cloned.get_simulation_rps(), 42);
+
+        // They share the same underlying state
+        cloned.stop_simulation();
+        assert!(!state.is_simulation_running());
+    }
+
+    #[test]
+    fn test_find_user_not_found() {
+        let state = create_test_state();
+        assert!(state.find_user("nobody").is_none());
+    }
 }

@@ -45,21 +45,25 @@
 - 🛡️ **サーキットブレーカー** - カスケード障害に対するデータベース保護
 - 🚦 **レート制限** - グローバルおよびデータベースレベルのレート制限
 - 📊 **Prometheusメトリクス** - Basic Auth保護付きの完全な可観測性
-- 🎨 **美しいページ** - 3つのテーマを備えたクリーンな404とインデックスページ
+- 🎨 **美しいページ** - 4つのテーマを備えたクリーンな404とインデックスページ
 - 🔑 **複数のソルト** - マイグレーション用のhashidソルトローテーションサポート
 - 📱 **管理ダッシュボード** - SSEによるリアルタイムメトリクス監視
 
 ## スクリーンショット
 
-| ライト | ダーク | ウォーム |
-|--------|--------|----------|
-| ![ダッシュボード ライト](screenshots/dashboard-light.png) | ![ダッシュボード ダーク](screenshots/dashboard-dark.png) | ![ダッシュボード ウォーム](screenshots/dashboard-warm.png) |
-| ![ログイン ライト](screenshots/login-light.png) | ![ログイン ダーク](screenshots/login-dark.png) | ![ログイン ウォーム](screenshots/login-warm.png) |
-| ![404 ライト](screenshots/not-found-light.png) | ![404 ダーク](screenshots/not-found-dark.png) | ![404 ウォーム](screenshots/not-found-warm.png) |
+| ライト | ダーク | グレー | ウォーム |
+|--------|--------|--------|----------|
+| ![ダッシュボード ライト](screenshots/dashboard-light.png) | ![ダッシュボード ダーク](screenshots/dashboard-dark.png) | ![ダッシュボード グレー](screenshots/dashboard-gray.png) | ![ダッシュボード ウォーム](screenshots/dashboard-warm.png) |
+| ![ログイン ライト](screenshots/login-light.png) | ![ログイン ダーク](screenshots/login-dark.png) | ![ログイン グレー](screenshots/login-gray.png) | ![ログイン ウォーム](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
-| インデックスページ | インタースティシャル |
-|--------------------|----------------------|
-| ![インデックス](screenshots/index.png) | ![インタースティシャル](screenshots/interstitial.png) |
+### 負荷テストモーダル
+
+| ライト | ダーク | グレー | ウォーム |
+|--------|--------|--------|----------|
+| ![モーダル ライト](screenshots/dashboard-modal-light.png) | ![モーダル ダーク](screenshots/dashboard-modal-dark.png) | ![モーダル グレー](screenshots/dashboard-modal-gray.png) | ![モーダル ウォーム](screenshots/dashboard-modal-warm.png) |
 
 ## 技術スタック
 
