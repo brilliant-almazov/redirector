@@ -45,21 +45,22 @@ Het delen van lange URL's is onhandig. URL-verkorters bestaan, maar leiden vaak 
 - 🛡️ **Circuit breaker** - Databasebescherming tegen cascade-fouten
 - 🚦 **Rate limiting** - Globale en database-niveau rate limits
 - 📊 **Prometheus metrics** - Volledige observeerbaarheid met Basic Auth-bescherming
-- 🎨 **Mooie pagina's** - Schone 404- en indexpagina's met 3 thema's
+- 🎨 **Mooie pagina's** - Schone 404- en indexpagina's met 4 thema's
 - 🔑 **Meerdere salts** - Hashid salt-rotatie ondersteuning voor migratie
 - 📱 **Admin dashboard** - Realtime metrics monitoring met SSE
 
 ## Screenshots
 
-| Licht | Donker | Warm |
-|-------|--------|------|
-| ![Dashboard Licht](screenshots/dashboard-light.png) | ![Dashboard Donker](screenshots/dashboard-dark.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
-| ![Login Licht](screenshots/login-light.png) | ![Login Donker](screenshots/login-dark.png) | ![Login Warm](screenshots/login-warm.png) |
-| ![404 Licht](screenshots/not-found-light.png) | ![404 Donker](screenshots/not-found-dark.png) | ![404 Warm](screenshots/not-found-warm.png) |
+| Licht | Donker | Grijs | Warm |
+|-------|--------|-------|------|
+| ![Dashboard Licht](screenshots/dashboard-light.png) | ![Dashboard Donker](screenshots/dashboard-dark.png) | ![Dashboard Grijs](screenshots/dashboard-gray.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
+| ![Login Licht](screenshots/login-light.png) | ![Login Donker](screenshots/login-dark.png) | ![Login Grijs](screenshots/login-gray.png) | ![Login Warm](screenshots/login-warm.png) |
 
-| Indexpagina | Tussenpagina |
-|-------------|--------------|
-| ![Index](screenshots/index.png) | ![Tussenpagina](screenshots/interstitial.png) |
+### Belastingtest-modal
+
+| Licht | Donker | Grijs | Warm |
+|-------|--------|-------|------|
+| ![Modal Licht](screenshots/dashboard-modal-light.png) | ![Modal Donker](screenshots/dashboard-modal-dark.png) | ![Modal Grijs](screenshots/dashboard-modal-gray.png) | ![Modal Warm](screenshots/dashboard-modal-warm.png) |
 
 ## Technologie stack
 

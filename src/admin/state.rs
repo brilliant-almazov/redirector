@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
@@ -20,6 +21,13 @@ pub struct Session {
     pub created_at: Instant,
 }
 
+/// Simulation state
+#[derive(Default)]
+pub struct SimulationState {
+    pub running: AtomicBool,
+    pub rps: AtomicU32,
+}
+
 /// Shared admin state
 #[derive(Clone)]
 pub struct AdminState {
@@ -28,6 +36,7 @@ pub struct AdminState {
     pub users: Vec<AdminUser>,
     pub session_ttl: Duration,
     pub max_recent: usize,
+    pub simulation: Arc<SimulationState>,
 }
 
 impl AdminState {
@@ -38,7 +47,29 @@ impl AdminState {
             users,
             session_ttl: Duration::from_secs(session_ttl_hours * 3600),
             max_recent: 50,
+            simulation: Arc::new(SimulationState::default()),
         }
+    }
+
+    /// Start simulation with given RPS
+    pub fn start_simulation(&self, rps: u32) {
+        self.simulation.rps.store(rps, Ordering::SeqCst);
+        self.simulation.running.store(true, Ordering::SeqCst);
+    }
+
+    /// Stop simulation
+    pub fn stop_simulation(&self) {
+        self.simulation.running.store(false, Ordering::SeqCst);
+    }
+
+    /// Check if simulation is running
+    pub fn is_simulation_running(&self) -> bool {
+        self.simulation.running.load(Ordering::SeqCst)
+    }
+
+    /// Get simulation RPS
+    pub fn get_simulation_rps(&self) -> u32 {
+        self.simulation.rps.load(Ordering::SeqCst)
     }
 
     /// Add a new session, returns session token

@@ -45,21 +45,22 @@ Das Teilen langer URLs ist unpraktisch. URL-Verkürzer existieren, leiten aber o
 - 🛡️ **Circuit Breaker** - Datenbankschutz gegen kaskadierende Fehler
 - 🚦 **Rate Limiting** - Globale und datenbankbezogene Ratenlimits
 - 📊 **Prometheus-Metriken** - Vollständige Observability mit Basic Auth-Schutz
-- 🎨 **Schöne Seiten** - Saubere 404- und Index-Seiten mit 3 Themes
+- 🎨 **Schöne Seiten** - Saubere 404- und Index-Seiten mit 4 Themes
 - 🔑 **Mehrere Salts** - Hashid-Salt-Rotation für Migration
 - 📱 **Admin-Dashboard** - Echtzeit-Metriken-Überwachung mit SSE
 
 ## Screenshots
 
-| Hell | Dunkel | Warm |
-|------|--------|------|
-| ![Dashboard Hell](screenshots/dashboard-light.png) | ![Dashboard Dunkel](screenshots/dashboard-dark.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
-| ![Login Hell](screenshots/login-light.png) | ![Login Dunkel](screenshots/login-dark.png) | ![Login Warm](screenshots/login-warm.png) |
-| ![404 Hell](screenshots/not-found-light.png) | ![404 Dunkel](screenshots/not-found-dark.png) | ![404 Warm](screenshots/not-found-warm.png) |
+| Hell | Dunkel | Grau | Warm |
+|------|--------|------|------|
+| ![Dashboard Hell](screenshots/dashboard-light.png) | ![Dashboard Dunkel](screenshots/dashboard-dark.png) | ![Dashboard Grau](screenshots/dashboard-gray.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
+| ![Login Hell](screenshots/login-light.png) | ![Login Dunkel](screenshots/login-dark.png) | ![Login Grau](screenshots/login-gray.png) | ![Login Warm](screenshots/login-warm.png) |
 
-| Startseite | Zwischenseite |
-|------------|---------------|
-| ![Startseite](screenshots/index.png) | ![Zwischenseite](screenshots/interstitial.png) |
+### Lasttest-Modal
+
+| Hell | Dunkel | Grau | Warm |
+|------|--------|------|------|
+| ![Modal Hell](screenshots/dashboard-modal-light.png) | ![Modal Dunkel](screenshots/dashboard-modal-dark.png) | ![Modal Grau](screenshots/dashboard-modal-gray.png) | ![Modal Warm](screenshots/dashboard-modal-warm.png) |
 
 ## Technologie-Stack
 

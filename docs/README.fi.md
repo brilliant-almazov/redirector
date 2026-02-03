@@ -45,21 +45,22 @@ Pitkien URL-osoitteiden jakaminen on epäkäytännöllistä. URL-lyhentäjiä on
 - 🛡️ **Circuit breaker** - Tietokantasuojaus kaskadivirheiden varalta
 - 🚦 **Nopeusrajoitus** - Sekä globaali että tietokantatasoinen nopeusrajoitus
 - 📊 **Prometheus-mittarit** - Täysi havainnoitavuus Basic Auth -suojauksella
-- 🎨 **Kauniit sivut** - Siistit 404- ja hakemistosivut 3 teemalla
+- 🎨 **Kauniit sivut** - Siistit 404- ja hakemistosivut 4 teemalla
 - 🔑 **Useita suoloja** - Hashid-suolan kiertotuuki migraatiota varten
 - 📱 **Ylläpitopaneeli** - Reaaliaikainen mittareiden seuranta SSE:llä
 
 ## Kuvakaappaukset
 
-| Vaalea | Tumma | Lämmin |
-|--------|-------|--------|
-| ![Dashboard Vaalea](screenshots/dashboard-light.png) | ![Dashboard Tumma](screenshots/dashboard-dark.png) | ![Dashboard Lämmin](screenshots/dashboard-warm.png) |
-| ![Kirjautuminen Vaalea](screenshots/login-light.png) | ![Kirjautuminen Tumma](screenshots/login-dark.png) | ![Kirjautuminen Lämmin](screenshots/login-warm.png) |
-| ![404 Vaalea](screenshots/not-found-light.png) | ![404 Tumma](screenshots/not-found-dark.png) | ![404 Lämmin](screenshots/not-found-warm.png) |
+| Vaalea | Tumma | Harmaa | Lämmin |
+|--------|-------|--------|--------|
+| ![Dashboard Vaalea](screenshots/dashboard-light.png) | ![Dashboard Tumma](screenshots/dashboard-dark.png) | ![Dashboard Harmaa](screenshots/dashboard-gray.png) | ![Dashboard Lämmin](screenshots/dashboard-warm.png) |
+| ![Kirjautuminen Vaalea](screenshots/login-light.png) | ![Kirjautuminen Tumma](screenshots/login-dark.png) | ![Kirjautuminen Harmaa](screenshots/login-gray.png) | ![Kirjautuminen Lämmin](screenshots/login-warm.png) |
 
-| Hakemistosivu | Välisivu |
-|---------------|----------|
-| ![Hakemisto](screenshots/index.png) | ![Välisivu](screenshots/interstitial.png) |
+### Kuormitustestin modaali
+
+| Vaalea | Tumma | Harmaa | Lämmin |
+|--------|-------|--------|--------|
+| ![Modaali Vaalea](screenshots/dashboard-modal-light.png) | ![Modaali Tumma](screenshots/dashboard-modal-dark.png) | ![Modaali Harmaa](screenshots/dashboard-modal-gray.png) | ![Modaali Lämmin](screenshots/dashboard-modal-warm.png) |
 
 ## Teknologiapino
 
