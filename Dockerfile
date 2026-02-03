@@ -14,7 +14,7 @@ RUN mkdir src && \
     echo "pub fn lib() {}" > src/lib.rs
 
 # Build dependencies (this layer will be cached)
-RUN cargo build --release && \
+RUN cargo build --release --bin redirector && \
     rm -rf src
 
 # Copy source code
@@ -23,7 +23,7 @@ COPY templates ./templates
 
 # Build the application
 RUN touch src/main.rs src/lib.rs && \
-    cargo build --release
+    cargo build --release --bin redirector
 
 # Runtime stage
 FROM alpine:3.20
