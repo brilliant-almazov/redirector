@@ -208,10 +208,10 @@ jobs:
           name: redirector-linux-amd64
           path: ./bin
 
-      - name: Install wrk
+      - name: Install tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y wrk
+          sudo apt-get install -y wrk redis-tools
 
       - name: Setup database
         run: |
