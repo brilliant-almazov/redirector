@@ -14,12 +14,10 @@ fn main() {
     let stdout = io::stdout();
     let mut out = stdout.lock();
 
-    for line in stdin.lock().lines() {
-        if let Ok(line) = line {
-            if let Ok(id) = line.trim().parse::<u64>() {
-                let hashid = harsh.encode(&[id]);
-                writeln!(out, "{}", hashid).ok();
-            }
+    for line in stdin.lock().lines().map_while(Result::ok) {
+        if let Ok(id) = line.trim().parse::<u64>() {
+            let hashid = harsh.encode(&[id]);
+            writeln!(out, "{}", hashid).ok();
         }
     }
 }
