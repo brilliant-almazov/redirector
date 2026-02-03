@@ -2,8 +2,13 @@
 
 [English](../README.md) | **Русский**
 
-[![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yaml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yaml)
+[![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![RPS](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/rps.json)](https://github.com/brilliant-almazov/redirector)
+[![Latency](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/latency.json)](https://github.com/brilliant-almazov/redirector)
+[![Cache Hit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/cache_hit_rate.json)](https://github.com/brilliant-almazov/redirector)
 
 Безопасный сервис редиректов с промежуточными страницами и короткими ссылками на основе hashid.
 
@@ -171,9 +176,24 @@ rate_limit:
 
 Сервису нужна простая связь: **ID → URL**
 
-Сейчас использует встроенный запрос для таблиц `dictionary.urls` + `dictionary.domains`.
+Настройте таблицу и колонки в `config.yaml`:
 
-> **Скоро**: Конфигурируемая структура запроса. Можно будет декларативно указать свои колонки ID и URL, независимо от схемы БД.
+```yaml
+database:
+  query:
+    table: "dictionary.urls"    # Имя таблицы
+    id_column: "id"             # Колонка ID (BIGINT)
+    url_column: "name"          # Колонка URL (VARCHAR)
+```
+
+Пример схемы таблицы:
+
+```sql
+CREATE TABLE dictionary.urls (
+    id BIGINT PRIMARY KEY,
+    name VARCHAR(4096) NOT NULL
+);
+```
 
 ## Эндпоинты
 

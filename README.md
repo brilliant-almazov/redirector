@@ -2,8 +2,13 @@
 
 **English** | [Русский](docs/README.ru.md)
 
-[![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yaml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yaml)
+[![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![RPS](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/rps.json)](https://github.com/brilliant-almazov/redirector)
+[![Latency](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/latency.json)](https://github.com/brilliant-almazov/redirector)
+[![Cache Hit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/GIST_ID/raw/cache_hit_rate.json)](https://github.com/brilliant-almazov/redirector)
 
 Safe URL redirect service with interstitial pages and hashid-based short links.
 
@@ -171,9 +176,24 @@ All config values support `${VAR}` substitution. Additionally:
 
 The service needs a simple mapping: **ID → URL**
 
-Currently uses a built-in query for `dictionary.urls` + `dictionary.domains` tables.
+Configure your table and columns in `config.yaml`:
 
-> **Coming soon**: Configurable query structure. You'll be able to specify your own ID and URL columns declaratively, regardless of your database schema.
+```yaml
+database:
+  query:
+    table: "dictionary.urls"    # Your table name
+    id_column: "id"             # ID column (BIGINT)
+    url_column: "name"          # URL column (VARCHAR)
+```
+
+Example table schema:
+
+```sql
+CREATE TABLE dictionary.urls (
+    id BIGINT PRIMARY KEY,
+    name VARCHAR(4096) NOT NULL
+);
+```
 
 ## Endpoints
 
