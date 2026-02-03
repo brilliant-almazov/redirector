@@ -1,16 +1,21 @@
 # redirector
 
-[English](../README.md) | **Русский** | [中文](README.zh.md) | [हिंदी](README.hi.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Polski](README.pl.md) | [Nederlands](README.nl.md) | [Italiano](README.it.md) | [Türkçe](README.tr.md) | [Українська](README.uk.md) | [Bahasa Indonesia](README.id.md) | [Tiếng Việt](README.vi.md) | [Svenska](README.sv.md) | [Suomi](README.fi.md)
+> **Высокопроизводительный сервис сокращения ссылок и редиректов** на Rust, Axum, Redis и PostgreSQL. Безопасные промежуточные страницы, панель мониторинга в реальном времени и полная наблюдаемость.
+
+[English](../README.md) | **Русский** | [中文](README.zh.md) | [हिंदी](README.hi.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Polski](README.pl.md) | [Nederlands](README.nl.md) | [Italiano](README.it.md) | [Türkçe](README.tr.md) | [Українська](README.uk.md) | [עברית](README.he.md) | [Bahasa Indonesia](README.id.md) | [Tiếng Việt](README.vi.md) | [Svenska](README.sv.md) | [Suomi](README.fi.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
+[![Docker Image Size](https://ghcr-badge.egpl.dev/brilliant-almazov/redirector/size)](https://github.com/brilliant-almazov/redirector/pkgs/container/redirector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![RPS](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/rps.json)](https://github.com/brilliant-almazov/redirector)
 [![Latency](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/latency.json)](https://github.com/brilliant-almazov/redirector)
 [![Cache Hit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/cache_hit_rate.json)](https://github.com/brilliant-almazov/redirector)
 
-Безопасный сервис редиректов с промежуточными страницами и короткими ссылками на основе hashid.
+**Ключевые слова**: сокращатель ссылок, url shortener, сервис редиректов, rust веб-сервис, axum фреймворк, redis кэш, postgresql, prometheus метрики, hashids, короткие ссылки, промежуточные страницы, безопасные редиректы, высокая производительность, микросервис
+
+Безопасный сервис редиректов с промежуточными страницами и короткими ссылками на основе hashid. Идеально подходит для внутренних инструментов, корпоративного управления ссылками и брендированных URL-сервисов.
 
 ### Производительность
 
@@ -40,8 +45,32 @@
 - 🛡️ **Circuit breaker** - Защита БД от каскадных сбоев
 - 🚦 **Rate limiting** - Глобальный и на уровне БД
 - 📊 **Prometheus метрики** - Полная наблюдаемость с Basic Auth защитой
-- 🎨 **Красивые страницы** - Чистые страницы 404 и индекса
+- 🎨 **Красивые страницы** - Чистые страницы 404 и индекса с 3 темами
 - 🔑 **Несколько солей** - Поддержка ротации соли hashid для миграции
+- 📱 **Админ-панель** - Мониторинг метрик в реальном времени через SSE
+
+## Скриншоты
+
+| Светлая | Тёмная | Тёплая |
+|---------|--------|--------|
+| ![Дашборд светлая](screenshots/dashboard-light.png) | ![Дашборд тёмная](screenshots/dashboard-dark.png) | ![Дашборд тёплая](screenshots/dashboard-warm.png) |
+| ![Логин светлая](screenshots/login-light.png) | ![Логин тёмная](screenshots/login-dark.png) | ![Логин тёплая](screenshots/login-warm.png) |
+| ![404 светлая](screenshots/not-found-light.png) | ![404 тёмная](screenshots/not-found-dark.png) | ![404 тёплая](screenshots/not-found-warm.png) |
+
+| Главная | Промежуточная |
+|---------|---------------|
+| ![Главная](screenshots/index.png) | ![Промежуточная](screenshots/interstitial.png) |
+
+## Стек технологий
+
+- **Язык**: Rust (асинхронный с Tokio)
+- **Веб-фреймворк**: Axum
+- **Кэш**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB и др.)
+- **База данных**: PostgreSQL (абстрактный слой хранения)
+- **Метрики**: Prometheus + metrics-rs
+- **Хеширование паролей**: Argon2
+
+> **Примечание**: Слои хранения и кэширования абстрагированы и могут быть заменены любым совместимым источником данных. Проект в активной разработке.
 
 ## Быстрый старт
 
@@ -201,8 +230,49 @@ CREATE TABLE dictionary.urls (
 |----------|-------------|----------|
 | `GET /` | Нет | Главная страница |
 | `GET /r/{hashid}` | Нет | Редирект с промежуточной страницей |
+| `GET /d/{hashid}` | Нет | Демо-редирект (синтетическое нагрузочное тестирование) |
 | `GET /health` | Нет | Проверка здоровья |
 | `GET /metrics` | Basic | Prometheus метрики |
+| `GET /admin` | Session | Вход в админ-панель |
+| `GET /admin/dashboard` | Session | Админ-панель |
+
+## Админ-панель
+
+Сервис включает опциональную админ-панель для мониторинга метрик в реальном времени.
+
+### Настройка
+
+1. **Сгенерируйте хэш пароля:**
+
+```bash
+cargo run --bin hash_password
+# Введите пароль или:
+cargo run --bin hash_password -- "ваш-пароль"
+```
+
+2. **Добавьте в config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # из шага 1
+```
+
+3. **Откройте панель:**
+
+Перейдите на `http://localhost:8080/admin` и войдите с вашими учётными данными.
+
+### Возможности
+
+- Графики RPS и задержки в реальном времени
+- Системные метрики (CPU, память, uptime)
+- Мониторинг cache hit rate
+- Список последних редиректов
+- Симуляция нагрузки для тестирования
+- Три темы: Светлая, Тёмная, Тёплая
 
 ## Метрики
 

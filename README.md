@@ -1,16 +1,21 @@
 # redirector
 
-**English** | [Русский](docs/README.ru.md) | [中文](docs/README.zh.md) | [हिंदी](docs/README.hi.md) | [Español](docs/README.es.md) | [Português](docs/README.pt.md) | [Français](docs/README.fr.md) | [Deutsch](docs/README.de.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Polski](docs/README.pl.md) | [Nederlands](docs/README.nl.md) | [Italiano](docs/README.it.md) | [Türkçe](docs/README.tr.md) | [Українська](docs/README.uk.md) | [Bahasa Indonesia](docs/README.id.md) | [Tiếng Việt](docs/README.vi.md) | [Svenska](docs/README.sv.md) | [Suomi](docs/README.fi.md)
+> **High-performance URL shortener and redirect service** built with Rust, Axum, Redis, and PostgreSQL. Features secure interstitial pages, real-time admin dashboard, and enterprise-grade observability.
+
+**English** | [Русский](docs/README.ru.md) | [中文](docs/README.zh.md) | [हिंदी](docs/README.hi.md) | [Español](docs/README.es.md) | [Português](docs/README.pt.md) | [Français](docs/README.fr.md) | [Deutsch](docs/README.de.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Polski](docs/README.pl.md) | [Nederlands](docs/README.nl.md) | [Italiano](docs/README.it.md) | [Türkçe](docs/README.tr.md) | [Українська](docs/README.uk.md) | [עברית](docs/README.he.md) | [Bahasa Indonesia](docs/README.id.md) | [Tiếng Việt](docs/README.vi.md) | [Svenska](docs/README.sv.md) | [Suomi](docs/README.fi.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
+[![Docker Image Size](https://ghcr-badge.egpl.dev/brilliant-almazov/redirector/size)](https://github.com/brilliant-almazov/redirector/pkgs/container/redirector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![RPS](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/rps.json)](https://github.com/brilliant-almazov/redirector)
 [![Latency](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/latency.json)](https://github.com/brilliant-almazov/redirector)
 [![Cache Hit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/cache_hit_rate.json)](https://github.com/brilliant-almazov/redirector)
 
-Safe URL redirect service with interstitial pages and hashid-based short links.
+**Keywords**: url shortener, link shortener, redirect service, rust web service, axum framework, redis cache, postgresql, prometheus metrics, hashids, short links, interstitial pages, safe redirects, high performance, microservice
+
+Safe URL redirect service with interstitial pages and hashid-based short links. Perfect for internal tools, enterprise link management, and branded short URL services.
 
 ### Performance
 
@@ -40,8 +45,32 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 - 🛡️ **Circuit breaker** - Database protection against cascading failures
 - 🚦 **Rate limiting** - Both global and database-level rate limits
 - 📊 **Prometheus metrics** - Full observability with Basic Auth protection
-- 🎨 **Beautiful pages** - Clean 404 and index pages
+- 🎨 **Beautiful pages** - Clean 404 and index pages with 3 themes
 - 🔑 **Multiple salts** - Hashid salt rotation support for migration
+- 📱 **Admin Dashboard** - Real-time metrics monitoring with SSE
+
+## Screenshots
+
+| Light | Dark | Warm |
+|-------|------|------|
+| ![Dashboard Light](docs/screenshots/dashboard-light.png) | ![Dashboard Dark](docs/screenshots/dashboard-dark.png) | ![Dashboard Warm](docs/screenshots/dashboard-warm.png) |
+| ![Login Light](docs/screenshots/login-light.png) | ![Login Dark](docs/screenshots/login-dark.png) | ![Login Warm](docs/screenshots/login-warm.png) |
+| ![404 Light](docs/screenshots/not-found-light.png) | ![404 Dark](docs/screenshots/not-found-dark.png) | ![404 Warm](docs/screenshots/not-found-warm.png) |
+
+| Index Page | Interstitial |
+|------------|--------------|
+| ![Index](docs/screenshots/index.png) | ![Interstitial](docs/screenshots/interstitial.png) |
+
+## Tech Stack
+
+- **Language**: Rust (async with Tokio)
+- **Web Framework**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB, etc.)
+- **Database**: PostgreSQL (pluggable storage layer)
+- **Metrics**: Prometheus + metrics-rs
+- **Password Hashing**: Argon2
+
+> **Note**: The storage and cache layers are abstracted and can be replaced with any compatible data source. Currently in active development.
 
 ## Quick Start
 
@@ -201,8 +230,57 @@ CREATE TABLE dictionary.urls (
 |----------|------|-------------|
 | `GET /` | No | Index page |
 | `GET /r/{hashid}` | No | Redirect with interstitial |
+| `GET /d/{hashid}` | No | Demo redirect (synthetic load testing) |
 | `GET /health` | No | Health check |
 | `GET /metrics` | Basic | Prometheus metrics |
+| `GET /admin` | Session | Admin dashboard login |
+| `GET /admin/dashboard` | Session | Admin dashboard |
+
+### Demo Endpoints
+
+The `/d/{hashid}` endpoint provides demo redirects for load testing without hitting the real database. It uses pre-generated simulation data from `static/simulation_data.bin` containing sample hashids and URLs. This is useful for:
+
+- Performance testing and benchmarking
+- Admin dashboard demonstration
+- Development and testing without database setup
+
+## Admin Dashboard
+
+The service includes an optional admin dashboard for monitoring live metrics.
+
+### Setup
+
+1. **Generate password hash:**
+
+```bash
+cargo run --bin hash_password
+# Enter password when prompted, or:
+cargo run --bin hash_password -- "your-password"
+```
+
+2. **Add to config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # from step 1
+```
+
+3. **Access dashboard:**
+
+Open `http://localhost:8080/admin` and login with your credentials.
+
+### Features
+
+- Real-time RPS and latency charts
+- System metrics (CPU, memory, uptime)
+- Cache hit rate monitoring
+- Recent redirects list
+- Load simulation for testing
+- Three themes: Light, Dark, Warm
 
 ## Metrics
 

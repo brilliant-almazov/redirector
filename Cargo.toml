@@ -14,8 +14,10 @@ categories = ["web-programming"]
 # Web framework
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
+parking_lot = "0.12"
 tower = "0.5"
-tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip", "normalize-path", "fs"] }
+minify-html = "0.15"
 
 # Templates
 askama = { version = "0.12", features = ["with-axum"] }
@@ -57,6 +59,19 @@ subtle = "2"
 base64 = "0.22"
 async-trait = "0.1"
 
+# Admin dashboard
+leptos = { version = "0.7", features = ["ssr"] }
+leptos_axum = "0.7"
+argon2 = "0.5"
+sysinfo = "0.32"
+rand = "0.8"
+tokio-stream = "0.1"
+uuid = { version = "1", features = ["v4"] }
+axum-extra = { version = "0.10", features = ["cookie"] }
+time = "0.3"
+futures = "0.3"
+serde_json = "1"
+
 [dev-dependencies]
 # Testing
 tokio-test = "0.4"
@@ -70,6 +85,14 @@ rstest = "0.23"
 [[bin]]
 name = "gen_hashids"
 path = "tools/gen_hashids.rs"
+
+[[bin]]
+name = "hash_password"
+path = "tools/hash_password.rs"
+
+[[bin]]
+name = "gen_simulation_data"
+path = "tools/gen_simulation_data.rs"
 
 [profile.release]
 lto = true
