@@ -1,97 +1,260 @@
-# Redirector
+# redirector
 
-Safe redirect service with hashid decoding and caching.
+**English** | [Русский](docs/README.ru.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yaml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yaml)
-[![Coverage](https://codecov.io/gh/brilliant-almazov/redirector/branch/master/graph/badge.svg)](https://codecov.io/gh/brilliant-almazov/redirector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Safe URL redirect service with interstitial pages and hashid-based short links.
+
+## Problem
+
+Sharing long URLs is inconvenient. URL shorteners exist but often redirect immediately, which can be a security risk. Users should see where they're going before being redirected.
+
+**redirector** provides safe redirects with:
+- Interstitial page showing target URL before redirect
+- Countdown timer for user awareness
+- Beautiful, branded pages
 
 ## Features
 
-- **Hashid decoding** with multiple salts support (fallback)
-- **Redis caching** with configurable TTL
-- **Interstitial page** with countdown timer before redirect
-- **Rate limiting** to protect main database
-- **Circuit breaker** for resilience
-- **Prometheus metrics** with Basic Auth
-- **Beautiful error pages**
+- 🔗 **Hashid URLs** - Short, unique, non-sequential IDs (e.g., `/abc123`)
+- ⏱️ **Interstitial page** - Countdown timer shows target URL before redirect
+- ⚡ **Redis caching** - Fast lookups with configurable TTL
+- 🛡️ **Circuit breaker** - Database protection against cascading failures
+- 🚦 **Rate limiting** - Both global and database-level rate limits
+- 📊 **Prometheus metrics** - Full observability with Basic Auth protection
+- 🎨 **Beautiful pages** - Clean 404 and index pages
+- 🔑 **Multiple salts** - Hashid salt rotation support for migration
 
 ## Quick Start
 
-### Using Docker Compose
+### Docker
 
 ```bash
-# Copy and configure
-cp config.yaml.example config.yaml
-# Edit config.yaml with your settings
-
-# Start
-docker-compose up -d
+docker run -p 8080:8080 \
+  -v $(pwd)/config.yaml:/config.yaml \
+  ghcr.io/brilliant-almazov/redirector:latest
 ```
 
-### Manual
+### Docker Compose
 
-```bash
-# Install dependencies
-cargo build --release
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/config.yaml
+    depends_on:
+      - postgres
+      - redis
 
-# Configure
-cp config.yaml.example config.yaml
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redirector
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: redirector
 
-# Run
-CONFIG_PATH=config.yaml ./target/release/redirector
+  redis:
+    image: redis:7-alpine
 ```
 
 ## Configuration
 
-See [config.yaml.example](config.yaml.example) for all options.
+Create `config.yaml`:
 
-Environment variables override config file (prefix `REDIRECTOR__`):
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - ${HASHID_SALT}          # Primary salt
+    - ${HASHID_SALT_OLD}      # Optional: old salt for migration
+  min_length: 6
+
+redis:
+  url: ${REDIS_URL}
+  cache_ttl_seconds: 86400    # 24 hours
+
+database:
+  url: ${DATABASE_URL}
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+
+interstitial:
+  delay_seconds: 5            # Countdown before redirect
+
+metrics:
+  basic_auth:
+    username: prometheus
+    password: ${METRICS_PASSWORD}
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100
+```
+
+### Configuration Options
+
+#### Server
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `host` | `0.0.0.0` | Bind address |
+| `port` | `8080` | HTTP port |
+
+#### Hashids
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `salts` | *required* | List of hashid salts (first = primary) |
+| `min_length` | `6` | Minimum hashid length |
+
+#### Redis
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `url` | *required* | Redis connection URL |
+| `cache_ttl_seconds` | `86400` | Cache TTL in seconds |
+
+#### Database
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `url` | *required* | PostgreSQL connection URL |
+| `pool.max_connections` | `3` | Connection pool size |
+| `pool.connect_timeout_seconds` | `3` | Connection timeout |
+| `rate_limit.max_requests_per_second` | `50` | DB rate limit |
+| `circuit_breaker.failure_threshold` | `3` | Failures before opening |
+| `circuit_breaker.reset_timeout_seconds` | `60` | Circuit reset timeout |
+
+#### Rate Limit (Global)
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `requests_per_second` | `1000` | Global rate limit |
+| `burst` | `100` | Burst allowance |
+
+### Environment Variables
+
+All config values support `${VAR}` substitution. Additionally:
+
+- `CONFIG_FILE` - Path to config file (default: `config.yaml`)
+
+## Database Schema
+
+The service expects the following PostgreSQL schema:
+
+```sql
+CREATE SCHEMA dictionary;
+
+CREATE TABLE dictionary.domains (
+    id BIGSERIAL PRIMARY KEY,
+    hash VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE dictionary.urls (
+    id BIGSERIAL PRIMARY KEY,
+    domain_id BIGINT NOT NULL REFERENCES dictionary.domains(id),
+    hash VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE INDEX idx_urls_id ON dictionary.urls(id);
+```
+
+## Endpoints
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `GET /` | No | Index page |
+| `GET /{hashid}` | No | Redirect with interstitial |
+| `GET /health` | No | Health check |
+| `GET /metrics` | Basic | Prometheus metrics |
+
+## Metrics
+
+The service exposes Prometheus metrics:
+
+```
+# Total redirect requests
+redirect_requests_total
+
+# Not found requests
+not_found_requests_total
+
+# Database queries
+db_queries_total
+
+# Rate limit exceeded events
+rate_limit_exceeded_total
+db_rate_limit_exceeded_total
+
+# Circuit breaker rejections
+circuit_breaker_rejections_total
+```
+
+## How It Works
+
+1. User visits `/{hashid}` (e.g., `/abc123`)
+2. Service decodes hashid to numeric ID
+3. Checks Redis cache for URL
+4. On cache miss, queries PostgreSQL
+5. Caches result in Redis
+6. Shows interstitial page with countdown
+7. After countdown, redirects to target URL
+
+```
+┌──────┐     ┌───────────┐     ┌───────┐     ┌──────────┐
+│Client│────▶│Redirector │────▶│ Redis │────▶│PostgreSQL│
+└──────┘     └───────────┘     └───────┘     └──────────┘
+                  │
+                  ▼
+           ┌─────────────┐
+           │ Interstitial│
+           │    Page     │
+           └─────────────┘
+```
+
+## Building
 
 ```bash
-export REDIRECTOR__SERVER__PORT=3000
-export REDIRECTOR__REDIS__URL=redis://localhost:6379
-export REDIRECTOR__DATABASE__URL=postgres://user:pass@host/db
-```
+# Build
+cargo build --release
 
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Service info page |
-| `/{hashid}` | GET | Redirect with interstitial |
-| `/metrics` | GET | Prometheus metrics (Basic Auth) |
-
-## Architecture
-
-```
-Request → Rate Limiter → Hashid Decode → Redis Cache
-                                              ↓ (miss)
-                                         PostgreSQL
-                                              ↓
-                                         Cache Result
-                                              ↓
-                                      Interstitial Page
-                                              ↓
-                                        302 Redirect
-```
-
-## Development
-
-```bash
 # Run tests
 cargo test
 
-# Run with hot reload
-cargo watch -x run
+# Run with coverage
+cargo llvm-cov --text
 
-# Format code
-cargo fmt
-
-# Lint
-cargo clippy
+# Check code style
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
 ```
 
 ## License
 
-MIT
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Contributing
+
+Contributions welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a Pull Request
+
+Protected master branch requires PR review.
