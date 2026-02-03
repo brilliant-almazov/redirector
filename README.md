@@ -55,6 +55,9 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 |-------|------|------|------|
 | ![Dashboard Light](docs/screenshots/dashboard-light.png) | ![Dashboard Dark](docs/screenshots/dashboard-dark.png) | ![Dashboard Gray](docs/screenshots/dashboard-gray.png) | ![Dashboard Warm](docs/screenshots/dashboard-warm.png) |
 | ![Login Light](docs/screenshots/login-light.png) | ![Login Dark](docs/screenshots/login-dark.png) | ![Login Gray](docs/screenshots/login-gray.png) | ![Login Warm](docs/screenshots/login-warm.png) |
+| ![Index Light](docs/screenshots/index-light.png) | ![Index Dark](docs/screenshots/index-dark.png) | ![Index Gray](docs/screenshots/index-gray.png) | ![Index Warm](docs/screenshots/index-warm.png) |
+| ![Interstitial Light](docs/screenshots/interstitial-light.png) | ![Interstitial Dark](docs/screenshots/interstitial-dark.png) | ![Interstitial Gray](docs/screenshots/interstitial-gray.png) | ![Interstitial Warm](docs/screenshots/interstitial-warm.png) |
+| ![404 Light](docs/screenshots/404-light.png) | ![404 Dark](docs/screenshots/404-dark.png) | ![404 Gray](docs/screenshots/404-gray.png) | ![404 Warm](docs/screenshots/404-warm.png) |
 
 ### Load Test Modal
 

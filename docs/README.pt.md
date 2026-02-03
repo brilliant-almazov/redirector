@@ -55,6 +55,9 @@ Compartilhar URLs longas é inconveniente. Encurtadores de URL existem, mas freq
 |-------|--------|-------|--------|
 | ![Dashboard Claro](screenshots/dashboard-light.png) | ![Dashboard Escuro](screenshots/dashboard-dark.png) | ![Dashboard Cinza](screenshots/dashboard-gray.png) | ![Dashboard Quente](screenshots/dashboard-warm.png) |
 | ![Login Claro](screenshots/login-light.png) | ![Login Escuro](screenshots/login-dark.png) | ![Login Cinza](screenshots/login-gray.png) | ![Login Quente](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Modal de teste de carga
 

@@ -59,11 +59,11 @@ where
                 delay_seconds: state.delay_seconds,
             };
 
-            Ok(Html(
-                template
+            Ok(Html(crate::minify_html_str(
+                &template
                     .render()
                     .map_err(|e| AppError::Internal(e.into()))?,
-            ))
+            )))
         }
         Err(AppError::NotFound | AppError::InvalidHashid) => {
             tracing::info!(hashid = %hashid, "URL not found");

@@ -55,6 +55,9 @@
 |------|-------|------|-------|
 | ![डैशबोर्ड लाइट](screenshots/dashboard-light.png) | ![डैशबोर्ड डार्क](screenshots/dashboard-dark.png) | ![डैशबोर्ड ग्रे](screenshots/dashboard-gray.png) | ![डैशबोर्ड वार्म](screenshots/dashboard-warm.png) |
 | ![लॉगिन लाइट](screenshots/login-light.png) | ![लॉगिन डार्क](screenshots/login-dark.png) | ![लॉगिन ग्रे](screenshots/login-gray.png) | ![लॉगिन वार्म](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### लोड टेस्ट मोडल
 

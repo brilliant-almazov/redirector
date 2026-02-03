@@ -55,6 +55,9 @@ Het delen van lange URL's is onhandig. URL-verkorters bestaan, maar leiden vaak 
 |-------|--------|-------|------|
 | ![Dashboard Licht](screenshots/dashboard-light.png) | ![Dashboard Donker](screenshots/dashboard-dark.png) | ![Dashboard Grijs](screenshots/dashboard-gray.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
 | ![Login Licht](screenshots/login-light.png) | ![Login Donker](screenshots/login-dark.png) | ![Login Grijs](screenshots/login-gray.png) | ![Login Warm](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Belastingtest-modal
 
