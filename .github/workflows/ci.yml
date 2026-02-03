@@ -245,7 +245,7 @@ jobs:
             port: 8080
           hashids:
             salts:
-              - "test-salt-for-ci"
+              - "test-salt-for-load-testing"
             min_length: 6
           redis:
             url: "redis://localhost:6379"
