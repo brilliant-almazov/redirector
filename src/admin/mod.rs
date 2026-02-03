@@ -68,3 +68,30 @@ pub fn admin_routes(admin_state: AdminState) -> Router {
         .merge(protected)
         .with_state(admin_state)
 }
+
+#[cfg(test)]
+mod simulate_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_simulate_handler_returns_ok() {
+        let status = simulate_handler().await;
+        assert_eq!(status, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_simulate_handler_records_metrics() {
+        let before = crate::metrics::get_total_requests();
+        let _ = simulate_handler().await;
+        let after = crate::metrics::get_total_requests();
+        assert!(after > before);
+    }
+
+    #[tokio::test]
+    async fn test_simulate_handler_multiple_calls() {
+        for _ in 0..10 {
+            let status = simulate_handler().await;
+            assert_eq!(status, StatusCode::OK);
+        }
+    }
+}
