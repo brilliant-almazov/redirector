@@ -2,10 +2,11 @@
 
 > **High-performance URL shortener and redirect service** built with Rust, Axum, Redis, and PostgreSQL. Features secure interstitial pages, real-time admin dashboard, and enterprise-grade observability.
 
-**English** | [Русский](docs/README.ru.md) | [中文](docs/README.zh.md) | [हिंदी](docs/README.hi.md) | [Español](docs/README.es.md) | [Português](docs/README.pt.md) | [Français](docs/README.fr.md) | [Deutsch](docs/README.de.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Polski](docs/README.pl.md) | [Nederlands](docs/README.nl.md) | [Italiano](docs/README.it.md) | [Türkçe](docs/README.tr.md) | [Українська](docs/README.uk.md) | [Bahasa Indonesia](docs/README.id.md) | [Tiếng Việt](docs/README.vi.md) | [Svenska](docs/README.sv.md) | [Suomi](docs/README.fi.md)
+**English** | [Русский](docs/README.ru.md) | [中文](docs/README.zh.md) | [हिंदी](docs/README.hi.md) | [Español](docs/README.es.md) | [Português](docs/README.pt.md) | [Français](docs/README.fr.md) | [Deutsch](docs/README.de.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Polski](docs/README.pl.md) | [Nederlands](docs/README.nl.md) | [Italiano](docs/README.it.md) | [Türkçe](docs/README.tr.md) | [Українська](docs/README.uk.md) | [עברית](docs/README.he.md) | [Bahasa Indonesia](docs/README.id.md) | [Tiếng Việt](docs/README.vi.md) | [Svenska](docs/README.sv.md) | [Suomi](docs/README.fi.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
+[![Docker Image Size](https://ghcr-badge.egpl.dev/brilliant-almazov/redirector/size)](https://github.com/brilliant-almazov/redirector/pkgs/container/redirector)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 [![RPS](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/rps.json)](https://github.com/brilliant-almazov/redirector)
@@ -229,10 +230,19 @@ CREATE TABLE dictionary.urls (
 |----------|------|-------------|
 | `GET /` | No | Index page |
 | `GET /r/{hashid}` | No | Redirect with interstitial |
+| `GET /d/{hashid}` | No | Demo redirect (synthetic load testing) |
 | `GET /health` | No | Health check |
 | `GET /metrics` | Basic | Prometheus metrics |
 | `GET /admin` | Session | Admin dashboard login |
 | `GET /admin/dashboard` | Session | Admin dashboard |
+
+### Demo Endpoints
+
+The `/d/{hashid}` endpoint provides demo redirects for load testing without hitting the real database. It uses pre-generated simulation data from `static/simulation_data.bin` containing sample hashids and URLs. This is useful for:
+
+- Performance testing and benchmarking
+- Admin dashboard demonstration
+- Development and testing without database setup
 
 ## Admin Dashboard
 
