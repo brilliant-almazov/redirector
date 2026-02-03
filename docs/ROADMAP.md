@@ -13,6 +13,7 @@
 - [x] Docker and docker-compose support
 - [x] CI/CD with coverage and performance badges
 - [x] 18 language translations
+- [x] Health check endpoints (`/health`, `/ready`)
 
 ## v0.2.0 (Planned)
 
@@ -24,9 +25,7 @@
 - [ ] `GET /api/urls` - list redirects with pagination
 - [ ] API authentication (API keys or JWT)
 
-### Health & Observability
-- [ ] `GET /health` - health check endpoint for k8s probes
-- [ ] `GET /ready` - readiness probe (DB + Redis connectivity)
+### Observability
 - [ ] Structured JSON logging
 - [ ] Request tracing (OpenTelemetry)
 
