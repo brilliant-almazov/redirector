@@ -45,21 +45,22 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 - 🛡️ **Circuit breaker** - Database protection against cascading failures
 - 🚦 **Rate limiting** - Both global and database-level rate limits
 - 📊 **Prometheus metrics** - Full observability with Basic Auth protection
-- 🎨 **Beautiful pages** - Clean 404 and index pages with 3 themes
+- 🎨 **Beautiful pages** - Clean 404 and index pages with 4 themes
 - 🔑 **Multiple salts** - Hashid salt rotation support for migration
 - 📱 **Admin Dashboard** - Real-time metrics monitoring with SSE
 
 ## Screenshots
 
-| Light | Dark | Warm |
-|-------|------|------|
-| ![Dashboard Light](docs/screenshots/dashboard-light.png) | ![Dashboard Dark](docs/screenshots/dashboard-dark.png) | ![Dashboard Warm](docs/screenshots/dashboard-warm.png) |
-| ![Login Light](docs/screenshots/login-light.png) | ![Login Dark](docs/screenshots/login-dark.png) | ![Login Warm](docs/screenshots/login-warm.png) |
-| ![404 Light](docs/screenshots/not-found-light.png) | ![404 Dark](docs/screenshots/not-found-dark.png) | ![404 Warm](docs/screenshots/not-found-warm.png) |
+| Light | Dark | Gray | Warm |
+|-------|------|------|------|
+| ![Dashboard Light](docs/screenshots/dashboard-light.png) | ![Dashboard Dark](docs/screenshots/dashboard-dark.png) | ![Dashboard Gray](docs/screenshots/dashboard-gray.png) | ![Dashboard Warm](docs/screenshots/dashboard-warm.png) |
+| ![Login Light](docs/screenshots/login-light.png) | ![Login Dark](docs/screenshots/login-dark.png) | ![Login Gray](docs/screenshots/login-gray.png) | ![Login Warm](docs/screenshots/login-warm.png) |
 
-| Index Page | Interstitial |
-|------------|--------------|
-| ![Index](docs/screenshots/index.png) | ![Interstitial](docs/screenshots/interstitial.png) |
+### Load Test Modal
+
+| Light | Dark | Gray | Warm |
+|-------|------|------|------|
+| ![Modal Light](docs/screenshots/dashboard-modal-light.png) | ![Modal Dark](docs/screenshots/dashboard-modal-dark.png) | ![Modal Gray](docs/screenshots/dashboard-modal-gray.png) | ![Modal Warm](docs/screenshots/dashboard-modal-warm.png) |
 
 ## Tech Stack
 
@@ -280,7 +281,7 @@ Open `http://localhost:8080/admin` and login with your credentials.
 - Cache hit rate monitoring
 - Recent redirects list
 - Load simulation for testing
-- Three themes: Light, Dark, Warm
+- Four themes: Light, Dark, Gray, Warm
 
 ## Metrics
 

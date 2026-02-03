@@ -45,21 +45,22 @@ Udostępnianie długich adresów URL jest niewygodne. Skracacze URL istnieją, a
 - 🛡️ **Circuit breaker** - Ochrona bazy danych przed awariami kaskadowymi
 - 🚦 **Limitowanie prędkości** - Globalne i na poziomie bazy danych limity prędkości
 - 📊 **Metryki Prometheus** - Pełna obserwowalność z ochroną Basic Auth
-- 🎨 **Piękne strony** - Czyste strony 404 i indeksu z 3 motywami
+- 🎨 **Piękne strony** - Czyste strony 404 i indeksu z 4 motywami
 - 🔑 **Wiele soli** - Wsparcie dla rotacji soli hashid dla migracji
 - 📱 **Panel administracyjny** - Monitoring metryk w czasie rzeczywistym przez SSE
 
 ## Zrzuty ekranu
 
-| Jasny | Ciemny | Ciepły |
-|-------|--------|--------|
-| ![Dashboard Jasny](screenshots/dashboard-light.png) | ![Dashboard Ciemny](screenshots/dashboard-dark.png) | ![Dashboard Ciepły](screenshots/dashboard-warm.png) |
-| ![Logowanie Jasny](screenshots/login-light.png) | ![Logowanie Ciemny](screenshots/login-dark.png) | ![Logowanie Ciepły](screenshots/login-warm.png) |
-| ![404 Jasny](screenshots/not-found-light.png) | ![404 Ciemny](screenshots/not-found-dark.png) | ![404 Ciepły](screenshots/not-found-warm.png) |
+| Jasny | Ciemny | Szary | Ciepły |
+|-------|--------|-------|--------|
+| ![Dashboard Jasny](screenshots/dashboard-light.png) | ![Dashboard Ciemny](screenshots/dashboard-dark.png) | ![Dashboard Szary](screenshots/dashboard-gray.png) | ![Dashboard Ciepły](screenshots/dashboard-warm.png) |
+| ![Logowanie Jasny](screenshots/login-light.png) | ![Logowanie Ciemny](screenshots/login-dark.png) | ![Logowanie Szary](screenshots/login-gray.png) | ![Logowanie Ciepły](screenshots/login-warm.png) |
 
-| Strona główna | Przejściowa |
-|---------------|-------------|
-| ![Strona główna](screenshots/index.png) | ![Przejściowa](screenshots/interstitial.png) |
+### Modal testu obciążenia
+
+| Jasny | Ciemny | Szary | Ciepły |
+|-------|--------|-------|--------|
+| ![Modal Jasny](screenshots/dashboard-modal-light.png) | ![Modal Ciemny](screenshots/dashboard-modal-dark.png) | ![Modal Szary](screenshots/dashboard-modal-gray.png) | ![Modal Ciepły](screenshots/dashboard-modal-warm.png) |
 
 ## Stos technologiczny
 

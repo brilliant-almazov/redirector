@@ -45,21 +45,22 @@
 - 🛡️ **Circuit breaker** - הגנה על מסד הנתונים מפני כשלים מדורגים
 - 🚦 **הגבלת קצב** - הגבלות קצב גלובליות וברמת מסד הנתונים
 - 📊 **מדדי Prometheus** - תצפיתנות מלאה עם הגנת Basic Auth
-- 🎨 **דפים יפים** - דפי 404 ודף ראשי נקיים עם 3 ערכות נושא
+- 🎨 **דפים יפים** - דפי 404 ודף ראשי נקיים עם 4 ערכות נושא
 - 🔑 **מלחים מרובים** - תמיכה בסיבוב מלח hashid להעברה
 - 📱 **לוח בקרה** - ניטור מדדים בזמן אמת עם SSE
 
 ## צילומי מסך
 
-| בהיר | כהה | חם |
-|------|-----|-----|
-| ![לוח בקרה בהיר](screenshots/dashboard-light.png) | ![לוח בקרה כהה](screenshots/dashboard-dark.png) | ![לוח בקרה חם](screenshots/dashboard-warm.png) |
-| ![התחברות בהיר](screenshots/login-light.png) | ![התחברות כהה](screenshots/login-dark.png) | ![התחברות חם](screenshots/login-warm.png) |
-| ![404 בהיר](screenshots/not-found-light.png) | ![404 כהה](screenshots/not-found-dark.png) | ![404 חם](screenshots/not-found-warm.png) |
+| בהיר | כהה | אפור | חם |
+|------|-----|------|-----|
+| ![לוח בקרה בהיר](screenshots/dashboard-light.png) | ![לוח בקרה כהה](screenshots/dashboard-dark.png) | ![לוח בקרה אפור](screenshots/dashboard-gray.png) | ![לוח בקרה חם](screenshots/dashboard-warm.png) |
+| ![התחברות בהיר](screenshots/login-light.png) | ![התחברות כהה](screenshots/login-dark.png) | ![התחברות אפור](screenshots/login-gray.png) | ![התחברות חם](screenshots/login-warm.png) |
 
-| דף ראשי | דף ביניים |
-|---------|----------|
-| ![דף ראשי](screenshots/index.png) | ![דף ביניים](screenshots/interstitial.png) |
+### חלון בדיקת עומס
+
+| בהיר | כהה | אפור | חם |
+|------|-----|------|-----|
+| ![חלון בהיר](screenshots/dashboard-modal-light.png) | ![חלון כהה](screenshots/dashboard-modal-dark.png) | ![חלון אפור](screenshots/dashboard-modal-gray.png) | ![חלון חם](screenshots/dashboard-modal-warm.png) |
 
 ## מחסנית טכנולוגית
 

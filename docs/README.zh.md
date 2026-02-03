@@ -45,21 +45,22 @@
 - 🛡️ **熔断器** - 防止级联故障的数据库保护
 - 🚦 **速率限制** - 全局和数据库级别的速率限制
 - 📊 **Prometheus 指标** - 带 Basic Auth 保护的完整可观测性
-- 🎨 **美观页面** - 简洁的 404 和索引页面，支持 3 种主题
+- 🎨 **美观页面** - 简洁的 404 和索引页面，支持 4 种主题
 - 🔑 **多盐值** - 支持 hashid 盐值轮换以便迁移
 - 📱 **管理面板** - 通过 SSE 实时监控指标
 
 ## 截图
 
-| 浅色 | 深色 | 暖色 |
-|------|------|------|
-| ![仪表盘浅色](screenshots/dashboard-light.png) | ![仪表盘深色](screenshots/dashboard-dark.png) | ![仪表盘暖色](screenshots/dashboard-warm.png) |
-| ![登录浅色](screenshots/login-light.png) | ![登录深色](screenshots/login-dark.png) | ![登录暖色](screenshots/login-warm.png) |
-| ![404浅色](screenshots/not-found-light.png) | ![404深色](screenshots/not-found-dark.png) | ![404暖色](screenshots/not-found-warm.png) |
+| 浅色 | 深色 | 灰色 | 暖色 |
+|------|------|------|------|
+| ![仪表盘浅色](screenshots/dashboard-light.png) | ![仪表盘深色](screenshots/dashboard-dark.png) | ![仪表盘灰色](screenshots/dashboard-gray.png) | ![仪表盘暖色](screenshots/dashboard-warm.png) |
+| ![登录浅色](screenshots/login-light.png) | ![登录深色](screenshots/login-dark.png) | ![登录灰色](screenshots/login-gray.png) | ![登录暖色](screenshots/login-warm.png) |
 
-| 首页 | 过渡页 |
-|------|--------|
-| ![首页](screenshots/index.png) | ![过渡页](screenshots/interstitial.png) |
+### 负载测试模态框
+
+| 浅色 | 深色 | 灰色 | 暖色 |
+|------|------|------|------|
+| ![模态框浅色](screenshots/dashboard-modal-light.png) | ![模态框深色](screenshots/dashboard-modal-dark.png) | ![模态框灰色](screenshots/dashboard-modal-gray.png) | ![模态框暖色](screenshots/dashboard-modal-warm.png) |
 
 ## 技术栈
 
