@@ -55,6 +55,9 @@ Condividere URL lunghi è scomodo. Gli accorciatori di URL esistono ma spesso re
 |--------|-------|--------|-------|
 | ![Dashboard Chiaro](screenshots/dashboard-light.png) | ![Dashboard Scuro](screenshots/dashboard-dark.png) | ![Dashboard Grigio](screenshots/dashboard-gray.png) | ![Dashboard Caldo](screenshots/dashboard-warm.png) |
 | ![Login Chiaro](screenshots/login-light.png) | ![Login Scuro](screenshots/login-dark.png) | ![Login Grigio](screenshots/login-gray.png) | ![Login Caldo](screenshots/login-warm.png) |
+| ![Index Light](screenshots/index-light.png) | ![Index Dark](screenshots/index-dark.png) | ![Index Gray](screenshots/index-gray.png) | ![Index Warm](screenshots/index-warm.png) |
+| ![Interstitial Light](screenshots/interstitial-light.png) | ![Interstitial Dark](screenshots/interstitial-dark.png) | ![Interstitial Gray](screenshots/interstitial-gray.png) | ![Interstitial Warm](screenshots/interstitial-warm.png) |
+| ![404 Light](screenshots/404-light.png) | ![404 Dark](screenshots/404-dark.png) | ![404 Gray](screenshots/404-gray.png) | ![404 Warm](screenshots/404-warm.png) |
 
 ### Modal test di carico
 
