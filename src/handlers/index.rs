@@ -22,12 +22,5 @@ pub async fn index_handler() -> Html<String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_index_handler_returns_html() {
-        let response = index_handler().await;
-        assert!(!response.0.is_empty());
-    }
-}
+#[path = "index_test.rs"]
+mod index_test;

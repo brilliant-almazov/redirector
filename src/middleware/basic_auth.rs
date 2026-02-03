@@ -39,7 +39,6 @@ impl BasicAuthLayer {
             return false;
         };
 
-        // Constant-time comparison to prevent timing attacks
         use subtle::ConstantTimeEq;
         let user_match = user.as_bytes().ct_eq(self.username.as_bytes());
         let pass_match = pass.as_bytes().ct_eq(self.password.as_bytes());
@@ -71,60 +70,5 @@ pub async fn basic_auth_middleware(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn layer(user: &str, pass: &str) -> BasicAuthLayer {
-        BasicAuthLayer::new(user.to_string(), pass.to_string())
-    }
-
-    fn encode_basic(user: &str, pass: &str) -> String {
-        format!("Basic {}", STANDARD.encode(format!("{}:{}", user, pass)))
-    }
-
-    #[test]
-    fn test_valid_credentials() {
-        let auth = layer("admin", "secret");
-        let header = encode_basic("admin", "secret");
-        assert!(auth.check(Some(&header)));
-    }
-
-    #[test]
-    fn test_invalid_username() {
-        let auth = layer("admin", "secret");
-        let header = encode_basic("wrong", "secret");
-        assert!(!auth.check(Some(&header)));
-    }
-
-    #[test]
-    fn test_invalid_password() {
-        let auth = layer("admin", "secret");
-        let header = encode_basic("admin", "wrong");
-        assert!(!auth.check(Some(&header)));
-    }
-
-    #[test]
-    fn test_missing_header() {
-        let auth = layer("admin", "secret");
-        assert!(!auth.check(None));
-    }
-
-    #[test]
-    fn test_invalid_scheme() {
-        let auth = layer("admin", "secret");
-        assert!(!auth.check(Some("Bearer token")));
-    }
-
-    #[test]
-    fn test_invalid_base64() {
-        let auth = layer("admin", "secret");
-        assert!(!auth.check(Some("Basic !!!invalid!!!")));
-    }
-
-    #[test]
-    fn test_no_colon_in_credentials() {
-        let auth = layer("admin", "secret");
-        let header = format!("Basic {}", STANDARD.encode("nocolon"));
-        assert!(!auth.check(Some(&header)));
-    }
-}
+#[path = "basic_auth_test.rs"]
+mod basic_auth_test;

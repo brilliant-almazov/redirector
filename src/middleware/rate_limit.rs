@@ -48,27 +48,5 @@ pub async fn rate_limit_middleware(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_rate_limiter_allows_requests() {
-        let limiter = RateLimitLayer::new(10, 10);
-
-        // First few requests should pass
-        for _ in 0..10 {
-            assert!(limiter.check());
-        }
-    }
-
-    #[test]
-    fn test_rate_limiter_blocks_excess() {
-        let limiter = RateLimitLayer::new(1, 1);
-
-        // First request passes
-        assert!(limiter.check());
-
-        // Second immediate request should fail
-        assert!(!limiter.check());
-    }
-}
+#[path = "rate_limit_test.rs"]
+mod rate_limit_test;

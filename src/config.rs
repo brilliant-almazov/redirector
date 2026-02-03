@@ -21,6 +21,15 @@ pub struct ServerConfig {
     pub port: u16,
 }
 
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            host: default_host(),
+            port: default_port(),
+        }
+    }
+}
+
 fn default_host() -> String {
     "0.0.0.0".to_string()
 }
@@ -47,8 +56,17 @@ pub struct RedisConfig {
     pub cache_ttl_seconds: u64,
 }
 
+impl Default for RedisConfig {
+    fn default() -> Self {
+        Self {
+            url: "redis://localhost:6379".to_string(),
+            cache_ttl_seconds: default_cache_ttl(),
+        }
+    }
+}
+
 fn default_cache_ttl() -> u64 {
-    86400 // 24 hours
+    86400
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -193,22 +211,5 @@ impl Config {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_default_values() {
-        assert_eq!(default_host(), "0.0.0.0");
-        assert_eq!(default_port(), 8080);
-        assert_eq!(default_min_length(), 6);
-        assert_eq!(default_cache_ttl(), 86400);
-        assert_eq!(default_max_connections(), 3);
-        assert_eq!(default_connect_timeout(), 3);
-        assert_eq!(default_db_rps(), 50);
-        assert_eq!(default_failure_threshold(), 3);
-        assert_eq!(default_reset_timeout(), 60);
-        assert_eq!(default_delay(), 5);
-        assert_eq!(default_rps(), 1000);
-        assert_eq!(default_burst(), 100);
-    }
-}
+#[path = "config_test.rs"]
+mod config_test;

@@ -20,7 +20,7 @@ impl CacheService {
         })
     }
 
-    fn key(id: i64) -> String {
+    pub(crate) fn key(id: i64) -> String {
         format!("url:{}", id)
     }
 }
@@ -41,14 +41,5 @@ impl Cache for CacheService {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_cache_key_format() {
-        assert_eq!(CacheService::key(42), "url:42");
-        assert_eq!(CacheService::key(0), "url:0");
-        assert_eq!(CacheService::key(999999), "url:999999");
-        assert_eq!(CacheService::key(-1), "url:-1");
-    }
-}
+#[path = "cache_test.rs"]
+mod cache_test;

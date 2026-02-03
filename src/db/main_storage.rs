@@ -83,7 +83,6 @@ impl MainStorage {
 #[async_trait]
 impl UrlStorage for MainStorage {
     async fn get_url_by_id(&self, id: i64) -> Result<Option<String>> {
-        // Check circuit breaker
         {
             let cb = self.circuit_breaker.lock().await;
             if !cb.is_call_permitted() {
@@ -93,7 +92,6 @@ impl UrlStorage for MainStorage {
             }
         }
 
-        // Check rate limit
         if self.rate_limiter.check().is_err() {
             tracing::warn!("Database rate limit exceeded");
             metrics::counter!("db_rate_limit_exceeded").increment(1);
@@ -104,7 +102,6 @@ impl UrlStorage for MainStorage {
 
         let result = self.query_url(id).await;
 
-        // Update circuit breaker state
         {
             let cb = self.circuit_breaker.lock().await;
             match &result {
@@ -115,10 +112,4 @@ impl UrlStorage for MainStorage {
 
         result
     }
-}
-
-#[cfg(test)]
-mod tests {
-    // Integration tests will cover MainStorage functionality
-    // as it requires a real database connection
 }
