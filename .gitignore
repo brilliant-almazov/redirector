@@ -16,7 +16,8 @@
 
 # Configuration (keep example)
 config.yaml
-!config.yaml.example
+config.test.yaml
+!config.example.yaml
 
 # Environment
 .env
