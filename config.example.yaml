@@ -1,0 +1,41 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - "your-primary-salt-here"
+    - "your-fallback-salt-here"  # optional: for migrating from old salt
+  min_length: 6
+
+redis:
+  url: "redis://localhost:6379/0"
+  cache_ttl_seconds: 86400  # 24 hours
+
+database:
+  url: "postgresql://user:password@localhost:5432/database"
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+  # Query configuration - customize for your schema
+  query:
+    table: "dictionary.urls"    # Table name (with schema if needed)
+    id_column: "id"             # Column with numeric ID
+    url_column: "name"          # Column with URL value
+
+interstitial:
+  delay_seconds: 5
+
+metrics:
+  basic_auth:
+    username: "metrics"
+    password: "your-secure-password"
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100

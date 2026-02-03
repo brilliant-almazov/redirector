@@ -1,0 +1,295 @@
+# redirector
+
+[English](../README.md) | **Русский** | [中文](README.zh.md) | [हिंदी](README.hi.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Polski](README.pl.md) | [Nederlands](README.nl.md) | [Italiano](README.it.md) | [Türkçe](README.tr.md) | [Українська](README.uk.md) | [Bahasa Indonesia](README.id.md) | [Tiếng Việt](README.vi.md) | [Svenska](README.sv.md) | [Suomi](README.fi.md)
+
+[![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+[![RPS](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/rps.json)](https://github.com/brilliant-almazov/redirector)
+[![Latency](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/latency.json)](https://github.com/brilliant-almazov/redirector)
+[![Cache Hit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/cache_hit_rate.json)](https://github.com/brilliant-almazov/redirector)
+
+Безопасный сервис редиректов с промежуточными страницами и короткими ссылками на основе hashid.
+
+### Производительность
+
+| Сценарий | RPS | Средн. задержка | P99 задержка |
+|----------|-----|-----------------|--------------|
+| 100% Cache Hit | **7,800+** | ~14ms | ~50ms |
+| Cache Miss (10K URLs) | **2,300+** | ~44ms | ~81ms |
+
+**Условия теста**: wrk -t4 -c100 -d30s, PostgreSQL 15, Dragonfly (Redis), macOS M1 (Docker)
+
+> ⚠️ Результаты получены в Docker на macOS с overhead виртуализации. На native Linux ожидается **в 3-5 раз быстрее**.
+
+## Проблема
+
+Делиться длинными URL неудобно. Сокращатели ссылок существуют, но часто перенаправляют мгновенно, что может быть небезопасно. Пользователи должны видеть, куда их перенаправляют, прежде чем перейти.
+
+**redirector** обеспечивает безопасные редиректы:
+- Промежуточная страница показывает целевой URL перед редиректом
+- Обратный отсчёт для осведомлённости пользователя
+- Красивые, брендированные страницы
+
+## Возможности
+
+- 🔗 **Hashid URL** - Короткие, уникальные, непоследовательные ID (например, `/r/abc123`)
+- ⏱️ **Промежуточная страница** - Обратный отсчёт показывает целевой URL перед редиректом
+- ⚡ **Кэширование Redis** - Быстрые запросы с настраиваемым TTL
+- 🛡️ **Circuit breaker** - Защита БД от каскадных сбоев
+- 🚦 **Rate limiting** - Глобальный и на уровне БД
+- 📊 **Prometheus метрики** - Полная наблюдаемость с Basic Auth защитой
+- 🎨 **Красивые страницы** - Чистые страницы 404 и индекса
+- 🔑 **Несколько солей** - Поддержка ротации соли hashid для миграции
+
+## Быстрый старт
+
+### Docker
+
+```bash
+docker run -p 8080:8080 \
+  -v $(pwd)/config.yaml:/config.yaml \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+### Docker Compose
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/config.yaml
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redirector
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: redirector
+
+  redis:
+    image: redis:7-alpine
+```
+
+## Конфигурация
+
+Создайте `config.yaml`:
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - ${HASHID_SALT}          # Основная соль
+    - ${HASHID_SALT_OLD}      # Опционально: старая соль для миграции
+  min_length: 6
+
+redis:
+  url: ${REDIS_URL}
+  cache_ttl_seconds: 86400    # 24 часа
+
+database:
+  url: ${DATABASE_URL}
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+  query:
+    table: "dictionary.urls"    # Имя таблицы
+    id_column: "id"             # Колонка ID
+    url_column: "name"          # Колонка URL
+
+interstitial:
+  delay_seconds: 5            # Отсчёт перед редиректом
+
+metrics:
+  basic_auth:
+    username: prometheus
+    password: ${METRICS_PASSWORD}
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100
+```
+
+### Параметры конфигурации
+
+#### Сервер
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `host` | `0.0.0.0` | Адрес привязки |
+| `port` | `8080` | HTTP порт |
+
+#### Hashids
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `salts` | *обязательно* | Список солей hashid (первая = основная) |
+| `min_length` | `6` | Минимальная длина hashid |
+
+#### Redis
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `url` | *обязательно* | URL подключения к Redis |
+| `cache_ttl_seconds` | `86400` | TTL кэша в секундах |
+
+#### База данных
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `url` | *обязательно* | URL подключения к PostgreSQL |
+| `pool.max_connections` | `3` | Размер пула соединений |
+| `pool.connect_timeout_seconds` | `3` | Таймаут подключения |
+| `rate_limit.max_requests_per_second` | `50` | Rate limit БД |
+| `circuit_breaker.failure_threshold` | `3` | Сбоев до открытия |
+| `circuit_breaker.reset_timeout_seconds` | `60` | Таймаут сброса circuit |
+
+#### Rate Limit (глобальный)
+
+| Параметр | По умолчанию | Описание |
+|----------|--------------|----------|
+| `requests_per_second` | `1000` | Глобальный rate limit |
+| `burst` | `100` | Размер всплеска |
+
+### Переменные окружения
+
+Все значения конфигурации поддерживают подстановку `${VAR}`. Дополнительно:
+
+- `CONFIG_FILE` - Путь к файлу конфигурации (по умолчанию: `config.yaml`)
+
+## База данных
+
+Сервису нужна простая связь: **ID → URL**
+
+Настройте таблицу и колонки в `config.yaml`:
+
+```yaml
+database:
+  query:
+    table: "dictionary.urls"    # Имя таблицы
+    id_column: "id"             # Колонка ID (BIGINT)
+    url_column: "name"          # Колонка URL (VARCHAR)
+```
+
+Пример схемы таблицы:
+
+```sql
+CREATE TABLE dictionary.urls (
+    id BIGINT PRIMARY KEY,
+    name VARCHAR(4096) NOT NULL
+);
+```
+
+## Эндпоинты
+
+| Эндпоинт | Авторизация | Описание |
+|----------|-------------|----------|
+| `GET /` | Нет | Главная страница |
+| `GET /r/{hashid}` | Нет | Редирект с промежуточной страницей |
+| `GET /health` | Нет | Проверка здоровья |
+| `GET /metrics` | Basic | Prometheus метрики |
+
+## Метрики
+
+Сервис предоставляет Prometheus метрики на `/metrics` (требуется Basic Auth):
+
+### Метрики сервиса
+```
+redirector_up 1
+redirector_build_info{version="0.1.0"} 1
+redirector_uptime_seconds 3600.5
+```
+
+### Метрики запросов
+```
+redirect_requests_total 150000
+not_found_requests_total 50
+request_duration_seconds{quantile="0.5"} 0.040
+request_duration_seconds{quantile="0.99"} 0.081
+```
+
+### Метрики кэша
+```
+cache_hits_total 140000
+cache_misses_total 10000
+cache_get_duration_seconds{quantile="0.5"} 0.002
+cache_set_duration_seconds{quantile="0.5"} 0.002
+```
+
+### Метрики БД
+```
+db_queries_total 10000
+db_hits_total 9950
+db_misses_total 50
+db_query_duration_seconds{quantile="0.5"} 0.035
+db_rate_limit_exceeded_total 0
+circuit_breaker_rejections_total 0
+```
+
+## Как это работает
+
+1. Пользователь посещает `/r/{hashid}` (например, `/r/abc123`)
+2. Сервис декодирует hashid в числовой ID
+3. Проверяет кэш Redis на наличие URL
+4. При промахе кэша — запрос к PostgreSQL
+5. Кэширует результат в Redis
+6. Показывает промежуточную страницу с отсчётом
+7. После отсчёта редиректит на целевой URL
+
+```
+┌──────┐     ┌───────────┐     ┌───────┐     ┌──────────┐
+│Клиент│────▶│Redirector │────▶│ Redis │────▶│PostgreSQL│
+└──────┘     └───────────┘     └───────┘     └──────────┘
+                  │
+                  ▼
+           ┌─────────────┐
+           │Промежуточная│
+           │  страница   │
+           └─────────────┘
+```
+
+## Сборка
+
+```bash
+# Сборка
+cargo build --release
+
+# Запуск тестов
+cargo test
+
+# Запуск с покрытием
+cargo llvm-cov --text
+
+# Проверка стиля кода
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+```
+
+## Лицензия
+
+MIT License - подробности в [LICENSE](../LICENSE).
+
+## Участие в разработке
+
+Вклад приветствуется! Пожалуйста:
+
+1. Форкните репозиторий
+2. Создайте feature-ветку
+3. Отправьте Pull Request
+
+Защищённая master-ветка требует ревью PR.
