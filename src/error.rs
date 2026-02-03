@@ -14,7 +14,8 @@ static NOT_FOUND_HTML: &str = include_str!("../templates/not_found.html");
 static NOT_FOUND_MINIFIED: LazyLock<String> = LazyLock::new(|| {
     use minify_html::{minify, Cfg};
     let cfg = Cfg::spec_compliant();
-    String::from_utf8(minify(NOT_FOUND_HTML.as_bytes(), &cfg)).unwrap_or_else(|_| NOT_FOUND_HTML.to_string())
+    String::from_utf8(minify(NOT_FOUND_HTML.as_bytes(), &cfg))
+        .unwrap_or_else(|_| NOT_FOUND_HTML.to_string())
 });
 
 #[derive(Error, Debug)]
@@ -46,7 +47,10 @@ fn not_found_page() -> Html<String> {
     {
         match std::fs::read_to_string("templates/not_found.html") {
             Ok(content) => Html(content),
-            Err(e) => Html(format!("<h1>404 - Not Found</h1><p>Error loading template: {}</p>", e)),
+            Err(e) => Html(format!(
+                "<h1>404 - Not Found</h1><p>Error loading template: {}</p>",
+                e
+            )),
         }
     }
     #[cfg(not(debug_assertions))]
@@ -72,7 +76,7 @@ impl IntoResponse for AppError {
             AppError::NotFound | AppError::InvalidHashid => {
                 (status, not_found_page()).into_response()
             }
-            _ => (status, self.to_string()).into_response()
+            _ => (status, self.to_string()).into_response(),
         }
     }
 }

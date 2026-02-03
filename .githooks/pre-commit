@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-commit hook for code formatting and linting
+
+set -e
+
+echo "Running pre-commit checks..."
+
+# Check Rust formatting
+echo "Checking Rust formatting..."
+cargo fmt --all -- --check
+if [ $? -ne 0 ]; then
+    echo "Error: Rust code is not formatted. Run 'cargo fmt' to fix."
+    exit 1
+fi
+
+# Run clippy
+echo "Running clippy..."
+cargo clippy --all-targets --all-features -- -D warnings
+if [ $? -ne 0 ]; then
+    echo "Error: Clippy found issues. Fix them before committing."
+    exit 1
+fi
+
+echo "All pre-commit checks passed!"

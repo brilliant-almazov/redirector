@@ -84,14 +84,22 @@ pub fn get_cache_hit_rate() -> f64 {
     let hits = CACHE_HITS.load(Ordering::Relaxed) as f64;
     let misses = CACHE_MISSES.load(Ordering::Relaxed) as f64;
     let total = hits + misses;
-    if total > 0.0 { hits / total } else { 0.0 }
+    if total > 0.0 {
+        hits / total
+    } else {
+        0.0
+    }
 }
 
 /// Get average latency in ms
 pub fn get_avg_latency_ms() -> f64 {
     let sum = LATENCY_SUM_MICROS.load(Ordering::Relaxed) as f64;
     let count = LATENCY_COUNT.load(Ordering::Relaxed) as f64;
-    if count > 0.0 { sum / count / 1000.0 } else { 0.0 }
+    if count > 0.0 {
+        sum / count / 1000.0
+    } else {
+        0.0
+    }
 }
 
 /// Record a recent redirect
