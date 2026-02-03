@@ -32,6 +32,29 @@ Das Teilen langer URLs ist unpraktisch. URL-Verkürzer existieren, leiten aber o
 - 🎨 **Schöne Seiten** - Saubere 404- und Index-Seiten
 - 🔑 **Mehrere Salts** - Hashid-Salt-Rotation für Migration
 
+## Screenshots
+
+| Hell | Dunkel | Warm |
+|------|--------|------|
+| ![Dashboard Hell](screenshots/dashboard-light.png) | ![Dashboard Dunkel](screenshots/dashboard-dark.png) | ![Dashboard Warm](screenshots/dashboard-warm.png) |
+| ![Login Hell](screenshots/login-light.png) | ![Login Dunkel](screenshots/login-dark.png) | ![Login Warm](screenshots/login-warm.png) |
+| ![404 Hell](screenshots/not-found-light.png) | ![404 Dunkel](screenshots/not-found-dark.png) | ![404 Warm](screenshots/not-found-warm.png) |
+
+| Startseite | Zwischenseite |
+|------------|---------------|
+| ![Startseite](screenshots/index.png) | ![Zwischenseite](screenshots/interstitial.png) |
+
+## Technologie-Stack
+
+- **Sprache**: Rust (async mit Tokio)
+- **Web-Framework**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Datenbank**: PostgreSQL (austauschbare Speicherschicht)
+- **Metriken**: Prometheus + metrics-rs
+- **Passwort-Hashing**: Argon2
+
+> **Hinweis**: PostgreSQL wird als Standard-Speicher-Backend verwendet. Die Speicherschicht ist abstrahiert und kann durch jede Datenquelle ersetzt werden. In aktiver Entwicklung.
+
 ## Schnellstart
 
 ### Docker

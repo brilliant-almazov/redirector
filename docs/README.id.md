@@ -32,6 +32,29 @@ Berbagi URL panjang tidak praktis. Pemendek URL ada tetapi sering langsung menga
 - 🎨 **Halaman indah** - Halaman 404 dan indeks yang bersih
 - 🔑 **Banyak salt** - Dukungan rotasi salt hashid untuk migrasi
 
+## Tangkapan Layar
+
+| Terang | Gelap | Hangat |
+|--------|-------|--------|
+| ![Dasbor Terang](screenshots/dashboard-light.png) | ![Dasbor Gelap](screenshots/dashboard-dark.png) | ![Dasbor Hangat](screenshots/dashboard-warm.png) |
+| ![Login Terang](screenshots/login-light.png) | ![Login Gelap](screenshots/login-dark.png) | ![Login Hangat](screenshots/login-warm.png) |
+| ![404 Terang](screenshots/not-found-light.png) | ![404 Gelap](screenshots/not-found-dark.png) | ![404 Hangat](screenshots/not-found-warm.png) |
+
+| Halaman Utama | Halaman Antara |
+|---------------|----------------|
+| ![Indeks](screenshots/index.png) | ![Halaman Antara](screenshots/interstitial.png) |
+
+## Tumpukan Teknologi
+
+- **Bahasa**: Rust (async dengan Tokio)
+- **Framework Web**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Database**: PostgreSQL (lapisan penyimpanan yang dapat dipasang)
+- **Metrik**: Prometheus + metrics-rs
+- **Hashing Kata Sandi**: Argon2
+
+> **Catatan**: PostgreSQL digunakan sebagai backend penyimpanan default. Lapisan penyimpanan diabstraksi dan dapat diganti dengan sumber data apa pun. Saat ini dalam pengembangan aktif.
+
 ## Mulai Cepat
 
 ### Docker

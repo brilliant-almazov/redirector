@@ -32,6 +32,29 @@ Condividere URL lunghi è scomodo. Gli accorciatori di URL esistono ma spesso re
 - 🎨 **Pagine belle** - Pagine 404 e indice pulite
 - 🔑 **Salt multipli** - Supporto rotazione salt hashid per migrazione
 
+## Screenshot
+
+| Chiaro | Scuro | Caldo |
+|--------|-------|-------|
+| ![Dashboard Chiaro](screenshots/dashboard-light.png) | ![Dashboard Scuro](screenshots/dashboard-dark.png) | ![Dashboard Caldo](screenshots/dashboard-warm.png) |
+| ![Login Chiaro](screenshots/login-light.png) | ![Login Scuro](screenshots/login-dark.png) | ![Login Caldo](screenshots/login-warm.png) |
+| ![404 Chiaro](screenshots/not-found-light.png) | ![404 Scuro](screenshots/not-found-dark.png) | ![404 Caldo](screenshots/not-found-warm.png) |
+
+| Pagina Indice | Interstiziale |
+|---------------|---------------|
+| ![Indice](screenshots/index.png) | ![Interstiziale](screenshots/interstitial.png) |
+
+## Stack Tecnologico
+
+- **Linguaggio**: Rust (asincrono con Tokio)
+- **Framework Web**: Axum
+- **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Database**: PostgreSQL (livello di storage collegabile)
+- **Metriche**: Prometheus + metrics-rs
+- **Hashing Password**: Argon2
+
+> **Nota**: PostgreSQL viene utilizzato come backend di storage predefinito. Il livello di storage è astratto e può essere sostituito con qualsiasi fonte dati. Attualmente in sviluppo attivo.
+
 ## Avvio Rapido
 
 ### Docker

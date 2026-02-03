@@ -32,6 +32,29 @@ Pitkien URL-osoitteiden jakaminen on hankalaa. URL-lyhentimiä on olemassa, mutt
 - 🎨 **Kauniit sivut** - Siistit 404- ja indeksisivut
 - 🔑 **Useita suoloja** - Hashid-suolarotaatiotuki migraatiota varten
 
+## Kuvakaappaukset
+
+| Vaalea | Tumma | Lämmin |
+|--------|-------|--------|
+| ![Hallintapaneeli Vaalea](screenshots/dashboard-light.png) | ![Hallintapaneeli Tumma](screenshots/dashboard-dark.png) | ![Hallintapaneeli Lämmin](screenshots/dashboard-warm.png) |
+| ![Kirjautuminen Vaalea](screenshots/login-light.png) | ![Kirjautuminen Tumma](screenshots/login-dark.png) | ![Kirjautuminen Lämmin](screenshots/login-warm.png) |
+| ![404 Vaalea](screenshots/not-found-light.png) | ![404 Tumma](screenshots/not-found-dark.png) | ![404 Lämmin](screenshots/not-found-warm.png) |
+
+| Etusivu | Välisivu |
+|---------|----------|
+| ![Etusivu](screenshots/index.png) | ![Välisivu](screenshots/interstitial.png) |
+
+## Teknologiapino
+
+- **Kieli**: Rust (asynkroninen Tokiolla)
+- **Web-kehys**: Axum
+- **Välimuisti**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Tietokanta**: PostgreSQL (vaihdettava tallennuskerros)
+- **Mittarit**: Prometheus + metrics-rs
+- **Salasanan tiivistys**: Argon2
+
+> **Huomautus**: PostgreSQL toimii oletustallennuspalveluna. Tallennuskerros on abstrahoitu ja voidaan korvata millä tahansa tietolähteellä. Tällä hetkellä aktiivisessa kehityksessä.
+
 ## Pikaopas
 
 ### Docker

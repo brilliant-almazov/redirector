@@ -32,6 +32,18 @@
 - 🎨 **美观页面** - 简洁的404和索引页面
 - 🔑 **多盐值** - 支持hashid盐值轮换以便迁移
 
+## 截图
+
+| 浅色 | 深色 | 暖色 |
+|------|------|------|
+| ![仪表盘浅色](screenshots/dashboard-light.png) | ![仪表盘深色](screenshots/dashboard-dark.png) | ![仪表盘暖色](screenshots/dashboard-warm.png) |
+| ![登录浅色](screenshots/login-light.png) | ![登录深色](screenshots/login-dark.png) | ![登录暖色](screenshots/login-warm.png) |
+| ![404浅色](screenshots/not-found-light.png) | ![404深色](screenshots/not-found-dark.png) | ![404暖色](screenshots/not-found-warm.png) |
+
+| 首页 | 中间页 |
+|------|--------|
+| ![首页](screenshots/index.png) | ![中间页](screenshots/interstitial.png) |
+
 ## 快速开始
 
 ### Docker
@@ -131,6 +143,17 @@ admin:
 ## 指标
 
 服务在 `/metrics` 端点暴露 Prometheus 指标（需要 Basic Auth）。
+
+## 技术栈
+
+- **语言**: Rust（基于 Tokio 的异步）
+- **Web 框架**: Axum
+- **缓存**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **数据库**: PostgreSQL（可插拔存储层）
+- **指标**: Prometheus + metrics-rs
+- **密码哈希**: Argon2
+
+> **注意**: PostgreSQL 作为默认存储后端。存储层是抽象的，可以替换为任何数据源。项目正在积极开发中。
 
 ## 许可证
 

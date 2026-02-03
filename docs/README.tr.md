@@ -32,6 +32,29 @@ Uzun URL'leri paylaşmak zahmetlidir. URL kısaltıcılar mevcut ancak çoğu za
 - 🎨 **Güzel sayfalar** - Temiz 404 ve dizin sayfaları
 - 🔑 **Çoklu tuzlar** - Geçiş için hashid tuz rotasyonu desteği
 
+## Ekran Görüntüleri
+
+| Açık | Koyu | Sıcak |
+|------|------|-------|
+| ![Dashboard Açık](screenshots/dashboard-light.png) | ![Dashboard Koyu](screenshots/dashboard-dark.png) | ![Dashboard Sıcak](screenshots/dashboard-warm.png) |
+| ![Giriş Açık](screenshots/login-light.png) | ![Giriş Koyu](screenshots/login-dark.png) | ![Giriş Sıcak](screenshots/login-warm.png) |
+| ![404 Açık](screenshots/not-found-light.png) | ![404 Koyu](screenshots/not-found-dark.png) | ![404 Sıcak](screenshots/not-found-warm.png) |
+
+| Ana Sayfa | Ara Sayfa |
+|-----------|-----------|
+| ![Ana Sayfa](screenshots/index.png) | ![Ara Sayfa](screenshots/interstitial.png) |
+
+## Teknoloji Yığını
+
+- **Dil**: Rust (Tokio ile async)
+- **Web Framework**: Axum
+- **Önbellek**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB)
+- **Veritabanı**: PostgreSQL (takılabilir depolama katmanı)
+- **Metrikler**: Prometheus + metrics-rs
+- **Şifre Hashleme**: Argon2
+
+> **Not**: PostgreSQL varsayılan depolama arka ucu olarak kullanılır. Depolama katmanı soyutlanmıştır ve herhangi bir veri kaynağı ile değiştirilebilir. Şu anda aktif geliştirme aşamasındadır.
+
 ## Hızlı Başlangıç
 
 ### Docker
