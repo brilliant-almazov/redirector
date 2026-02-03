@@ -203,6 +203,48 @@ CREATE TABLE dictionary.urls (
 | `GET /r/{hashid}` | Нет | Редирект с промежуточной страницей |
 | `GET /health` | Нет | Проверка здоровья |
 | `GET /metrics` | Basic | Prometheus метрики |
+| `GET /admin` | Session | Вход в админ-панель |
+| `GET /admin/dashboard` | Session | Админ-панель |
+
+## Админ-панель
+
+Сервис включает опциональную админ-панель для мониторинга метрик в реальном времени.
+
+### Настройка
+
+1. **Сгенерируйте хэш пароля:**
+
+```bash
+# Используя Rust
+cargo run --bin hash_password
+
+# Или используя Python (pip install argon2-cffi)
+./scripts/hash_password.sh
+```
+
+2. **Добавьте в config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # из шага 1
+```
+
+3. **Откройте панель:**
+
+Перейдите на `http://localhost:8080/admin` и войдите с вашими учётными данными.
+
+### Возможности
+
+- Графики RPS и задержки в реальном времени
+- Системные метрики (CPU, память, uptime)
+- Мониторинг cache hit rate
+- Список последних редиректов
+- Симуляция нагрузки для тестирования
+- Три темы: Светлая, Тёмная, Тёплая
 
 ## Метрики
 

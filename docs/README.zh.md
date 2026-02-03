@@ -77,6 +77,61 @@ services:
 6. 显示带倒计时的过渡页面
 7. 倒计时结束后，重定向到目标URL
 
+## 端点
+
+| 端点 | 认证 | 描述 |
+|------|------|------|
+| `GET /` | 无 | 首页 |
+| `GET /r/{hashid}` | 无 | 带过渡页面的重定向 |
+| `GET /health` | 无 | 健康检查 |
+| `GET /metrics` | Basic | Prometheus指标 |
+| `GET /admin` | Session | 管理面板登录 |
+| `GET /admin/dashboard` | Session | 管理面板 |
+
+## 管理面板
+
+服务包含可选的管理面板，用于实时监控指标。
+
+### 设置
+
+1. **生成密码哈希：**
+
+```bash
+# 使用 Rust
+cargo run --bin hash_password
+
+# 或使用 Python (pip install argon2-cffi)
+./scripts/hash_password.sh
+```
+
+2. **添加到 config.yaml：**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # 来自步骤1
+```
+
+3. **访问面板：**
+
+打开 `http://localhost:8080/admin` 并使用您的凭据登录。
+
+### 功能
+
+- 实时 RPS 和延迟图表
+- 系统指标（CPU、内存、运行时间）
+- 缓存命中率监控
+- 最近重定向列表
+- 负载模拟测试
+- 三种主题：浅色、深色、暖色
+
+## 指标
+
+服务在 `/metrics` 端点暴露 Prometheus 指标（需要 Basic Auth）。
+
 ## 许可证
 
 MIT许可证 - 详见 [LICENSE](../LICENSE)。

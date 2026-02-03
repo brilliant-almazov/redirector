@@ -42,6 +42,55 @@ docker run -p 8080:8080 \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
+## Päätepisteet
+
+| Päätepiste | Autentikointi | Kuvaus |
+|------------|---------------|--------|
+| `GET /` | Ei | Etusivu |
+| `GET /r/{hashid}` | Ei | Uudelleenohjaus välisivun kanssa |
+| `GET /health` | Ei | Terveystarkistus |
+| `GET /metrics` | Basic | Prometheus-mittarit |
+| `GET /admin` | Istunto | Hallintapaneelin kirjautuminen |
+| `GET /admin/dashboard` | Istunto | Hallintapaneeli |
+
+## Hallintapaneeli
+
+Palvelu sisältää valinnaisen hallintapaneelin reaaliaikaisten mittareiden seurantaan.
+
+### Asennus
+
+1. **Luo salasanan tiiviste:**
+
+```bash
+cargo run --bin hash_password
+# Syötä salasana pyydettäessä, tai:
+cargo run --bin hash_password -- "salasanasi"
+```
+
+2. **Lisää config.yaml-tiedostoon:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # vaiheesta 1
+```
+
+3. **Avaa hallintapaneeli:**
+
+Avaa `http://localhost:8080/admin` ja kirjaudu tunnuksillasi.
+
+### Ominaisuudet
+
+- Reaaliaikaiset RPS- ja viivekaaviot
+- Järjestelmämittarit (CPU, muisti, käyttöaika)
+- Välimuistin osumaprosentin seuranta
+- Viimeaikaisten uudelleenohjausten lista
+- Kuormitussimulaatio testaukseen
+- Kolme teemaa: Vaalea, Tumma, Lämmin
+
 ## Miten Se Toimii
 
 1. Käyttäjä vierailee `/r/{hashid}` (esim. `/r/abc123`)

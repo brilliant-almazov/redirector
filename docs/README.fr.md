@@ -77,6 +77,57 @@ services:
 6. Affiche la page interstitielle avec compte à rebours
 7. Après le compte à rebours, redirige vers l'URL cible
 
+## Endpoints
+
+| Endpoint | Auth | Description |
+|----------|------|-------------|
+| `GET /` | Non | Page d'accueil |
+| `GET /r/{hashid}` | Non | Redirection avec page interstitielle |
+| `GET /health` | Non | Vérification de santé |
+| `GET /metrics` | Basic | Métriques Prometheus |
+| `GET /admin` | Session | Connexion au panneau d'administration |
+| `GET /admin/dashboard` | Session | Panneau d'administration |
+
+## Panneau d'Administration
+
+Le service comprend un panneau d'administration optionnel pour surveiller les métriques en temps réel.
+
+### Configuration
+
+1. **Générer le hash du mot de passe :**
+
+```bash
+# Avec Rust
+cargo run --bin hash_password
+
+# Ou avec Python (pip install argon2-cffi)
+./scripts/hash_password.sh
+```
+
+2. **Ajouter à config.yaml :**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # de l'étape 1
+```
+
+3. **Accéder au panneau :**
+
+Ouvrez `http://localhost:8080/admin` et connectez-vous avec vos identifiants.
+
+### Fonctionnalités
+
+- Graphiques RPS et latence en temps réel
+- Métriques système (CPU, mémoire, uptime)
+- Surveillance du taux de succès du cache
+- Liste des redirections récentes
+- Simulation de charge pour les tests
+- Trois thèmes : Clair, Sombre, Chaud
+
 ## Licence
 
 Licence MIT - voir [LICENSE](../LICENSE) pour les détails.
