@@ -203,6 +203,46 @@ CREATE TABLE dictionary.urls (
 | `GET /r/{hashid}` | No | Redirect with interstitial |
 | `GET /health` | No | Health check |
 | `GET /metrics` | Basic | Prometheus metrics |
+| `GET /admin` | Session | Admin dashboard login |
+| `GET /admin/dashboard` | Session | Admin dashboard |
+
+## Admin Dashboard
+
+The service includes an optional admin dashboard for monitoring live metrics.
+
+### Setup
+
+1. **Generate password hash:**
+
+```bash
+cargo run --bin hash_password
+# Enter password when prompted, or:
+cargo run --bin hash_password -- "your-password"
+```
+
+2. **Add to config.yaml:**
+
+```yaml
+admin:
+  enabled: true
+  session_ttl_hours: 24
+  users:
+    - username: admin
+      password_hash: "$argon2id$v=19$m=19456,t=2,p=1$..."  # from step 1
+```
+
+3. **Access dashboard:**
+
+Open `http://localhost:8080/admin` and login with your credentials.
+
+### Features
+
+- Real-time RPS and latency charts
+- System metrics (CPU, memory, uptime)
+- Cache hit rate monitoring
+- Recent redirects list
+- Load simulation for testing
+- Three themes: Light, Dark, Warm
 
 ## Metrics
 
