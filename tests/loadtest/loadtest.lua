@@ -10,7 +10,7 @@ local file = io.open(hashids_file, "r")
 if file then
     for line in file:lines() do
         if line ~= "" then
-            table.insert(urls, "/" .. line)
+            table.insert(urls, "/r/" .. line)
         end
     end
     file:close()
@@ -18,7 +18,7 @@ if file then
 else
     print("Warning: Could not open " .. hashids_file)
     -- Fallback to a single test URL
-    table.insert(urls, "/test")
+    table.insert(urls, "/r/test")
 end
 
 local counter = 1

@@ -1,6 +1,6 @@
 # redirector
 
-[English](../README.md) | **Русский**
+[English](../README.md) | **Русский** | [中文](README.zh.md) | [हिंदी](README.hi.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Polski](README.pl.md) | [Nederlands](README.nl.md) | [Italiano](README.it.md) | [Türkçe](README.tr.md) | [Українська](README.uk.md) | [Bahasa Indonesia](README.id.md) | [Tiếng Việt](README.vi.md) | [Svenska](README.sv.md) | [Suomi](README.fi.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
@@ -34,7 +34,7 @@
 
 ## Возможности
 
-- 🔗 **Hashid URL** - Короткие, уникальные, непоследовательные ID (например, `/abc123`)
+- 🔗 **Hashid URL** - Короткие, уникальные, непоследовательные ID (например, `/r/abc123`)
 - ⏱️ **Промежуточная страница** - Обратный отсчёт показывает целевой URL перед редиректом
 - ⚡ **Кэширование Redis** - Быстрые запросы с настраиваемым TTL
 - 🛡️ **Circuit breaker** - Защита БД от каскадных сбоев
@@ -200,7 +200,7 @@ CREATE TABLE dictionary.urls (
 | Эндпоинт | Авторизация | Описание |
 |----------|-------------|----------|
 | `GET /` | Нет | Главная страница |
-| `GET /{hashid}` | Нет | Редирект с промежуточной страницей |
+| `GET /r/{hashid}` | Нет | Редирект с промежуточной страницей |
 | `GET /health` | Нет | Проверка здоровья |
 | `GET /metrics` | Basic | Prometheus метрики |
 
@@ -243,7 +243,7 @@ circuit_breaker_rejections_total 0
 
 ## Как это работает
 
-1. Пользователь посещает `/{hashid}` (например, `/abc123`)
+1. Пользователь посещает `/r/{hashid}` (например, `/r/abc123`)
 2. Сервис декодирует hashid в числовой ID
 3. Проверяет кэш Redis на наличие URL
 4. При промахе кэша — запрос к PostgreSQL

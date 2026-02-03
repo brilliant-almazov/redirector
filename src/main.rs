@@ -84,7 +84,7 @@ async fn main() -> anyhow::Result<()> {
     // Build main router
     let app = Router::new()
         .route("/", get(index_handler))
-        .route("/{hashid}", get(redirect_handler))
+        .route("/r/{hashid}", get(redirect_handler))
         .merge(metrics_router)
         .with_state(redirect_state)
         .layer(axum_middleware::from_fn(rate_limit_middleware))

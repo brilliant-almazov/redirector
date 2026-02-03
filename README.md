@@ -1,6 +1,6 @@
 # redirector
 
-**English** | [Русский](docs/README.ru.md)
+**English** | [Русский](docs/README.ru.md) | [中文](docs/README.zh.md) | [हिंदी](docs/README.hi.md) | [Español](docs/README.es.md) | [Português](docs/README.pt.md) | [Français](docs/README.fr.md) | [Deutsch](docs/README.de.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Polski](docs/README.pl.md) | [Nederlands](docs/README.nl.md) | [Italiano](docs/README.it.md) | [Türkçe](docs/README.tr.md) | [Українська](docs/README.uk.md) | [Bahasa Indonesia](docs/README.id.md) | [Tiếng Việt](docs/README.vi.md) | [Svenska](docs/README.sv.md) | [Suomi](docs/README.fi.md)
 
 [![CI](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml/badge.svg)](https://github.com/brilliant-almazov/redirector/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/brilliant-almazov/5f930cca5d181b300d81d45850ddaf67/raw/coverage.json)](https://github.com/brilliant-almazov/redirector)
@@ -34,7 +34,7 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 
 ## Features
 
-- 🔗 **Hashid URLs** - Short, unique, non-sequential IDs (e.g., `/abc123`)
+- 🔗 **Hashid URLs** - Short, unique, non-sequential IDs (e.g., `/r/abc123`)
 - ⏱️ **Interstitial page** - Countdown timer shows target URL before redirect
 - ⚡ **Redis caching** - Fast lookups with configurable TTL
 - 🛡️ **Circuit breaker** - Database protection against cascading failures
@@ -200,7 +200,7 @@ CREATE TABLE dictionary.urls (
 | Endpoint | Auth | Description |
 |----------|------|-------------|
 | `GET /` | No | Index page |
-| `GET /{hashid}` | No | Redirect with interstitial |
+| `GET /r/{hashid}` | No | Redirect with interstitial |
 | `GET /health` | No | Health check |
 | `GET /metrics` | Basic | Prometheus metrics |
 
@@ -249,7 +249,7 @@ rate_limit_exceeded_total 0
 
 ## How It Works
 
-1. User visits `/{hashid}` (e.g., `/abc123`)
+1. User visits `/r/{hashid}` (e.g., `/r/abc123`)
 2. Service decodes hashid to numeric ID
 3. Checks Redis cache for URL
 4. On cache miss, queries PostgreSQL
