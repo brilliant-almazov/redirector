@@ -41,16 +41,13 @@ Old partitions can be detached/dropped without vacuum overhead.
 ```sql
 CREATE TABLE analytics.user_agents (
     id      SERIAL PRIMARY KEY,
-    hash    INT NOT NULL UNIQUE,
-    raw     TEXT NOT NULL
+    raw     TEXT NOT NULL UNIQUE
 );
-
-CREATE INDEX idx_ua_hash ON analytics.user_agents (hash);
 ```
 
-- Hash: CRC32 of raw User-Agent string for fast lookup
-- Avoids storing duplicate 200+ byte UA strings per click
-- In-app: `HashMap<u32, i32>` cache (hash → id), write-through to DB
+- Unique index on `raw` — PG handles deduplication natively
+- At realistic volumes (thousands of unique UAs) index size is negligible
+- In-app: `HashMap<String, i32>` cache (UA string → id), write-through to DB
 
 ## Data Flow
 
@@ -108,18 +105,17 @@ analytics::record_click(url_id, &request).await;
 
 ```rust
 struct UaCache {
-    cache: HashMap<u32, i32>,  // crc32 hash → DB id
+    cache: HashMap<String, i32>,  // UA string → DB id
 }
 
 impl UaCache {
-    fn get_or_insert(&mut self, ua: &str, db: &PgPool) -> i32 {
-        let hash = crc32fast::hash(ua.as_bytes()) as i32;
-        if let Some(&id) = self.cache.get(&hash) {
+    async fn get_or_insert(&mut self, ua: &str, db: &PgPool) -> i32 {
+        if let Some(&id) = self.cache.get(ua) {
             return id;
         }
-        // INSERT ... ON CONFLICT DO NOTHING RETURNING id
-        let id = insert_ua(db, hash, ua).await;
-        self.cache.insert(hash, id);
+        // INSERT ... ON CONFLICT (raw) DO NOTHING RETURNING id
+        let id = insert_ua(db, ua).await;
+        self.cache.insert(ua.to_string(), id);
         id
     }
 }
