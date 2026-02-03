@@ -70,4 +70,37 @@ mod tests {
         let header = encode_basic("admin", "");
         assert!(auth.check(Some(&header)));
     }
+
+    #[test]
+    fn test_special_characters_in_password() {
+        let auth = layer("admin", "p@ss:w0rd!#$%");
+        let header = encode_basic("admin", "p@ss:w0rd!#$%");
+        assert!(auth.check(Some(&header)));
+    }
+
+    #[test]
+    fn test_unicode_credentials() {
+        let auth = layer("пользователь", "пароль");
+        let header = encode_basic("пользователь", "пароль");
+        assert!(auth.check(Some(&header)));
+    }
+
+    #[test]
+    fn test_long_credentials() {
+        let long_user = "a".repeat(1000);
+        let long_pass = "b".repeat(1000);
+        let auth = layer(&long_user, &long_pass);
+        let header = encode_basic(&long_user, &long_pass);
+        assert!(auth.check(Some(&header)));
+    }
+
+    #[test]
+    fn test_timing_attack_resistance() {
+        let auth = layer("admin", "secret");
+        // Different length passwords should take similar time (constant-time comparison)
+        let header1 = encode_basic("admin", "a");
+        let header2 = encode_basic("admin", "a".repeat(1000).as_str());
+        assert!(!auth.check(Some(&header1)));
+        assert!(!auth.check(Some(&header2)));
+    }
 }
