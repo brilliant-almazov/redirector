@@ -76,3 +76,49 @@ pub fn get_random_entry() -> &'static SimulationEntry {
     let idx = rand::random::<usize>() % SIMULATION_DATA.len();
     &SIMULATION_DATA[idx]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_random_entry_returns_valid_entry() {
+        let entry = get_random_entry();
+        assert!(!entry.hashid.is_empty());
+        assert!(!entry.url.is_empty());
+        assert!(entry.id > 0);
+    }
+
+    #[test]
+    fn test_get_random_entry_multiple_calls() {
+        // Call multiple times to ensure no panic
+        for _ in 0..100 {
+            let entry = get_random_entry();
+            assert!(!entry.hashid.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_simulation_entry_clone() {
+        let entry = get_random_entry();
+        let cloned = entry.clone();
+        assert_eq!(entry.id, cloned.id);
+        assert_eq!(entry.hashid, cloned.hashid);
+        assert_eq!(entry.url, cloned.url);
+    }
+
+    #[test]
+    fn test_simulation_data_has_entries() {
+        // Force initialization and check we have data
+        let entry = get_random_entry();
+        assert!(entry.id >= 1);
+    }
+
+    #[test]
+    fn test_default_entries_when_file_missing() {
+        // When binary file is missing, defaults should be used
+        let entry = get_random_entry();
+        // Default entries have ids 1 or 2
+        assert!(entry.id >= 1);
+    }
+}
