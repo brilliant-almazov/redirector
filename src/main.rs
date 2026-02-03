@@ -1,4 +1,6 @@
-use axum::{extract::Extension, middleware as axum_middleware, response::Redirect, routing::get, Router};
+use axum::{
+    extract::Extension, middleware as axum_middleware, response::Redirect, routing::get, Router,
+};
 use metrics_exporter_prometheus::PrometheusBuilder;
 use redirector::{
     admin::{admin_routes, AdminState},

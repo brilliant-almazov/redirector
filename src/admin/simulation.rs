@@ -65,7 +65,10 @@ fn load_simulation_data(path: &str) -> Result<Vec<SimulationEntry>, std::io::Err
         entries.push(SimulationEntry { id, hashid, url });
     }
 
-    tracing::info!("Loaded {} simulation entries from binary file", entries.len());
+    tracing::info!(
+        "Loaded {} simulation entries from binary file",
+        entries.len()
+    );
     Ok(entries)
 }
 
