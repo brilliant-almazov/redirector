@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
-use parking_lot::RwLock;
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::RwLock;
 use std::time::Instant;
 
 static START_TIME: Lazy<Instant> = Lazy::new(Instant::now);
@@ -112,7 +112,7 @@ pub fn record_recent_redirect(hashid: String, url: String) {
             .unwrap_or_default()
             .as_secs(),
     };
-    let mut recent = RECENT_REDIRECTS.write();
+    let mut recent = RECENT_REDIRECTS.write().unwrap();
     recent.push_front(entry);
     while recent.len() > MAX_RECENT {
         recent.pop_back();
@@ -121,7 +121,7 @@ pub fn record_recent_redirect(hashid: String, url: String) {
 
 /// Get recent redirects
 pub fn get_recent_redirects() -> Vec<RecentRedirect> {
-    RECENT_REDIRECTS.read().iter().cloned().collect()
+    RECENT_REDIRECTS.read().unwrap().iter().cloned().collect()
 }
 
 #[cfg(test)]

@@ -1,8 +1,8 @@
 use crate::config::RedisConfig;
 use crate::services::traits::Cache;
 use async_trait::async_trait;
+use deadpool_redis::redis::AsyncCommands;
 use deadpool_redis::{Config as PoolConfig, Pool, Runtime};
-use redis::AsyncCommands;
 use std::time::Instant;
 
 pub struct CacheService {
