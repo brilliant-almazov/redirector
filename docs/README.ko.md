@@ -111,6 +111,18 @@ services:
     image: redis:7-alpine
 ```
 
+#### Base64 설정
+
+설정 파일 마운트가 불가능한 환경(예: Railway, 서버리스):
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Run with base64 config
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
+
 ## 작동 방식
 
 1. 사용자가 `/r/{hashid}` 방문 (예: `/r/abc123`)
