@@ -5,8 +5,8 @@ RUN apk add --no-cache musl-dev pkgconfig openssl-dev
 
 WORKDIR /app
 
-# Copy manifests
-COPY Cargo.toml Cargo.lock ./
+# Copy manifests and build script
+COPY Cargo.toml Cargo.lock build.rs ./
 
 # Create dummy main.rs to build dependencies
 RUN mkdir src && \
