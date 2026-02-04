@@ -1,4 +1,4 @@
-name: CI
+name: 🔄 CI
 
 on:
   push:
@@ -21,7 +21,7 @@ env:
 
 jobs:
   ci:
-    name: CI
+    name: 🦀 Lint → Test → Build → Benchmark
     runs-on: ubuntu-latest
 
     services:
