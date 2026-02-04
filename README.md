@@ -203,7 +203,49 @@ rate_limit:
 
 All config values support `${VAR}` substitution. Additionally:
 
-- `CONFIG_FILE` - Path to config file (default: `config.yaml`)
+- `CONFIG_PATH` - Path to config file (default: `config.yaml`)
+- `CONFIG_BASE64` - Base64-encoded config YAML (takes priority over `CONFIG_PATH`)
+- `REDIRECTOR_*` - Override any config value (e.g. `REDIRECTOR_SERVER__PORT=9090`)
+
+#### Base64 Configuration
+
+For environments where mounting config files is not possible (e.g. Railway, serverless), pass the entire config as a base64-encoded string. `CONFIG_BASE64` takes priority over `CONFIG_PATH`.
+
+**Encode your config:**
+
+```bash
+cat config.yaml | base64
+```
+
+**Without Docker:**
+
+```bash
+export CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..."
+./redirector
+```
+
+**Docker:**
+
+```bash
+docker run -e CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**Docker Compose:**
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    environment:
+      CONFIG_BASE64: "c2VydmVyOgogIGhvc3Q6IC..."
+    ports:
+      - "8080:8080"
+```
+
+**Railway:**
+
+Set `CONFIG_BASE64` in the service variables. No config file or volume mount needed.
 
 ## Database
 

@@ -203,7 +203,21 @@ rate_limit:
 
 Все значения конфигурации поддерживают подстановку `${VAR}`. Дополнительно:
 
-- `CONFIG_FILE` - Путь к файлу конфигурации (по умолчанию: `config.yaml`)
+- `CONFIG_PATH` - Путь к файлу конфигурации (по умолчанию: `config.yaml`)
+- `CONFIG_BASE64` - Конфигурация в формате Base64 (приоритет над `CONFIG_PATH`)
+- `REDIRECTOR_*` - Переопределение любого значения конфигурации (например, `REDIRECTOR_SERVER__PORT=9090`)
+
+#### Конфигурация через Base64
+
+Для окружений, где монтирование файлов невозможно (Railway, serverless), конфигурация передаётся через Base64:
+
+```bash
+# Кодирование
+cat config.yaml | base64
+
+# Использование
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
 
 ## База данных
 

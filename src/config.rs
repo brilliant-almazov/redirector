@@ -1,3 +1,4 @@
+use base64::Engine;
 use serde::Deserialize;
 use std::path::Path;
 
@@ -273,6 +274,23 @@ impl Config {
     pub fn load<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let settings = config::Config::builder()
             .add_source(config::File::from(path.as_ref()))
+            .add_source(
+                config::Environment::default()
+                    .separator("__")
+                    .prefix("REDIRECTOR"),
+            )
+            .build()?;
+
+        let config: Config = settings.try_deserialize()?;
+        Ok(config)
+    }
+
+    pub fn load_from_base64(encoded: &str) -> anyhow::Result<Self> {
+        let bytes = base64::engine::general_purpose::STANDARD.decode(encoded)?;
+        let yaml = String::from_utf8(bytes)?;
+
+        let settings = config::Config::builder()
+            .add_source(config::File::from_str(&yaml, config::FileFormat::Yaml))
             .add_source(
                 config::Environment::default()
                     .separator("__")
