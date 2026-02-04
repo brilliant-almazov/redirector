@@ -113,7 +113,7 @@ services:
 
 #### Base64-konfiguraatio
 
-Ympäristöihin, joissa konfiguraatiotiedostojen liittäminen ei ole mahdollista (esim. Railway, serverless):
+Ympäristöihin, joissa konfiguraatiotiedostojen liittäminen ei ole mahdollista (esim. serverless, PaaS):
 
 ```bash
 # Encode

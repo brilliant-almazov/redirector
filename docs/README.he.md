@@ -113,7 +113,7 @@ services:
 
 #### הגדרת Base64
 
-עבור סביבות שבהן אין אפשרות לעגן קבצי תצורה (למשל Railway, serverless):
+עבור סביבות שבהן אין אפשרות לעגן קבצי תצורה (למשל serverless, PaaS):
 
 ```bash
 # Encode
