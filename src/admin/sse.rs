@@ -75,7 +75,8 @@ pub async fn events_handler(
             let system = SystemMetrics {
                 uptime_secs: crate::metrics::uptime_secs(),
                 cpu_percent: sys.global_cpu_usage(),
-                memory_mb: sys.used_memory() / 1024 / 1024,
+                memory_mb: get_container_memory_mb()
+                    .unwrap_or_else(|| sys.used_memory() / 1024 / 1024),
             };
 
             // Get app metrics from prometheus
@@ -149,6 +150,18 @@ fn calculate_rps(
     };
 
     (total, rps, Some((total, now)))
+}
+
+/// Read container memory usage from cgroup v2 (Docker/K8s/Railway)
+fn get_container_memory_mb() -> Option<u64> {
+    std::fs::read_to_string("/sys/fs/cgroup/memory.current")
+        .ok()
+        .and_then(|s| parse_cgroup_memory_mb(s.trim()))
+}
+
+/// Parse cgroup memory value (bytes) into MB
+pub(crate) fn parse_cgroup_memory_mb(raw: &str) -> Option<u64> {
+    raw.parse::<u64>().ok().map(|bytes| bytes / 1024 / 1024)
 }
 
 // Get metrics from global counters
