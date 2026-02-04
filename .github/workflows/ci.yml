@@ -51,12 +51,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: 🦀 Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt, llvm-tools-preview
 
-      - name: Cache cargo
+      - name: 📦 Cache cargo
         uses: actions/cache@v4
         with:
           path: |
@@ -68,26 +68,24 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Install cargo-llvm-cov
+      - name: 📦 Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Install tools
+      - name: 🔧 Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y wrk redis-tools
 
-      # --- Lint ---
-      - name: Check formatting
+      - name: 🎨 Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Clippy
+      - name: 📎 Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      # --- Test & Coverage ---
-      - name: Run tests with coverage
+      - name: 🧪 Run tests with coverage
         run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
-      - name: Upload coverage to Codecov
+      - name: 📊 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: lcov.info
@@ -95,13 +93,13 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Extract coverage percentage
+      - name: 📊 Extract coverage percentage
         id: coverage
         run: |
           COVERAGE=$(cargo llvm-cov --all-features --workspace --json | jq '.data[0].totals.lines.percent' | cut -d. -f1)
           echo "percent=$COVERAGE" >> $GITHUB_OUTPUT
 
-      - name: Update coverage badge
+      - name: 📊 Update coverage badge
         if: github.ref == 'refs/heads/master'
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
@@ -114,12 +112,10 @@ jobs:
           maxColorRange: 100
           minColorRange: 0
 
-      # --- Build ---
-      - name: Build release
+      - name: 🔨 Build release
         run: cargo build --release
 
-      # --- Benchmark ---
-      - name: Setup database
+      - name: 🗄️ Setup database
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -d test -c "
             CREATE SCHEMA IF NOT EXISTS dictionary;
@@ -127,13 +123,13 @@ jobs:
             INSERT INTO dictionary.urls (id, name) SELECT i, 'https://example.com/page' || i FROM generate_series(1, 10000) i;
           "
 
-      - name: Setup Redis cache
+      - name: 🗄️ Setup Redis cache
         run: |
           for i in $(seq 1 1000); do
             redis-cli SET "url:$i" "https://example.com/page$i" EX 3600
           done
 
-      - name: Create config
+      - name: ⚙️ Create config
         run: |
           cat > config.yaml << 'EOF'
           server:
@@ -171,19 +167,19 @@ jobs:
             burst: 1000
           EOF
 
-      - name: Start service
+      - name: 🚀 Start service
         run: |
           chmod +x ./target/release/redirector
           ./target/release/redirector &
           sleep 3
 
-      - name: Generate test hashids
+      - name: 🔗 Generate test hashids
         run: |
           cd tests/loadtest
           cat sample_hashids_100.txt > cache_test.txt
           head -1000 sample_hashids_10000.txt > mixed_test.txt
 
-      - name: Run cache hit benchmark
+      - name: 🏎️ Run cache hit benchmark
         id: cache_bench
         run: |
           cd tests/loadtest
@@ -196,7 +192,7 @@ jobs:
           echo "cache_rps=$RPS" >> $GITHUB_OUTPUT
           echo "cache_latency=$LATENCY" >> $GITHUB_OUTPUT
 
-      - name: Run mixed load benchmark
+      - name: 🏎️ Run mixed load benchmark
         id: mixed_bench
         run: |
           cd tests/loadtest
@@ -206,7 +202,7 @@ jobs:
           RPS=$(echo "$RESULT" | grep "Requests/sec" | awk '{print $2}' | cut -d. -f1)
           echo "mixed_rps=$RPS" >> $GITHUB_OUTPUT
 
-      - name: Get metrics
+      - name: 📈 Get metrics
         id: metrics
         run: |
           METRICS=$(curl -s -u prometheus:secret http://localhost:8080/metrics)
@@ -228,7 +224,7 @@ jobs:
 
           echo "cache_hit_rate=$RATE" >> $GITHUB_OUTPUT
 
-      - name: Update performance badges
+      - name: 🏅 Update performance badges
         if: github.ref == 'refs/heads/master'
         run: |
           curl -X PATCH \
@@ -249,7 +245,7 @@ jobs:
             https://api.github.com/gists/${{ secrets.BADGE_GIST_ID }} \
             -d "{\"files\":{\"cache_hit_rate.json\":{\"content\":\"{\\\"schemaVersion\\\":1,\\\"label\\\":\\\"cache hit\\\",\\\"message\\\":\\\"${{ steps.metrics.outputs.cache_hit_rate }}%\\\",\\\"color\\\":\\\"brightgreen\\\"}\"}}}"
 
-      - name: Print benchmark summary
+      - name: 📋 Print benchmark summary
         run: |
           echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
