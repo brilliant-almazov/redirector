@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.85-alpine AS builder
+FROM rust:1.88-alpine AS builder
 
 RUN apk add --no-cache musl-dev pkgconfig openssl-dev
 
@@ -20,6 +20,7 @@ RUN cargo build --release --bin redirector && \
 # Copy source code
 COPY src ./src
 COPY templates ./templates
+COPY static ./static
 
 # Build the application
 RUN touch src/main.rs src/lib.rs && \
