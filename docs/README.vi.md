@@ -113,7 +113,7 @@ services:
 
 #### Cấu hình Base64
 
-Cho các môi trường không thể mount file cấu hình (ví dụ Railway, serverless):
+Cho các môi trường không thể mount file cấu hình (ví dụ serverless, PaaS):
 
 ```bash
 # Encode

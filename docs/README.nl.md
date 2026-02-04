@@ -113,7 +113,7 @@ services:
 
 #### Base64-configuratie
 
-Voor omgevingen waar het mounten van configuratiebestanden niet mogelijk is (bijv. Railway, serverless):
+Voor omgevingen waar het mounten van configuratiebestanden niet mogelijk is (bijv. serverless, PaaS):
 
 ```bash
 # Encode

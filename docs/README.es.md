@@ -113,7 +113,7 @@ services:
 
 #### Configuración Base64
 
-Para entornos donde no es posible montar archivos de configuración (ej. Railway, serverless):
+Para entornos donde no es posible montar archivos de configuración (ej. serverless, PaaS):
 
 ```bash
 # Encode

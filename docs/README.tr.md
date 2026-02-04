@@ -113,7 +113,7 @@ services:
 
 #### Base64 Yapılandırması
 
-Yapılandırma dosyalarının bağlanmasının mümkün olmadığı ortamlar için (örn. Railway, serverless):
+Yapılandırma dosyalarının bağlanmasının mümkün olmadığı ortamlar için (örn. serverless, PaaS):
 
 ```bash
 # Encode

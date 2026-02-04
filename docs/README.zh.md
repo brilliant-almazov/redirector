@@ -113,7 +113,7 @@ services:
 
 #### Base64 配置
 
-适用于无法挂载配置文件的环境（如 Railway、Serverless）：
+适用于无法挂载配置文件的环境（如 Serverless、PaaS）：
 
 ```bash
 # Encode

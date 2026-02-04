@@ -209,7 +209,7 @@ All config values support `${VAR}` substitution. Additionally:
 
 #### Base64 Configuration
 
-For environments where mounting config files is not possible (e.g. Railway, serverless), pass the entire config as a base64-encoded string. `CONFIG_BASE64` takes priority over `CONFIG_PATH`.
+For environments where mounting config files is not possible (e.g. serverless, PaaS), pass the entire config as a base64-encoded string. `CONFIG_BASE64` takes priority over `CONFIG_PATH`.
 
 **Encode your config:**
 
@@ -242,10 +242,6 @@ services:
     ports:
       - "8080:8080"
 ```
-
-**Railway:**
-
-Set `CONFIG_BASE64` in the service variables. No config file or volume mount needed.
 
 ## Database
 
