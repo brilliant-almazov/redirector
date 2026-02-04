@@ -201,23 +201,162 @@ rate_limit:
 
 ### Переменные окружения
 
-Все значения конфигурации поддерживают подстановку `${VAR}`. Дополнительно:
+Есть **три способа** конфигурации сервиса, в порядке приоритета (от высшего к низшему):
 
-- `CONFIG_PATH` - Путь к файлу конфигурации (по умолчанию: `config.yaml`)
-- `CONFIG_BASE64` - Конфигурация в формате Base64 (приоритет над `CONFIG_PATH`)
-- `REDIRECTOR_*` - Переопределение любого значения конфигурации (например, `REDIRECTOR_SERVER__PORT=9090`)
+| Приоритет | Способ | Когда использовать |
+|-----------|--------|-------------------|
+| 1 | Переменные `REDIRECTOR__*` | Переопределение отдельных значений |
+| 2 | Стандартные PaaS-переменные (`DATABASE_URL` и др.) | PaaS-платформы (Railway, Heroku, Render) |
+| 3 | Конфигурационный файл (`config.yaml` или `CONFIG_BASE64`) | Базовая конфигурация |
+
+#### Служебные переменные
+
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `CONFIG_PATH` | `config.yaml` | Путь к YAML-конфигурации |
+| `CONFIG_BASE64` | — | YAML-конфигурация в Base64 (приоритет над `CONFIG_PATH`) |
+
+#### Стандартные PaaS-переменные
+
+Автоматически распознаются и применяются. Большинство PaaS-платформ устанавливают их за вас:
+
+| Переменная | Путь в конфиге | Пример |
+|------------|---------------|--------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+
+> **Правило приоритета**: если установлены и `DATABASE_URL`, и `REDIRECTOR__DATABASE__URL`, то побеждает версия с префиксом `REDIRECTOR__`.
+
+#### Переменные с префиксом (`REDIRECTOR__*`)
+
+Любое значение конфигурации можно переопределить через переменные с префиксом `REDIRECTOR__` и разделителем `__` (двойное подчёркивание) для вложенности:
+
+```
+Путь в YAML              →  Переменная окружения
+─────────────────────────────────────────────────────
+server.port               →  REDIRECTOR__SERVER__PORT
+server.host               →  REDIRECTOR__SERVER__HOST
+database.url              →  REDIRECTOR__DATABASE__URL
+database.pool.max_connections → REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS
+redis.url                 →  REDIRECTOR__REDIS__URL
+redis.cache_ttl_seconds   →  REDIRECTOR__REDIS__CACHE_TTL_SECONDS
+interstitial.delay_seconds → REDIRECTOR__INTERSTITIAL__DELAY_SECONDS
+metrics.basic_auth.username → REDIRECTOR__METRICS__BASIC_AUTH__USERNAME
+metrics.basic_auth.password → REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+rate_limit.requests_per_second → REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND
+rate_limit.burst          →  REDIRECTOR__RATE_LIMIT__BURST
+admin.enabled             →  REDIRECTOR__ADMIN__ENABLED
+admin.session_ttl_hours   →  REDIRECTOR__ADMIN__SESSION_TTL_HOURS
+```
+
+#### Примеры для разных платформ
+
+**Railway / Render / Fly.io** (PaaS с управляемыми базами):
+
+```bash
+# Эти переменные обычно устанавливаются платформой автоматически:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Конфигурация через base64:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# Или переопределение отдельных значений:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+```
+
+**Docker / Docker Compose**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://user:pass@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+      # Или переопределение отдельных значений поверх конфига:
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # не обязательно при CONFIG_BASE64
+    depends_on:
+      - postgres
+      - redis
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**Минимальная настройка (только env-переменные, без конфиг-файла)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
 
 #### Конфигурация через Base64
 
-Для окружений, где монтирование файлов невозможно (serverless, PaaS), конфигурация передаётся через Base64:
+Для окружений, где монтирование файлов затруднено (PaaS, serverless, CI/CD), передавайте конфигурацию в формате Base64:
 
 ```bash
 # Кодирование
 cat config.yaml | base64
 
-# Использование
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# Проверка (декодирование)
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` имеет приоритет над `CONFIG_PATH`. Переменные окружения (`REDIRECTOR__*` и PaaS-переменные) применяются **поверх** декодированного конфига.
 
 ## База данных
 

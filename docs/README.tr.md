@@ -111,17 +111,317 @@ services:
     image: redis:7-alpine
 ```
 
+### Ortam Değişkenleri
+
+Servisi yapılandırmanın **üç yolu** vardır, öncelik sırasına göre (en yüksekten en düşüğe):
+
+| Öncelik | Yöntem | Kullanım Senaryosu |
+|---------|--------|---------------------|
+| 1 | `REDIRECTOR__*` ortam değişkenleri | Bireysel değerleri geçersiz kılma |
+| 2 | Standart PaaS ortam değişkenleri (`DATABASE_URL` vb.) | PaaS platformları (Railway, Heroku, Render) |
+| 3 | Yapılandırma dosyası (`config.yaml` veya `CONFIG_BASE64`) | Temel yapılandırma |
+
+#### Özel Değişkenler
+
+| Değişken | Varsayılan | Açıklama |
+|----------|-----------|----------|
+| `CONFIG_PATH` | `config.yaml` | YAML yapılandırma dosyasının yolu |
+| `CONFIG_BASE64` | — | Base64 kodlanmış YAML yapılandırması (`CONFIG_PATH`'e göre önceliklidir) |
+
+#### Standart PaaS Ortam Değişkenleri
+
+Bunlar otomatik olarak tanınır ve uygulanır. Çoğu PaaS platformu bunları sizin için ayarlar:
+
+| Değişken | Yapılandırma Yolu | Örnek |
+|----------|-------------------|-------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+| `HASHIDS_SALTS` | `hashids.salts` | `new-salt,old-salt` (virgülle ayrılmış) |
+
+> **Öncelik kuralı**: Hem `DATABASE_URL` hem de `REDIRECTOR__DATABASE__URL` ayarlanmışsa, `REDIRECTOR__` ön ekli sürüm kazanır. Benzer şekilde, `REDIRECTOR__HASHIDS__SALTS__0`, `HASHIDS_SALTS`'a göre önceliklidir.
+
+#### Ön Ekli Ortam Değişkenleri (`REDIRECTOR__*`)
+
+Herhangi bir yapılandırma değeri `REDIRECTOR__` ön eki ile geçersiz kılınabilir; `__` (çift alt çizgi) iç içe ayırıcı olarak kullanılır. Aşağıda geçersiz kılınabilir tüm değişkenlerin **tam referansı** verilmiştir:
+
+##### Server
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__SERVER__HOST` | `server.host` | `0.0.0.0` | Bağlanma adresi |
+| `REDIRECTOR__SERVER__PORT` | `server.port` | `8080` | HTTP portu |
+
+##### Hashids
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__HASHIDS__SALTS__0` | `hashids.salts[0]` | *gerekli* | Birincil hashid tuzu |
+| `REDIRECTOR__HASHIDS__SALTS__1` | `hashids.salts[1]` | — | Eski tuz (geçiş için) |
+| `REDIRECTOR__HASHIDS__MIN_LENGTH` | `hashids.min_length` | `6` | Minimum hashid uzunluğu |
+
+> **Diziler**: Liste öğeleri `__0`, `__1`, `__2` vb. ile indekslenir. Hashid tuz rotasyonu için `__0`'ı yeni tuz, `__1`'i eski tuz olarak ayarlayın.
+
+##### Redis / Önbellek
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__REDIS__URL` | `redis.url` | *gerekli* | Redis bağlantı URL'si |
+| `REDIRECTOR__REDIS__CACHE_TTL_SECONDS` | `redis.cache_ttl_seconds` | `86400` | Önbellek TTL (saniye). `86400` = 24 saat |
+
+##### Veritabanı
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__DATABASE__URL` | `database.url` | *gerekli* | PostgreSQL bağlantı URL'si |
+| `REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS` | `database.pool.max_connections` | `3` | Bağlantı havuzu boyutu |
+| `REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS` | `database.pool.connect_timeout_seconds` | `3` | Bağlantı zaman aşımı (saniye) |
+| `REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND` | `database.rate_limit.max_requests_per_second` | `50` | Saniyede maks. DB sorgusu |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD` | `database.circuit_breaker.failure_threshold` | `3` | Devre açılmadan önceki ardışık hata sayısı |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS` | `database.circuit_breaker.reset_timeout_seconds` | `60` | Yarı açık yeniden deneme öncesi saniye |
+| `REDIRECTOR__DATABASE__QUERY__TABLE` | `database.query.table` | `dictionary.urls` | URL aramaları için tablo adı |
+| `REDIRECTOR__DATABASE__QUERY__ID_COLUMN` | `database.query.id_column` | `id` | Sayısal ID için sütun adı |
+| `REDIRECTOR__DATABASE__QUERY__URL_COLUMN` | `database.query.url_column` | `name` | Hedef URL için sütun adı |
+
+##### Ara Sayfa
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__INTERSTITIAL__DELAY_SECONDS` | `interstitial.delay_seconds` | `5` | Yönlendirmeden önceki geri sayım |
+
+##### Metrikler
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__METRICS__BASIC_AUTH__USERNAME` | `metrics.basic_auth.username` | *gerekli* | `/metrics` endpoint'i için kullanıcı adı |
+| `REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD` | `metrics.basic_auth.password` | *gerekli* | `/metrics` endpoint'i için şifre |
+
+##### Hız Sınırlama (Global)
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND` | `rate_limit.requests_per_second` | `1000` | Saniyede maks. istek |
+| `REDIRECTOR__RATE_LIMIT__BURST` | `rate_limit.burst` | `100` | RPS limitinin üzerinde izin verilen patlama |
+
+##### Yönetim Paneli
+
+| Ortam Değişkeni | Yapılandırma Yolu | Varsayılan | Açıklama |
+|-----------------|-------------------|-----------|----------|
+| `REDIRECTOR__ADMIN__ENABLED` | `admin.enabled` | `false` | Yönetim panelini etkinleştir |
+| `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | Oturum imzalama sırrı (min 32 karakter) |
+| `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Saat cinsinden oturum ömrü |
+
+> **Not**: Admin kullanıcıları (`admin.users`) `username` ve `password_hash` ile karmaşık yapıları nedeniyle ortam değişkenleri ile ayarlanamaz. Bunları yapılandırma dosyasında veya `CONFIG_BASE64` ile tanımlayın.
+
+#### Dağıtım Platformuna Göre Örnekler
+
+**Railway / Render / Fly.io** (yönetilen veritabanlarıyla PaaS):
+
+```bash
+# Bunlar genellikle platform tarafından otomatik ayarlanır:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Yapılandırmanızı base64 ile ayarlayın:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# Veya bireysel değerleri geçersiz kılın:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__USERNAME=prometheus
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+REDIRECTOR__ADMIN__ENABLED=true
+REDIRECTOR__ADMIN__SESSION_SECRET=random-32-byte-secret-for-sessions
+```
+
+**Docker Compose (tüm geçersiz kılmalarla tam örnek)**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # --- Bağlantı URL'leri (PaaS tarzı) ---
+      DATABASE_URL: "postgres://redirector:${DB_PASSWORD}@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+
+      # --- Yapılandırma dosyası ---
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+
+      # --- Sunucu ---
+      REDIRECTOR__SERVER__HOST: "0.0.0.0"
+      REDIRECTOR__SERVER__PORT: "8080"
+
+      # --- Hashid tuzları ---
+      REDIRECTOR__HASHIDS__SALTS__0: "${HASHID_SALT}"        # birincil tuz
+      REDIRECTOR__HASHIDS__SALTS__1: "${HASHID_SALT_OLD}"    # geçiş için eski tuz
+      REDIRECTOR__HASHIDS__MIN_LENGTH: "6"
+
+      # --- Redis önbellek ---
+      REDIRECTOR__REDIS__CACHE_TTL_SECONDS: "43200"          # 12 saat
+
+      # --- Veritabanı havuzu ve dayanıklılık ---
+      REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS: "5"
+      REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS: "5"
+      REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND: "100"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD: "5"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS: "30"
+
+      # --- Özel tablo eşlemesi ---
+      REDIRECTOR__DATABASE__QUERY__TABLE: "public.short_urls"
+      REDIRECTOR__DATABASE__QUERY__ID_COLUMN: "id"
+      REDIRECTOR__DATABASE__QUERY__URL_COLUMN: "target_url"
+
+      # --- Ara sayfa ---
+      REDIRECTOR__INTERSTITIAL__DELAY_SECONDS: "3"
+
+      # --- Metrik kimlik doğrulaması ---
+      REDIRECTOR__METRICS__BASIC_AUTH__USERNAME: "prometheus"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+
+      # --- Global hız limiti ---
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__RATE_LIMIT__BURST: "200"
+
+      # --- Yönetim paneli ---
+      REDIRECTOR__ADMIN__ENABLED: "true"
+      REDIRECTOR__ADMIN__SESSION_SECRET: "${SESSION_SECRET}"
+      REDIRECTOR__ADMIN__SESSION_TTL_HOURS: "8"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redirector
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: redirector
+
+  redis:
+    image: redis:7-alpine
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__HASHIDS__SALTS__0
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: hashid-salt
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: REDIRECTOR__ADMIN__SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: session-secret
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**Düz Docker (tek komut)**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e REDIRECTOR__HASHIDS__SALTS__0="my-secret-salt" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__USERNAME="prometheus" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD="strong-password" \
+  -e REDIRECTOR__INTERSTITIAL__DELAY_SECONDS="3" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**Minimal kurulum (yalnızca ortam değişkenleri, yapılandırma dosyası yok)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Ortam Değişkenleri ile Tuz Rotasyonu
+
+Hashid tuzlarını döndürürken, servis tuzları sırayla dener — ilk eşleşme kazanır. Yeni bağlantıların onu kullanması için yeni tuzu önce ayarlayın ve geriye dönük uyumluluk için eski tuzu tutun:
+
+**Seçenek 1: Virgülle ayrılmış tek değişken** (önerilen):
+
+```bash
+# Rotasyondan önce
+HASHIDS_SALTS=original-salt
+
+# Rotasyondan sonra — yeni tuz önce, mevcut bağlantılar için eski tuz
+HASHIDS_SALTS=new-salt,original-salt
+```
+
+**Seçenek 2: İndeksli değişkenler**:
+
+```bash
+# Rotasyondan önce
+REDIRECTOR__HASHIDS__SALTS__0=original-salt
+
+# Rotasyondan sonra
+REDIRECTOR__HASHIDS__SALTS__0=new-salt
+REDIRECTOR__HASHIDS__SALTS__1=original-salt
+```
+
+> **Not**: `REDIRECTOR__HASHIDS__SALTS__0` ayarlanmışsa, `HASHIDS_SALTS` görmezden gelinir.
+
 #### Base64 Yapılandırması
 
-Yapılandırma dosyalarının bağlanmasının mümkün olmadığı ortamlar için (örn. serverless, PaaS):
+Yapılandırma dosyalarının bağlanmasının pratik olmadığı ortamlar için (PaaS, serverless, CI/CD), tüm yapılandırmayı base64 kodlanmış dize olarak geçirin:
 
 ```bash
 # Encode
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# Doğrulamak için decode
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64`, `CONFIG_PATH`'e göre önceliklidir. Ortam değişkeni geçersiz kılmaları (`REDIRECTOR__*` ve PaaS değişkenleri) çözülen yapılandırmanın **üzerine** uygulanır.
 
 ## Nasıl Çalışır
 

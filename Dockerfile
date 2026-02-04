@@ -1,6 +1,8 @@
 # Build stage
 FROM rust:1.88-alpine AS builder
 
+ARG GIT_COMMIT_SHORT=unknown
+
 RUN apk add --no-cache musl-dev pkgconfig openssl-dev
 
 WORKDIR /app
@@ -22,9 +24,9 @@ COPY src ./src
 COPY templates ./templates
 COPY static ./static
 
-# Build the application
+# Build the application with git commit hash
 RUN touch src/main.rs src/lib.rs && \
-    cargo build --release --bin redirector
+    GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT} cargo build --release --bin redirector
 
 # Compress with UPX
 RUN apk add --no-cache upx && \

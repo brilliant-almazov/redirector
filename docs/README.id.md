@@ -111,17 +111,262 @@ services:
     image: redis:7-alpine
 ```
 
+## Konfigurasi
+
+Buat `config.yaml`:
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - ${HASHID_SALT}          # Salt utama
+    - ${HASHID_SALT_OLD}      # Opsional: salt lama untuk migrasi
+  min_length: 6
+
+redis:
+  url: ${REDIS_URL}
+  cache_ttl_seconds: 86400    # 24 jam
+
+database:
+  url: ${DATABASE_URL}
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+  query:
+    table: "dictionary.urls"    # Nama tabel Anda
+    id_column: "id"             # Kolom ID
+    url_column: "name"          # Kolom URL
+
+interstitial:
+  delay_seconds: 5            # Hitung mundur sebelum pengalihan
+
+metrics:
+  basic_auth:
+    username: prometheus
+    password: ${METRICS_PASSWORD}
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100
+```
+
+### Opsi Konfigurasi
+
+#### Server
+
+| Opsi | Default | Deskripsi |
+|------|---------|-----------|
+| `host` | `0.0.0.0` | Alamat bind |
+| `port` | `8080` | Port HTTP |
+
+#### Hashids
+
+| Opsi | Default | Deskripsi |
+|------|---------|-----------|
+| `salts` | *wajib* | Daftar salt hashid (pertama = utama) |
+| `min_length` | `6` | Panjang minimum hashid |
+
+#### Redis
+
+| Opsi | Default | Deskripsi |
+|------|---------|-----------|
+| `url` | *wajib* | URL koneksi Redis |
+| `cache_ttl_seconds` | `86400` | TTL cache dalam detik |
+
+#### Database
+
+| Opsi | Default | Deskripsi |
+|------|---------|-----------|
+| `url` | *wajib* | URL koneksi PostgreSQL |
+| `pool.max_connections` | `3` | Ukuran connection pool |
+| `pool.connect_timeout_seconds` | `3` | Timeout koneksi |
+| `rate_limit.max_requests_per_second` | `50` | Rate limit DB |
+| `circuit_breaker.failure_threshold` | `3` | Kegagalan sebelum terbuka |
+| `circuit_breaker.reset_timeout_seconds` | `60` | Timeout reset circuit |
+
+#### Rate Limit (Global)
+
+| Opsi | Default | Deskripsi |
+|------|---------|-----------|
+| `requests_per_second` | `1000` | Rate limit global |
+| `burst` | `100` | Kapasitas burst |
+
+### Variabel Lingkungan
+
+Ada **tiga cara** untuk mengkonfigurasi layanan, diurutkan berdasarkan prioritas (tertinggi pertama):
+
+| Prioritas | Metode | Kasus Penggunaan |
+|-----------|--------|------------------|
+| 1 | Variabel `REDIRECTOR__*` | Menimpa nilai individual |
+| 2 | Variabel PaaS standar (`DATABASE_URL`, dll.) | Platform PaaS (Railway, Heroku, Render) |
+| 3 | File konfigurasi (`config.yaml` atau `CONFIG_BASE64`) | Konfigurasi dasar |
+
+#### Variabel Khusus
+
+| Variabel | Default | Deskripsi |
+|----------|---------|-----------|
+| `CONFIG_PATH` | `config.yaml` | Path ke file konfigurasi YAML |
+| `CONFIG_BASE64` | — | Konfigurasi YAML yang di-encode Base64 (prioritas atas `CONFIG_PATH`) |
+
+#### Variabel Lingkungan PaaS Standar
+
+Ini secara otomatis dikenali dan diterapkan. Kebanyakan platform PaaS mengaturnya untuk Anda:
+
+| Variabel | Path Konfigurasi | Contoh |
+|----------|-----------------|--------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+
+> **Aturan prioritas**: Jika `DATABASE_URL` dan `REDIRECTOR__DATABASE__URL` keduanya diatur, versi dengan prefiks `REDIRECTOR__` yang menang.
+
+#### Variabel dengan Prefiks (`REDIRECTOR__*`)
+
+Setiap nilai konfigurasi dapat ditimpa menggunakan prefiks `REDIRECTOR__` dengan `__` (garis bawah ganda) sebagai pemisah bersarang:
+
+```
+Path konfigurasi YAML      →  Variabel lingkungan
+─────────────────────────────────────────────────────
+server.port               →  REDIRECTOR__SERVER__PORT
+server.host               →  REDIRECTOR__SERVER__HOST
+database.url              →  REDIRECTOR__DATABASE__URL
+database.pool.max_connections → REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS
+redis.url                 →  REDIRECTOR__REDIS__URL
+redis.cache_ttl_seconds   →  REDIRECTOR__REDIS__CACHE_TTL_SECONDS
+interstitial.delay_seconds → REDIRECTOR__INTERSTITIAL__DELAY_SECONDS
+metrics.basic_auth.username → REDIRECTOR__METRICS__BASIC_AUTH__USERNAME
+metrics.basic_auth.password → REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+rate_limit.requests_per_second → REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND
+rate_limit.burst          →  REDIRECTOR__RATE_LIMIT__BURST
+admin.enabled             →  REDIRECTOR__ADMIN__ENABLED
+admin.session_ttl_hours   →  REDIRECTOR__ADMIN__SESSION_TTL_HOURS
+```
+
+#### Contoh berdasarkan Platform Deployment
+
+**Railway / Render / Fly.io** (PaaS dengan database terkelola):
+
+```bash
+# Ini biasanya diatur secara otomatis oleh platform:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Atur konfigurasi via base64:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# Atau timpa nilai individual:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+```
+
+**Docker / Docker Compose**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://user:pass@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+      # Atau timpa nilai individual di atas file konfigurasi:
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # opsional jika menggunakan CONFIG_BASE64
+    depends_on:
+      - postgres
+      - redis
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**Docker biasa**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**Setup minimal (hanya variabel env, tanpa file konfigurasi)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
 #### Konfigurasi Base64
 
-Untuk lingkungan di mana mounting file konfigurasi tidak memungkinkan (misal serverless, PaaS):
+Untuk lingkungan di mana mounting file konfigurasi tidak praktis (PaaS, serverless, CI/CD), kirim seluruh konfigurasi sebagai string yang di-encode Base64:
 
 ```bash
 # Encode
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# Decode (untuk verifikasi)
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` memiliki prioritas atas `CONFIG_PATH`. Override variabel lingkungan (`REDIRECTOR__*` dan variabel PaaS) diterapkan **di atas** konfigurasi yang di-decode.
 
 ## Cara Kerja
 
