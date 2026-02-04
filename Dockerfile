@@ -37,8 +37,9 @@ RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-# Copy binary from builder
+# Copy binary and static assets from builder
 COPY --from=builder /app/target/release/redirector /app/redirector
+COPY --from=builder /app/static /app/static
 
 # Copy config example (actual config should be mounted)
 COPY config.yaml.example /app/config.yaml.example
