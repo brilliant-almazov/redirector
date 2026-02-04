@@ -1,6 +1,6 @@
 [package]
 name = "redirector"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Anton Brilliantov"]
 description = "Safe redirect service with hashid decoding and caching"
@@ -14,34 +14,31 @@ categories = ["web-programming"]
 # Web framework
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
-parking_lot = "0.12"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace", "compression-gzip", "normalize-path", "fs"] }
-minify-html = "0.15"
+minify-html = "0.18"
 
 # Templates
-askama = { version = "0.12", features = ["with-axum"] }
-askama_axum = "0.4"
+askama = "0.15"
 
 # Configuration
 config = { version = "0.14", features = ["yaml"] }
 serde = { version = "1", features = ["derive"] }
-serde_yaml = "0.9"
 
 # Database
 sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres"] }
-deadpool-redis = "0.18"
-redis = { version = "0.27", features = ["tokio-comp"] }
+deadpool-redis = "0.22"
+redis = { version = "1", features = ["tokio-comp"] }
 
 # Hashids
 harsh = "0.2"
 
 # Metrics
 metrics = "0.24"
-metrics-exporter-prometheus = "0.16"
+metrics-exporter-prometheus = "0.18"
 
 # Rate limiting & Circuit breaker
-governor = "0.8"
+governor = "0.10"
 failsafe = "1"
 
 # Tracing & Logging
@@ -60,27 +57,19 @@ base64 = "0.22"
 async-trait = "0.1"
 
 # Admin dashboard
-leptos = { version = "0.7", features = ["ssr"] }
-leptos_axum = "0.7"
 argon2 = "0.5"
-sysinfo = "0.32"
+sysinfo = "0.38"
 rand = "0.8"
-tokio-stream = "0.1"
 uuid = { version = "1", features = ["v4"] }
-axum-extra = { version = "0.10", features = ["cookie"] }
+axum-extra = { version = "0.12", features = ["cookie"] }
 time = "0.3"
 futures = "0.3"
 serde_json = "1"
 
 [dev-dependencies]
 # Testing
-tokio-test = "0.4"
-wiremock = "0.5"
-testcontainers = "0.23"
-testcontainers-modules = { version = "0.11", features = ["postgres", "redis"] }
-reqwest = { version = "0.12", features = ["json"] }
-pretty_assertions = "1"
-rstest = "0.23"
+testcontainers = "0.26"
+testcontainers-modules = { version = "0.14", features = ["postgres", "redis"] }
 
 [[bin]]
 name = "gen_hashids"
