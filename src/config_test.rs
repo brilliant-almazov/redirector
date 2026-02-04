@@ -81,4 +81,64 @@ mod tests {
     fn test_default_query_url_column() {
         assert_eq!(QueryConfig::default().url_column, "name");
     }
+
+    #[test]
+    fn test_load_from_base64_valid() {
+        use base64::Engine;
+
+        let yaml = r#"
+server:
+  host: "127.0.0.1"
+  port: 9090
+hashids:
+  salts:
+    - "test-salt"
+  min_length: 8
+redis:
+  url: "redis://localhost"
+database:
+  url: "postgres://localhost/test"
+  query:
+    table: "urls"
+    id_column: "id"
+    url_column: "url"
+interstitial:
+  delay_seconds: 3
+metrics:
+  basic_auth:
+    username: "admin"
+    password: "secret"
+"#;
+        let encoded = base64::engine::general_purpose::STANDARD.encode(yaml);
+        let config = Config::load_from_base64(&encoded).unwrap();
+        assert_eq!(config.server.host, "127.0.0.1");
+        assert_eq!(config.server.port, 9090);
+        assert_eq!(config.hashids.salts[0], "test-salt");
+        assert_eq!(config.hashids.min_length, 8);
+        assert_eq!(config.interstitial.delay_seconds, 3);
+    }
+
+    #[test]
+    fn test_load_from_base64_invalid_base64() {
+        let result = Config::load_from_base64("not-valid-base64!!!");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_from_base64_invalid_yaml() {
+        use base64::Engine;
+
+        let encoded = base64::engine::general_purpose::STANDARD.encode("not: valid: yaml: [[[");
+        let result = Config::load_from_base64(&encoded);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_load_from_base64_empty() {
+        use base64::Engine;
+
+        let encoded = base64::engine::general_purpose::STANDARD.encode("");
+        let result = Config::load_from_base64(&encoded);
+        assert!(result.is_err());
+    }
 }

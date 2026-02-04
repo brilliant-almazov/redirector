@@ -1,4 +1,4 @@
-name: CI
+name: 🔄 CI
 
 on:
   push:
@@ -21,17 +21,17 @@ env:
 
 jobs:
   lint:
-    name: Lint
+    name: 🎨 Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: 🦀 Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
 
-      - name: Cache cargo
+      - name: 📦 Cache cargo
         uses: actions/cache@v4
         with:
           path: |
@@ -40,88 +40,46 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-lint-
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Check formatting
+      - name: 🎨 Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Clippy
+      - name: 📎 Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-  test-unit:
-    name: Unit Tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-test-
-
-      - name: Run unit tests
-        run: cargo test --lib --all-features
-
-  test-integration:
-    name: Integration Tests
+  test:
+    name: 🧪 Test & Coverage
     runs-on: ubuntu-latest
-
+    needs: lint
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-integration-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-integration-
-
-      - name: Run integration tests
-        run: cargo test --test '*' --all-features
-
-  coverage:
-    name: Coverage
-    runs-on: ubuntu-latest
-    needs: [lint, test-unit, test-integration]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust
+      - name: 🦀 Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
 
-      - name: Install cargo-llvm-cov
+      - name: 📦 Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: 📦 Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Generate coverage
+      - name: 🧪 Run tests with coverage
         run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
-      - name: Upload coverage to Codecov
+      - name: 📊 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: lcov.info
@@ -129,13 +87,13 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Extract coverage percentage
+      - name: 📊 Extract coverage percentage
         id: coverage
         run: |
           COVERAGE=$(cargo llvm-cov --all-features --workspace --json | jq '.data[0].totals.lines.percent' | cut -d. -f1)
           echo "percent=$COVERAGE" >> $GITHUB_OUTPUT
 
-      - name: Update coverage badge
+      - name: 📊 Update coverage badge
         if: github.ref == 'refs/heads/master'
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
@@ -149,41 +107,41 @@ jobs:
           minColorRange: 0
 
   build:
-    name: Build (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    needs: [lint, test-unit]
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact: redirector-linux-amd64
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact: redirector-macos-arm64
-
+    name: 🔨 Build
+    runs-on: ubuntu-latest
+    needs: lint
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: 🦀 Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: 📦 Cache cargo
+        uses: actions/cache@v4
         with:
-          targets: ${{ matrix.target }}
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Build release
-        run: cargo build --release --target ${{ matrix.target }}
+      - name: 🔨 Build release
+        run: cargo build --release
 
-      - name: Upload artifact
+      - name: 📤 Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: target/${{ matrix.target }}/release/redirector
+          name: redirector-linux-amd64
+          path: target/release/redirector
           retention-days: 7
 
   benchmark:
-    name: Performance Benchmark
+    name: 🏎️ Benchmark
     runs-on: ubuntu-latest
-    needs: build
+    needs: [test, build]
 
     services:
       postgres:
@@ -212,18 +170,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download artifact
+      - name: 📥 Download artifact
         uses: actions/download-artifact@v4
         with:
           name: redirector-linux-amd64
           path: ./bin
 
-      - name: Install tools
+      - name: 🔧 Install tools
         run: |
           sudo apt-get update
           sudo apt-get install -y wrk redis-tools
 
-      - name: Setup database
+      - name: 🗄️ Setup database
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -d test -c "
             CREATE SCHEMA IF NOT EXISTS dictionary;
@@ -231,13 +189,13 @@ jobs:
             INSERT INTO dictionary.urls (id, name) SELECT i, 'https://example.com/page' || i FROM generate_series(1, 10000) i;
           "
 
-      - name: Setup Redis cache
+      - name: 🗄️ Setup Redis cache
         run: |
           for i in $(seq 1 1000); do
             redis-cli SET "url:$i" "https://example.com/page$i" EX 3600
           done
 
-      - name: Create config
+      - name: ⚙️ Create config
         run: |
           cat > config.yaml << 'EOF'
           server:
@@ -275,19 +233,19 @@ jobs:
             burst: 1000
           EOF
 
-      - name: Start service
+      - name: 🚀 Start service
         run: |
           chmod +x ./bin/redirector
           ./bin/redirector &
           sleep 3
 
-      - name: Generate test hashids
+      - name: 🔗 Generate test hashids
         run: |
           cd tests/loadtest
           cat sample_hashids_100.txt > cache_test.txt
           head -1000 sample_hashids_10000.txt > mixed_test.txt
 
-      - name: Run cache hit benchmark
+      - name: 🏎️ Run cache hit benchmark
         id: cache_bench
         run: |
           cd tests/loadtest
@@ -300,7 +258,7 @@ jobs:
           echo "cache_rps=$RPS" >> $GITHUB_OUTPUT
           echo "cache_latency=$LATENCY" >> $GITHUB_OUTPUT
 
-      - name: Run mixed load benchmark
+      - name: 🏎️ Run mixed load benchmark
         id: mixed_bench
         run: |
           cd tests/loadtest
@@ -310,7 +268,7 @@ jobs:
           RPS=$(echo "$RESULT" | grep "Requests/sec" | awk '{print $2}' | cut -d. -f1)
           echo "mixed_rps=$RPS" >> $GITHUB_OUTPUT
 
-      - name: Get metrics
+      - name: 📈 Get metrics
         id: metrics
         run: |
           METRICS=$(curl -s -u prometheus:secret http://localhost:8080/metrics)
@@ -332,7 +290,7 @@ jobs:
 
           echo "cache_hit_rate=$RATE" >> $GITHUB_OUTPUT
 
-      - name: Update performance badges
+      - name: 🏅 Update performance badges
         if: github.ref == 'refs/heads/master'
         run: |
           curl -X PATCH \
@@ -353,7 +311,7 @@ jobs:
             https://api.github.com/gists/${{ secrets.BADGE_GIST_ID }} \
             -d "{\"files\":{\"cache_hit_rate.json\":{\"content\":\"{\\\"schemaVersion\\\":1,\\\"label\\\":\\\"cache hit\\\",\\\"message\\\":\\\"${{ steps.metrics.outputs.cache_hit_rate }}%\\\",\\\"color\\\":\\\"brightgreen\\\"}\"}}}"
 
-      - name: Print benchmark summary
+      - name: 📋 Print benchmark summary
         run: |
           echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
