@@ -113,7 +113,7 @@ services:
 
 #### Konfigurasi Base64
 
-Untuk lingkungan di mana mounting file konfigurasi tidak memungkinkan (misal Railway, serverless):
+Untuk lingkungan di mana mounting file konfigurasi tidak memungkinkan (misal serverless, PaaS):
 
 ```bash
 # Encode
