@@ -111,17 +111,262 @@ services:
     image: redis:7-alpine
 ```
 
-#### Base64 कॉन्फ़िगरेशन
+## कॉन्फ़िगरेशन
 
-ऐसे वातावरण के लिए जहाँ कॉन्फ़िग फ़ाइलें माउंट करना संभव नहीं है (जैसे serverless, PaaS):
+`config.yaml` बनाएं:
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - ${HASHID_SALT}          # प्राथमिक सॉल्ट
+    - ${HASHID_SALT_OLD}      # वैकल्पिक: माइग्रेशन के लिए पुराना सॉल्ट
+  min_length: 6
+
+redis:
+  url: ${REDIS_URL}
+  cache_ttl_seconds: 86400    # 24 घंटे
+
+database:
+  url: ${DATABASE_URL}
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+  query:
+    table: "dictionary.urls"    # आपका टेबल नाम
+    id_column: "id"             # ID कॉलम
+    url_column: "name"          # URL कॉलम
+
+interstitial:
+  delay_seconds: 5            # रीडायरेक्ट से पहले काउंटडाउन
+
+metrics:
+  basic_auth:
+    username: prometheus
+    password: ${METRICS_PASSWORD}
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100
+```
+
+### कॉन्फ़िगरेशन विकल्प
+
+#### सर्वर
+
+| विकल्प | डिफ़ॉल्ट | विवरण |
+|--------|----------|-------|
+| `host` | `0.0.0.0` | बाइंड एड्रेस |
+| `port` | `8080` | HTTP पोर्ट |
+
+#### Hashids
+
+| विकल्प | डिफ़ॉल्ट | विवरण |
+|--------|----------|-------|
+| `salts` | *आवश्यक* | hashid सॉल्ट्स की सूची (पहला = प्राथमिक) |
+| `min_length` | `6` | न्यूनतम hashid लंबाई |
+
+#### Redis
+
+| विकल्प | डिफ़ॉल्ट | विवरण |
+|--------|----------|-------|
+| `url` | *आवश्यक* | Redis कनेक्शन URL |
+| `cache_ttl_seconds` | `86400` | कैश TTL सेकंड में |
+
+#### डेटाबेस
+
+| विकल्प | डिफ़ॉल्ट | विवरण |
+|--------|----------|-------|
+| `url` | *आवश्यक* | PostgreSQL कनेक्शन URL |
+| `pool.max_connections` | `3` | कनेक्शन पूल आकार |
+| `pool.connect_timeout_seconds` | `3` | कनेक्शन टाइमआउट |
+| `rate_limit.max_requests_per_second` | `50` | DB रेट लिमिट |
+| `circuit_breaker.failure_threshold` | `3` | खुलने से पहले विफलताएं |
+| `circuit_breaker.reset_timeout_seconds` | `60` | सर्किट रीसेट टाइमआउट |
+
+#### रेट लिमिट (ग्लोबल)
+
+| विकल्प | डिफ़ॉल्ट | विवरण |
+|--------|----------|-------|
+| `requests_per_second` | `1000` | ग्लोबल रेट लिमिट |
+| `burst` | `100` | बर्स्ट क्षमता |
+
+### पर्यावरण चर
+
+सेवा को कॉन्फ़िगर करने के **तीन तरीके** हैं, प्राथमिकता के क्रम में (उच्चतम पहले):
+
+| प्राथमिकता | विधि | उपयोग का मामला |
+|------------|-------|-----------------|
+| 1 | `REDIRECTOR__*` env वेरिएबल्स | व्यक्तिगत मान ओवरराइड करना |
+| 2 | मानक PaaS env वेरिएबल्स (`DATABASE_URL` आदि) | PaaS प्लेटफ़ॉर्म (Railway, Heroku, Render) |
+| 3 | कॉन्फ़िग फ़ाइल (`config.yaml` या `CONFIG_BASE64`) | आधार कॉन्फ़िगरेशन |
+
+#### विशेष चर
+
+| चर | डिफ़ॉल्ट | विवरण |
+|----|----------|-------|
+| `CONFIG_PATH` | `config.yaml` | YAML कॉन्फ़िग फ़ाइल का पथ |
+| `CONFIG_BASE64` | — | Base64-एन्कोडेड YAML कॉन्फ़िग (`CONFIG_PATH` पर प्राथमिकता) |
+
+#### मानक PaaS पर्यावरण चर
+
+ये स्वचालित रूप से पहचाने और लागू किए जाते हैं। अधिकांश PaaS प्लेटफ़ॉर्म इन्हें आपके लिए सेट करते हैं:
+
+| चर | कॉन्फ़िग पथ | उदाहरण |
+|----|-------------|--------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+
+> **प्राथमिकता नियम**: यदि `DATABASE_URL` और `REDIRECTOR__DATABASE__URL` दोनों सेट हैं, तो `REDIRECTOR__` प्रीफ़िक्स्ड संस्करण जीतता है।
+
+#### प्रीफ़िक्स्ड पर्यावरण चर (`REDIRECTOR__*`)
+
+किसी भी कॉन्फ़िग मान को `REDIRECTOR__` प्रीफ़िक्स और `__` (डबल अंडरस्कोर) नेस्टिंग सेपरेटर का उपयोग करके ओवरराइड किया जा सकता है:
+
+```
+YAML कॉन्फ़िग पथ            →  पर्यावरण चर
+─────────────────────────────────────────────────────
+server.port               →  REDIRECTOR__SERVER__PORT
+server.host               →  REDIRECTOR__SERVER__HOST
+database.url              →  REDIRECTOR__DATABASE__URL
+database.pool.max_connections → REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS
+redis.url                 →  REDIRECTOR__REDIS__URL
+redis.cache_ttl_seconds   →  REDIRECTOR__REDIS__CACHE_TTL_SECONDS
+interstitial.delay_seconds → REDIRECTOR__INTERSTITIAL__DELAY_SECONDS
+metrics.basic_auth.username → REDIRECTOR__METRICS__BASIC_AUTH__USERNAME
+metrics.basic_auth.password → REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+rate_limit.requests_per_second → REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND
+rate_limit.burst          →  REDIRECTOR__RATE_LIMIT__BURST
+admin.enabled             →  REDIRECTOR__ADMIN__ENABLED
+admin.session_ttl_hours   →  REDIRECTOR__ADMIN__SESSION_TTL_HOURS
+```
+
+#### डिप्लॉयमेंट प्लेटफ़ॉर्म के अनुसार उदाहरण
+
+**Railway / Render / Fly.io** (प्रबंधित डेटाबेस वाला PaaS):
 
 ```bash
-# Encode
+# ये आमतौर पर प्लेटफ़ॉर्म द्वारा स्वचालित रूप से सेट किए जाते हैं:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Base64 के माध्यम से कॉन्फ़िग सेट करें:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# या व्यक्तिगत मान ओवरराइड करें:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+```
+
+**Docker / Docker Compose**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://user:pass@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+      # या कॉन्फ़िग फ़ाइल के ऊपर व्यक्तिगत मान ओवरराइड करें:
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # CONFIG_BASE64 के साथ वैकल्पिक
+    depends_on:
+      - postgres
+      - redis
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**सादा Docker**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**न्यूनतम सेटअप (केवल env वेरिएबल्स, कोई कॉन्फ़िग फ़ाइल नहीं)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Base64 कॉन्फ़िगरेशन
+
+ऐसे वातावरण के लिए जहाँ कॉन्फ़िग फ़ाइलें माउंट करना व्यावहारिक नहीं है (PaaS, serverless, CI/CD), पूरा कॉन्फ़िग Base64-एन्कोडेड स्ट्रिंग के रूप में पास करें:
+
+```bash
+# एन्कोड
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# डीकोड (सत्यापन के लिए)
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` की `CONFIG_PATH` पर प्राथमिकता है। पर्यावरण चर ओवरराइड (`REDIRECTOR__*` और PaaS चर) डीकोडेड कॉन्फ़िग के **ऊपर** लागू होते हैं।
 
 ## यह कैसे काम करता है
 

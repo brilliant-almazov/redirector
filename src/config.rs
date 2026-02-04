@@ -270,6 +270,14 @@ pub struct AdminUser {
     pub password_hash: String,
 }
 
+/// Standard PaaS environment variable mappings.
+/// Each entry: (PaaS env var, corresponding REDIRECTOR__ prefixed var).
+const PAAS_ENV_MAPPINGS: &[(&str, &str)] = &[
+    ("DATABASE_URL", "REDIRECTOR__DATABASE__URL"),
+    ("REDIS_URL", "REDIRECTOR__REDIS__URL"),
+    ("PORT", "REDIRECTOR__SERVER__PORT"),
+];
+
 impl Config {
     pub fn load<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let settings = config::Config::builder()
@@ -281,7 +289,8 @@ impl Config {
             )
             .build()?;
 
-        let config: Config = settings.try_deserialize()?;
+        let mut config: Config = settings.try_deserialize()?;
+        config.apply_paas_overrides();
         Ok(config)
     }
 
@@ -298,8 +307,47 @@ impl Config {
             )
             .build()?;
 
-        let config: Config = settings.try_deserialize()?;
+        let mut config: Config = settings.try_deserialize()?;
+        config.apply_paas_overrides();
         Ok(config)
+    }
+
+    /// Apply standard PaaS environment variables (DATABASE_URL, REDIS_URL, PORT, HASHIDS_SALTS).
+    /// These only take effect if the explicit REDIRECTOR__* version is not set,
+    /// giving the prefixed form higher priority.
+    fn apply_paas_overrides(&mut self) {
+        for &(paas_var, prefixed_var) in PAAS_ENV_MAPPINGS {
+            if std::env::var(prefixed_var).is_ok() {
+                continue;
+            }
+            if let Ok(val) = std::env::var(paas_var) {
+                match paas_var {
+                    "DATABASE_URL" => self.database.url = val,
+                    "REDIS_URL" => self.redis.url = val,
+                    "PORT" => {
+                        if let Ok(port) = val.parse::<u16>() {
+                            self.server.port = port;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // Support comma-separated hashid salts via HASHIDS_SALTS env var.
+        // Only applies if no REDIRECTOR__HASHIDS__SALTS__* indexed vars are set.
+        if std::env::var("REDIRECTOR__HASHIDS__SALTS__0").is_err() {
+            if let Ok(salts) = std::env::var("HASHIDS_SALTS") {
+                let parsed: Vec<String> = salts
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if !parsed.is_empty() {
+                    self.hashids.salts = parsed;
+                }
+            }
+        }
     }
 }
 
