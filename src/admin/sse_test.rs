@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod tests {
     use crate::admin::sse::{
-        AppMetrics, MetricsPayload, RecentRedirectJson, SimulationStatus, SystemMetrics,
+        parse_cgroup_memory_mb, AppMetrics, MetricsPayload, RecentRedirectJson, SimulationStatus,
+        SystemMetrics,
     };
 
     #[test]
@@ -125,5 +126,30 @@ mod tests {
         let json = serde_json::to_string(&payload).unwrap();
         assert!(json.contains("\"first\""));
         assert!(json.contains("\"second\""));
+    }
+
+    #[test]
+    fn test_parse_cgroup_memory_mb_valid() {
+        // 512 MB = 536870912 bytes
+        assert_eq!(parse_cgroup_memory_mb("536870912"), Some(512));
+    }
+
+    #[test]
+    fn test_parse_cgroup_memory_mb_small() {
+        // Less than 1 MB
+        assert_eq!(parse_cgroup_memory_mb("500000"), Some(0));
+    }
+
+    #[test]
+    fn test_parse_cgroup_memory_mb_invalid() {
+        assert_eq!(parse_cgroup_memory_mb("max"), None);
+        assert_eq!(parse_cgroup_memory_mb(""), None);
+        assert_eq!(parse_cgroup_memory_mb("not_a_number"), None);
+    }
+
+    #[test]
+    fn test_parse_cgroup_memory_mb_large() {
+        // 8 GB
+        assert_eq!(parse_cgroup_memory_mb("8589934592"), Some(8192));
     }
 }
