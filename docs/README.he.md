@@ -111,6 +111,18 @@ services:
     image: redis:7-alpine
 ```
 
+#### הגדרת Base64
+
+עבור סביבות שבהן אין אפשרות לעגן קבצי תצורה (למשל serverless, PaaS):
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Run with base64 config
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
+
 ## איך זה עובד
 
 1. המשתמש מבקר ב-`/r/{hashid}` (לדוגמה, `/r/abc123`)
