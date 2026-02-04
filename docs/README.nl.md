@@ -111,17 +111,317 @@ services:
     image: redis:7-alpine
 ```
 
+### Omgevingsvariabelen
+
+Er zijn **drie manieren** om de service te configureren, gerangschikt op prioriteit (hoogste eerst):
+
+| Prioriteit | Methode | Toepassing |
+|------------|---------|------------|
+| 1 | `REDIRECTOR__*` omgevingsvariabelen | Individuele waarden overschrijven |
+| 2 | Standaard PaaS-variabelen (`DATABASE_URL`, etc.) | PaaS-platformen (Railway, Heroku, Render) |
+| 3 | Configuratiebestand (`config.yaml` of `CONFIG_BASE64`) | Basisconfiguratie |
+
+#### Speciale variabelen
+
+| Variabele | Standaard | Beschrijving |
+|-----------|-----------|--------------|
+| `CONFIG_PATH` | `config.yaml` | Pad naar YAML-configuratiebestand |
+| `CONFIG_BASE64` | — | Base64-gecodeerde YAML-configuratie (heeft prioriteit boven `CONFIG_PATH`) |
+
+#### Standaard PaaS-omgevingsvariabelen
+
+Deze worden automatisch herkend en toegepast. De meeste PaaS-platformen stellen ze automatisch in:
+
+| Variabele | Configuratiepad | Voorbeeld |
+|-----------|-----------------|-----------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+| `HASHIDS_SALTS` | `hashids.salts` | `new-salt,old-salt` (kommagescheiden) |
+
+> **Prioriteitsregel**: Als zowel `DATABASE_URL` als `REDIRECTOR__DATABASE__URL` zijn ingesteld, wint de `REDIRECTOR__`-versie. Hetzelfde geldt: `REDIRECTOR__HASHIDS__SALTS__0` heeft prioriteit boven `HASHIDS_SALTS`.
+
+#### Omgevingsvariabelen met prefix (`REDIRECTOR__*`)
+
+Elke configuratiewaarde kan worden overschreven met het `REDIRECTOR__`-prefix en `__` (dubbele underscore) als nestingsscheidingsteken. Hieronder staat de **volledige referentie** van alle overschrijfbare variabelen:
+
+##### Server
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__SERVER__HOST` | `server.host` | `0.0.0.0` | Bindadres |
+| `REDIRECTOR__SERVER__PORT` | `server.port` | `8080` | HTTP-poort |
+
+##### Hashids
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__HASHIDS__SALTS__0` | `hashids.salts[0]` | *vereist* | Primaire hashid-salt |
+| `REDIRECTOR__HASHIDS__SALTS__1` | `hashids.salts[1]` | — | Oude salt (voor migratie) |
+| `REDIRECTOR__HASHIDS__MIN_LENGTH` | `hashids.min_length` | `6` | Minimale hashid-lengte |
+
+> **Arrays**: Lijstitems worden geïndexeerd met `__0`, `__1`, `__2`, etc. Voor hashid salt-rotatie, stel `__0` in voor de nieuwe salt en `__1` voor de oude.
+
+##### Redis / Cache
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__REDIS__URL` | `redis.url` | *vereist* | Redis-verbindings-URL |
+| `REDIRECTOR__REDIS__CACHE_TTL_SECONDS` | `redis.cache_ttl_seconds` | `86400` | Cache-TTL (seconden). `86400` = 24u |
+
+##### Database
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__DATABASE__URL` | `database.url` | *vereist* | PostgreSQL-verbindings-URL |
+| `REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS` | `database.pool.max_connections` | `3` | Verbindingspoolgrootte |
+| `REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS` | `database.pool.connect_timeout_seconds` | `3` | Verbindingstime-out (seconden) |
+| `REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND` | `database.rate_limit.max_requests_per_second` | `50` | Max. databasequery's per seconde |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD` | `database.circuit_breaker.failure_threshold` | `3` | Opeenvolgende fouten voordat circuit opent |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS` | `database.circuit_breaker.reset_timeout_seconds` | `60` | Seconden voor half-open herpoging |
+| `REDIRECTOR__DATABASE__QUERY__TABLE` | `database.query.table` | `dictionary.urls` | Tabelnaam voor URL-lookups |
+| `REDIRECTOR__DATABASE__QUERY__ID_COLUMN` | `database.query.id_column` | `id` | Kolomnaam voor numeriek ID |
+| `REDIRECTOR__DATABASE__QUERY__URL_COLUMN` | `database.query.url_column` | `name` | Kolomnaam voor doel-URL |
+
+##### Tussenpagina
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__INTERSTITIAL__DELAY_SECONDS` | `interstitial.delay_seconds` | `5` | Aftelling voor omleiding |
+
+##### Metrics
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__METRICS__BASIC_AUTH__USERNAME` | `metrics.basic_auth.username` | *vereist* | Gebruikersnaam voor `/metrics`-endpoint |
+| `REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD` | `metrics.basic_auth.password` | *vereist* | Wachtwoord voor `/metrics`-endpoint |
+
+##### Snelheidsbeperking (globaal)
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND` | `rate_limit.requests_per_second` | `1000` | Max. verzoeken per seconde |
+| `REDIRECTOR__RATE_LIMIT__BURST` | `rate_limit.burst` | `100` | Burstcapaciteit boven RPS-limiet |
+
+##### Admin-dashboard
+
+| Omgevingsvariabele | Configuratiepad | Standaard | Beschrijving |
+|-------------------|-----------------|-----------|--------------|
+| `REDIRECTOR__ADMIN__ENABLED` | `admin.enabled` | `false` | Admin-dashboard inschakelen |
+| `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | Sessie-ondertekeningsgeheim (min. 32 tekens) |
+| `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Sessielevensduur in uren |
+
+> **Opmerking**: Admin-gebruikers (`admin.users`) met `username` en `password_hash` kunnen niet via omgevingsvariabelen worden ingesteld vanwege hun complexe structuur. Definieer ze in het configuratiebestand of `CONFIG_BASE64`.
+
+#### Voorbeelden per deploymentplatform
+
+**Railway / Render / Fly.io** (PaaS met beheerde databases):
+
+```bash
+# Deze worden meestal automatisch ingesteld door het platform:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Stel je configuratie in via base64:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# Of overschrijf individuele waarden:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__USERNAME=prometheus
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+REDIRECTOR__ADMIN__ENABLED=true
+REDIRECTOR__ADMIN__SESSION_SECRET=random-32-byte-secret-for-sessions
+```
+
+**Docker Compose (volledig voorbeeld met alle overschrijvingen)**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # --- Verbindings-URLs (PaaS-stijl) ---
+      DATABASE_URL: "postgres://redirector:${DB_PASSWORD}@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+
+      # --- Configuratiebestand ---
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+
+      # --- Server ---
+      REDIRECTOR__SERVER__HOST: "0.0.0.0"
+      REDIRECTOR__SERVER__PORT: "8080"
+
+      # --- Hashid salts ---
+      REDIRECTOR__HASHIDS__SALTS__0: "${HASHID_SALT}"        # primaire salt
+      REDIRECTOR__HASHIDS__SALTS__1: "${HASHID_SALT_OLD}"    # oude salt voor migratie
+      REDIRECTOR__HASHIDS__MIN_LENGTH: "6"
+
+      # --- Redis cache ---
+      REDIRECTOR__REDIS__CACHE_TTL_SECONDS: "43200"          # 12 uur
+
+      # --- Databasepool & veerkracht ---
+      REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS: "5"
+      REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS: "5"
+      REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND: "100"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD: "5"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS: "30"
+
+      # --- Aangepaste tabelmapping ---
+      REDIRECTOR__DATABASE__QUERY__TABLE: "public.short_urls"
+      REDIRECTOR__DATABASE__QUERY__ID_COLUMN: "id"
+      REDIRECTOR__DATABASE__QUERY__URL_COLUMN: "target_url"
+
+      # --- Tussenpagina ---
+      REDIRECTOR__INTERSTITIAL__DELAY_SECONDS: "3"
+
+      # --- Metrics-authenticatie ---
+      REDIRECTOR__METRICS__BASIC_AUTH__USERNAME: "prometheus"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+
+      # --- Globale snelheidsbeperking ---
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__RATE_LIMIT__BURST: "200"
+
+      # --- Admin-dashboard ---
+      REDIRECTOR__ADMIN__ENABLED: "true"
+      REDIRECTOR__ADMIN__SESSION_SECRET: "${SESSION_SECRET}"
+      REDIRECTOR__ADMIN__SESSION_TTL_HOURS: "8"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redirector
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: redirector
+
+  redis:
+    image: redis:7-alpine
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__HASHIDS__SALTS__0
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: hashid-salt
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: REDIRECTOR__ADMIN__SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: session-secret
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**Gewone Docker (enkele opdracht)**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e REDIRECTOR__HASHIDS__SALTS__0="my-secret-salt" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__USERNAME="prometheus" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD="strong-password" \
+  -e REDIRECTOR__INTERSTITIAL__DELAY_SECONDS="3" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**Minimale setup (alleen omgevingsvariabelen, geen configuratiebestand)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Salt-rotatie via omgevingsvariabelen
+
+Bij het roteren van hashid salts probeert de service salts in volgorde — de eerste match wint. Stel de nieuwe salt als eerste in zodat nieuwe links deze gebruiken, en behoud de oude salt voor achterwaartse compatibiliteit:
+
+**Optie 1: Enkele variabele met kommascheidingsteken** (aanbevolen):
+
+```bash
+# Voor rotatie
+HASHIDS_SALTS=original-salt
+
+# Na rotatie — nieuwe salt eerst, oude salt voor bestaande links
+HASHIDS_SALTS=new-salt,original-salt
+```
+
+**Optie 2: Geïndexeerde variabelen**:
+
+```bash
+# Voor rotatie
+REDIRECTOR__HASHIDS__SALTS__0=original-salt
+
+# Na rotatie
+REDIRECTOR__HASHIDS__SALTS__0=new-salt
+REDIRECTOR__HASHIDS__SALTS__1=original-salt
+```
+
+> **Opmerking**: Als `REDIRECTOR__HASHIDS__SALTS__0` is ingesteld, wordt `HASHIDS_SALTS` genegeerd.
+
 #### Base64-configuratie
 
-Voor omgevingen waar het mounten van configuratiebestanden niet mogelijk is (bijv. serverless, PaaS):
+Voor omgevingen waar het mounten van configuratiebestanden niet praktisch is (PaaS, serverless, CI/CD), geef de volledige configuratie door als een base64-gecodeerde string:
 
 ```bash
 # Encode
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# Decoderen (ter verificatie)
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` heeft prioriteit boven `CONFIG_PATH`. Overschrijvingen via omgevingsvariabelen (`REDIRECTOR__*` en PaaS-variabelen) worden **bovenop** de gedecodeerde configuratie toegepast.
 
 ## Hoe het werkt
 

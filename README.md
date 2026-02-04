@@ -201,47 +201,315 @@ rate_limit:
 
 ### Environment Variables
 
-All config values support `${VAR}` substitution. Additionally:
+There are **three ways** to configure the service, listed by priority (highest first):
 
-- `CONFIG_PATH` - Path to config file (default: `config.yaml`)
-- `CONFIG_BASE64` - Base64-encoded config YAML (takes priority over `CONFIG_PATH`)
-- `REDIRECTOR_*` - Override any config value (e.g. `REDIRECTOR_SERVER__PORT=9090`)
+| Priority | Method | Use Case |
+|----------|--------|----------|
+| 1 | `REDIRECTOR__*` env vars | Override individual values |
+| 2 | Standard PaaS env vars (`DATABASE_URL`, etc.) | PaaS platforms (Railway, Heroku, Render) |
+| 3 | Config file (`config.yaml` or `CONFIG_BASE64`) | Base configuration |
 
-#### Base64 Configuration
+#### Special Variables
 
-For environments where mounting config files is not possible (e.g. serverless, PaaS), pass the entire config as a base64-encoded string. `CONFIG_BASE64` takes priority over `CONFIG_PATH`.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CONFIG_PATH` | `config.yaml` | Path to YAML config file |
+| `CONFIG_BASE64` | — | Base64-encoded YAML config (takes priority over `CONFIG_PATH`) |
 
-**Encode your config:**
+#### Standard PaaS Environment Variables
+
+These are automatically recognized and applied. Most PaaS platforms set them for you:
+
+| Variable | Config Path | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+| `HASHIDS_SALTS` | `hashids.salts` | `new-salt,old-salt` (comma-separated) |
+
+> **Priority rule**: If both `DATABASE_URL` and `REDIRECTOR__DATABASE__URL` are set, the `REDIRECTOR__` prefixed version wins. Similarly, `REDIRECTOR__HASHIDS__SALTS__0` takes priority over `HASHIDS_SALTS`.
+
+#### Prefixed Environment Variables (`REDIRECTOR__*`)
+
+Any config value can be overridden using the `REDIRECTOR__` prefix with `__` (double underscore) as the nesting separator. Below is the **complete reference** of all overridable variables:
+
+##### Server
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__SERVER__HOST` | `server.host` | `0.0.0.0` | Bind address |
+| `REDIRECTOR__SERVER__PORT` | `server.port` | `8080` | HTTP port |
+
+##### Hashids
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__HASHIDS__SALTS__0` | `hashids.salts[0]` | *required* | Primary hashid salt |
+| `REDIRECTOR__HASHIDS__SALTS__1` | `hashids.salts[1]` | — | Old salt (for migration) |
+| `REDIRECTOR__HASHIDS__MIN_LENGTH` | `hashids.min_length` | `6` | Minimum hashid length |
+
+> **Arrays**: List items are indexed with `__0`, `__1`, `__2`, etc. For hashid salt rotation, set `__0` for the new salt and `__1` for the old one.
+
+##### Redis / Cache
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__REDIS__URL` | `redis.url` | *required* | Redis connection URL |
+| `REDIRECTOR__REDIS__CACHE_TTL_SECONDS` | `redis.cache_ttl_seconds` | `86400` | Cache TTL (seconds). `86400` = 24h |
+
+##### Database
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__DATABASE__URL` | `database.url` | *required* | PostgreSQL connection URL |
+| `REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS` | `database.pool.max_connections` | `3` | Connection pool size |
+| `REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS` | `database.pool.connect_timeout_seconds` | `3` | Connection timeout (seconds) |
+| `REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND` | `database.rate_limit.max_requests_per_second` | `50` | Max DB queries per second |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD` | `database.circuit_breaker.failure_threshold` | `3` | Consecutive failures before circuit opens |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS` | `database.circuit_breaker.reset_timeout_seconds` | `60` | Seconds before half-open retry |
+| `REDIRECTOR__DATABASE__QUERY__TABLE` | `database.query.table` | `dictionary.urls` | Table name for URL lookups |
+| `REDIRECTOR__DATABASE__QUERY__ID_COLUMN` | `database.query.id_column` | `id` | Column name for numeric ID |
+| `REDIRECTOR__DATABASE__QUERY__URL_COLUMN` | `database.query.url_column` | `name` | Column name for target URL |
+
+##### Interstitial Page
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__INTERSTITIAL__DELAY_SECONDS` | `interstitial.delay_seconds` | `5` | Countdown before redirect |
+
+##### Metrics
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__METRICS__BASIC_AUTH__USERNAME` | `metrics.basic_auth.username` | *required* | Username for `/metrics` endpoint |
+| `REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD` | `metrics.basic_auth.password` | *required* | Password for `/metrics` endpoint |
+
+##### Rate Limiting (Global)
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND` | `rate_limit.requests_per_second` | `1000` | Max requests per second |
+| `REDIRECTOR__RATE_LIMIT__BURST` | `rate_limit.burst` | `100` | Burst allowance above RPS limit |
+
+##### Admin Dashboard
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__ADMIN__ENABLED` | `admin.enabled` | `false` | Enable admin dashboard |
+| `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | Session signing secret (min 32 chars) |
+| `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Session lifetime in hours |
+
+> **Note**: Admin users (`admin.users`) with `username` and `password_hash` cannot be set via env vars due to their complex structure. Define them in the config file or `CONFIG_BASE64`.
+
+#### Examples by Deployment Platform
+
+**Railway / Render / Fly.io** (PaaS with managed databases):
 
 ```bash
-cat config.yaml | base64
+# These are usually set automatically by the platform:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Set your config via base64:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# Or override individual values:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__USERNAME=prometheus
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+REDIRECTOR__ADMIN__ENABLED=true
+REDIRECTOR__ADMIN__SESSION_SECRET=random-32-byte-secret-for-sessions
 ```
 
-**Without Docker:**
-
-```bash
-export CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..."
-./redirector
-```
-
-**Docker:**
-
-```bash
-docker run -e CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." \
-  ghcr.io/brilliant-almazov/redirector:latest
-```
-
-**Docker Compose:**
+**Docker Compose (full example with all overrides)**:
 
 ```yaml
 services:
   redirector:
     image: ghcr.io/brilliant-almazov/redirector:latest
-    environment:
-      CONFIG_BASE64: "c2VydmVyOgogIGhvc3Q6IC..."
     ports:
       - "8080:8080"
+    environment:
+      # --- Connection URLs (PaaS-style) ---
+      DATABASE_URL: "postgres://redirector:${DB_PASSWORD}@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+
+      # --- Config file ---
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+
+      # --- Server ---
+      REDIRECTOR__SERVER__HOST: "0.0.0.0"
+      REDIRECTOR__SERVER__PORT: "8080"
+
+      # --- Hashid salts ---
+      REDIRECTOR__HASHIDS__SALTS__0: "${HASHID_SALT}"        # primary salt
+      REDIRECTOR__HASHIDS__SALTS__1: "${HASHID_SALT_OLD}"    # old salt for migration
+      REDIRECTOR__HASHIDS__MIN_LENGTH: "6"
+
+      # --- Redis cache ---
+      REDIRECTOR__REDIS__CACHE_TTL_SECONDS: "43200"          # 12 hours
+
+      # --- Database pool & resilience ---
+      REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS: "5"
+      REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS: "5"
+      REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND: "100"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD: "5"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS: "30"
+
+      # --- Custom table mapping ---
+      REDIRECTOR__DATABASE__QUERY__TABLE: "public.short_urls"
+      REDIRECTOR__DATABASE__QUERY__ID_COLUMN: "id"
+      REDIRECTOR__DATABASE__QUERY__URL_COLUMN: "target_url"
+
+      # --- Interstitial ---
+      REDIRECTOR__INTERSTITIAL__DELAY_SECONDS: "3"
+
+      # --- Metrics auth ---
+      REDIRECTOR__METRICS__BASIC_AUTH__USERNAME: "prometheus"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+
+      # --- Global rate limit ---
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__RATE_LIMIT__BURST: "200"
+
+      # --- Admin dashboard ---
+      REDIRECTOR__ADMIN__ENABLED: "true"
+      REDIRECTOR__ADMIN__SESSION_SECRET: "${SESSION_SECRET}"
+      REDIRECTOR__ADMIN__SESSION_TTL_HOURS: "8"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redirector
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: redirector
+
+  redis:
+    image: redis:7-alpine
 ```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__HASHIDS__SALTS__0
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: hashid-salt
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: REDIRECTOR__ADMIN__SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: session-secret
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**Plain Docker (single command)**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e REDIRECTOR__HASHIDS__SALTS__0="my-secret-salt" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__USERNAME="prometheus" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD="strong-password" \
+  -e REDIRECTOR__INTERSTITIAL__DELAY_SECONDS="3" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**Minimal setup (env vars only, no config file)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Salt Rotation via Environment Variables
+
+When rotating hashid salts, the service tries salts in order — the first match wins. Set the new salt first so new links use it, and keep the old salt for backward compatibility:
+
+**Option 1: Single variable with comma separator** (recommended):
+
+```bash
+# Before rotation
+HASHIDS_SALTS=original-salt
+
+# After rotation — new salt first, old salt for existing links
+HASHIDS_SALTS=new-salt,original-salt
+```
+
+**Option 2: Indexed variables**:
+
+```bash
+# Before rotation
+REDIRECTOR__HASHIDS__SALTS__0=original-salt
+
+# After rotation
+REDIRECTOR__HASHIDS__SALTS__0=new-salt
+REDIRECTOR__HASHIDS__SALTS__1=original-salt
+```
+
+> **Note**: If `REDIRECTOR__HASHIDS__SALTS__0` is set, `HASHIDS_SALTS` is ignored.
+
+#### Base64 Configuration
+
+For environments where mounting config files is not practical (PaaS, serverless, CI/CD), pass the entire config as a base64-encoded string:
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Decode (to verify)
+echo "$CONFIG_BASE64" | base64 -d
+```
+
+`CONFIG_BASE64` takes priority over `CONFIG_PATH`. Environment variable overrides (`REDIRECTOR__*` and PaaS vars) are applied **on top** of the decoded config.
 
 ## Database
 

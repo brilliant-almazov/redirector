@@ -111,17 +111,317 @@ services:
     image: redis:7-alpine
 ```
 
+### 环境变量
+
+配置服务有**三种方式**，按优先级排列（从高到低）：
+
+| 优先级 | 方式 | 使用场景 |
+|--------|------|----------|
+| 1 | `REDIRECTOR__*` 环境变量 | 覆盖单个值 |
+| 2 | 标准 PaaS 环境变量（`DATABASE_URL` 等） | PaaS 平台（Railway、Heroku、Render） |
+| 3 | 配置文件（`config.yaml` 或 `CONFIG_BASE64`） | 基础配置 |
+
+#### 特殊变量
+
+| 变量 | 默认值 | 描述 |
+|------|--------|------|
+| `CONFIG_PATH` | `config.yaml` | YAML 配置文件路径 |
+| `CONFIG_BASE64` | — | Base64 编码的 YAML 配置（优先于 `CONFIG_PATH`） |
+
+#### 标准 PaaS 环境变量
+
+这些变量会被自动识别和应用。大多数 PaaS 平台会为您自动设置：
+
+| 变量 | 配置路径 | 示例 |
+|------|----------|------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+| `HASHIDS_SALTS` | `hashids.salts` | `new-salt,old-salt`（逗号分隔） |
+
+> **优先级规则**：如果同时设置了 `DATABASE_URL` 和 `REDIRECTOR__DATABASE__URL`，带 `REDIRECTOR__` 前缀的版本优先。同样，`REDIRECTOR__HASHIDS__SALTS__0` 优先于 `HASHIDS_SALTS`。
+
+#### 前缀环境变量（`REDIRECTOR__*`）
+
+任何配置值都可以使用 `REDIRECTOR__` 前缀覆盖，使用 `__`（双下划线）作为嵌套分隔符。以下是所有可覆盖变量的**完整参考**：
+
+##### Server
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__SERVER__HOST` | `server.host` | `0.0.0.0` | 绑定地址 |
+| `REDIRECTOR__SERVER__PORT` | `server.port` | `8080` | HTTP 端口 |
+
+##### Hashids
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__HASHIDS__SALTS__0` | `hashids.salts[0]` | *必填* | 主 hashid 盐值 |
+| `REDIRECTOR__HASHIDS__SALTS__1` | `hashids.salts[1]` | — | 旧盐值（用于迁移） |
+| `REDIRECTOR__HASHIDS__MIN_LENGTH` | `hashids.min_length` | `6` | 最小 hashid 长度 |
+
+> **数组**：列表元素通过 `__0`、`__1`、`__2` 等索引。对于 hashid 盐值轮换，将 `__0` 设为新盐值，`__1` 设为旧盐值。
+
+##### Redis / 缓存
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__REDIS__URL` | `redis.url` | *必填* | Redis 连接 URL |
+| `REDIRECTOR__REDIS__CACHE_TTL_SECONDS` | `redis.cache_ttl_seconds` | `86400` | 缓存 TTL（秒）。`86400` = 24 小时 |
+
+##### 数据库
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__DATABASE__URL` | `database.url` | *必填* | PostgreSQL 连接 URL |
+| `REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS` | `database.pool.max_connections` | `3` | 连接池大小 |
+| `REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS` | `database.pool.connect_timeout_seconds` | `3` | 连接超时（秒） |
+| `REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND` | `database.rate_limit.max_requests_per_second` | `50` | 每秒最大数据库查询数 |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD` | `database.circuit_breaker.failure_threshold` | `3` | 熔断器打开前的连续失败次数 |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS` | `database.circuit_breaker.reset_timeout_seconds` | `60` | 半开重试前的等待秒数 |
+| `REDIRECTOR__DATABASE__QUERY__TABLE` | `database.query.table` | `dictionary.urls` | URL 查询表名 |
+| `REDIRECTOR__DATABASE__QUERY__ID_COLUMN` | `database.query.id_column` | `id` | 数字 ID 列名 |
+| `REDIRECTOR__DATABASE__QUERY__URL_COLUMN` | `database.query.url_column` | `name` | 目标 URL 列名 |
+
+##### 过渡页面
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__INTERSTITIAL__DELAY_SECONDS` | `interstitial.delay_seconds` | `5` | 重定向前的倒计时 |
+
+##### 指标
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__METRICS__BASIC_AUTH__USERNAME` | `metrics.basic_auth.username` | *必填* | `/metrics` 端点的用户名 |
+| `REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD` | `metrics.basic_auth.password` | *必填* | `/metrics` 端点的密码 |
+
+##### 速率限制（全局）
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND` | `rate_limit.requests_per_second` | `1000` | 每秒最大请求数 |
+| `REDIRECTOR__RATE_LIMIT__BURST` | `rate_limit.burst` | `100` | 超过 RPS 限制的突发允许量 |
+
+##### 管理面板
+
+| 环境变量 | 配置路径 | 默认值 | 描述 |
+|----------|----------|--------|------|
+| `REDIRECTOR__ADMIN__ENABLED` | `admin.enabled` | `false` | 启用管理面板 |
+| `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | 会话签名密钥（最少 32 个字符） |
+| `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | 会话有效期（小时） |
+
+> **注意**：管理用户（`admin.users`）的 `username` 和 `password_hash` 由于结构复杂，无法通过环境变量设置。请在配置文件或 `CONFIG_BASE64` 中定义。
+
+#### 按部署平台的示例
+
+**Railway / Render / Fly.io**（带托管数据库的 PaaS）：
+
+```bash
+# 这些通常由平台自动设置：
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# 通过 base64 设置配置：
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# 或覆盖单个值：
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__USERNAME=prometheus
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+REDIRECTOR__ADMIN__ENABLED=true
+REDIRECTOR__ADMIN__SESSION_SECRET=random-32-byte-secret-for-sessions
+```
+
+**Docker Compose（包含所有覆盖的完整示例）**：
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # --- 连接 URL（PaaS 风格）---
+      DATABASE_URL: "postgres://redirector:${DB_PASSWORD}@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+
+      # --- 配置文件 ---
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+
+      # --- 服务器 ---
+      REDIRECTOR__SERVER__HOST: "0.0.0.0"
+      REDIRECTOR__SERVER__PORT: "8080"
+
+      # --- Hashid 盐值 ---
+      REDIRECTOR__HASHIDS__SALTS__0: "${HASHID_SALT}"        # 主盐值
+      REDIRECTOR__HASHIDS__SALTS__1: "${HASHID_SALT_OLD}"    # 迁移用旧盐值
+      REDIRECTOR__HASHIDS__MIN_LENGTH: "6"
+
+      # --- Redis 缓存 ---
+      REDIRECTOR__REDIS__CACHE_TTL_SECONDS: "43200"          # 12 小时
+
+      # --- 数据库连接池和容错 ---
+      REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS: "5"
+      REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS: "5"
+      REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND: "100"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD: "5"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS: "30"
+
+      # --- 自定义表映射 ---
+      REDIRECTOR__DATABASE__QUERY__TABLE: "public.short_urls"
+      REDIRECTOR__DATABASE__QUERY__ID_COLUMN: "id"
+      REDIRECTOR__DATABASE__QUERY__URL_COLUMN: "target_url"
+
+      # --- 过渡页面 ---
+      REDIRECTOR__INTERSTITIAL__DELAY_SECONDS: "3"
+
+      # --- 指标认证 ---
+      REDIRECTOR__METRICS__BASIC_AUTH__USERNAME: "prometheus"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+
+      # --- 全局速率限制 ---
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__RATE_LIMIT__BURST: "200"
+
+      # --- 管理面板 ---
+      REDIRECTOR__ADMIN__ENABLED: "true"
+      REDIRECTOR__ADMIN__SESSION_SECRET: "${SESSION_SECRET}"
+      REDIRECTOR__ADMIN__SESSION_TTL_HOURS: "8"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redirector
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: redirector
+
+  redis:
+    image: redis:7-alpine
+```
+
+**Kubernetes**：
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__HASHIDS__SALTS__0
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: hashid-salt
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: REDIRECTOR__ADMIN__SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: session-secret
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**纯 Docker（单条命令）**：
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e REDIRECTOR__HASHIDS__SALTS__0="my-secret-salt" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__USERNAME="prometheus" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD="strong-password" \
+  -e REDIRECTOR__INTERSTITIAL__DELAY_SECONDS="3" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**最小化配置（仅环境变量，无配置文件）**：
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### 通过环境变量进行盐值轮换
+
+轮换 hashid 盐值时，服务按顺序尝试盐值 -- 第一个匹配的获胜。将新盐值排在前面以便新链接使用它，同时保留旧盐值以实现向后兼容：
+
+**方式 1：使用逗号分隔的单个变量**（推荐）：
+
+```bash
+# 轮换前
+HASHIDS_SALTS=original-salt
+
+# 轮换后 -- 新盐值在前，旧盐值用于现有链接
+HASHIDS_SALTS=new-salt,original-salt
+```
+
+**方式 2：索引变量**：
+
+```bash
+# 轮换前
+REDIRECTOR__HASHIDS__SALTS__0=original-salt
+
+# 轮换后
+REDIRECTOR__HASHIDS__SALTS__0=new-salt
+REDIRECTOR__HASHIDS__SALTS__1=original-salt
+```
+
+> **注意**：如果设置了 `REDIRECTOR__HASHIDS__SALTS__0`，`HASHIDS_SALTS` 将被忽略。
+
 #### Base64 配置
 
-适用于无法挂载配置文件的环境（如 Serverless、PaaS）：
+对于无法挂载配置文件的环境（PaaS、serverless、CI/CD），可以将整个配置作为 base64 编码字符串传递：
 
 ```bash
 # Encode
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# Decode（用于验证）
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` 优先于 `CONFIG_PATH`。环境变量覆盖（`REDIRECTOR__*` 和 PaaS 变量）在解码后的配置**之上**应用。
 
 ## 工作原理
 

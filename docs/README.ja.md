@@ -111,17 +111,262 @@ services:
     image: redis:7-alpine
 ```
 
-#### Base64設定
+## 設定
 
-設定ファイルのマウントができない環境（サーバーレス、PaaSなど）向け：
+`config.yaml` を作成してください：
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - ${HASHID_SALT}          # プライマリソルト
+    - ${HASHID_SALT_OLD}      # オプション：移行用の旧ソルト
+  min_length: 6
+
+redis:
+  url: ${REDIS_URL}
+  cache_ttl_seconds: 86400    # 24時間
+
+database:
+  url: ${DATABASE_URL}
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+  query:
+    table: "dictionary.urls"    # テーブル名
+    id_column: "id"             # IDカラム
+    url_column: "name"          # URLカラム
+
+interstitial:
+  delay_seconds: 5            # リダイレクト前のカウントダウン
+
+metrics:
+  basic_auth:
+    username: prometheus
+    password: ${METRICS_PASSWORD}
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100
+```
+
+### 設定オプション
+
+#### サーバー
+
+| オプション | デフォルト | 説明 |
+|------------|------------|------|
+| `host` | `0.0.0.0` | バインドアドレス |
+| `port` | `8080` | HTTPポート |
+
+#### Hashids
+
+| オプション | デフォルト | 説明 |
+|------------|------------|------|
+| `salts` | *必須* | hashidソルトのリスト（最初 = プライマリ） |
+| `min_length` | `6` | hashidの最小長 |
+
+#### Redis
+
+| オプション | デフォルト | 説明 |
+|------------|------------|------|
+| `url` | *必須* | Redis接続URL |
+| `cache_ttl_seconds` | `86400` | キャッシュTTL（秒） |
+
+#### データベース
+
+| オプション | デフォルト | 説明 |
+|------------|------------|------|
+| `url` | *必須* | PostgreSQL接続URL |
+| `pool.max_connections` | `3` | コネクションプールサイズ |
+| `pool.connect_timeout_seconds` | `3` | 接続タイムアウト |
+| `rate_limit.max_requests_per_second` | `50` | DBレート制限 |
+| `circuit_breaker.failure_threshold` | `3` | オープンまでの失敗回数 |
+| `circuit_breaker.reset_timeout_seconds` | `60` | サーキットリセットタイムアウト |
+
+#### レート制限（グローバル）
+
+| オプション | デフォルト | 説明 |
+|------------|------------|------|
+| `requests_per_second` | `1000` | グローバルレート制限 |
+| `burst` | `100` | バースト容量 |
+
+### 環境変数
+
+サービスの設定には**3つの方法**があります。優先度順（高い順）に記載：
+
+| 優先度 | 方法 | 使用ケース |
+|--------|------|------------|
+| 1 | `REDIRECTOR__*` 環境変数 | 個別の値を上書き |
+| 2 | 標準PaaS環境変数（`DATABASE_URL` 等） | PaaSプラットフォーム（Railway、Heroku、Render） |
+| 3 | 設定ファイル（`config.yaml` または `CONFIG_BASE64`） | 基本設定 |
+
+#### 特殊変数
+
+| 変数 | デフォルト | 説明 |
+|------|------------|------|
+| `CONFIG_PATH` | `config.yaml` | YAML設定ファイルへのパス |
+| `CONFIG_BASE64` | — | Base64エンコードされたYAML設定（`CONFIG_PATH`より優先） |
+
+#### 標準PaaS環境変数
+
+これらは自動的に認識され適用されます。ほとんどのPaaSプラットフォームが自動で設定します：
+
+| 変数 | 設定パス | 例 |
+|------|----------|-----|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+
+> **優先度ルール**：`DATABASE_URL` と `REDIRECTOR__DATABASE__URL` の両方が設定されている場合、`REDIRECTOR__` プレフィックス版が優先されます。
+
+#### プレフィックス付き環境変数（`REDIRECTOR__*`）
+
+任意の設定値は `REDIRECTOR__` プレフィックスと `__`（ダブルアンダースコア）をネストの区切りとして使用して上書きできます：
+
+```
+YAML設定パス                →  環境変数
+─────────────────────────────────────────────────────
+server.port               →  REDIRECTOR__SERVER__PORT
+server.host               →  REDIRECTOR__SERVER__HOST
+database.url              →  REDIRECTOR__DATABASE__URL
+database.pool.max_connections → REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS
+redis.url                 →  REDIRECTOR__REDIS__URL
+redis.cache_ttl_seconds   →  REDIRECTOR__REDIS__CACHE_TTL_SECONDS
+interstitial.delay_seconds → REDIRECTOR__INTERSTITIAL__DELAY_SECONDS
+metrics.basic_auth.username → REDIRECTOR__METRICS__BASIC_AUTH__USERNAME
+metrics.basic_auth.password → REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+rate_limit.requests_per_second → REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND
+rate_limit.burst          →  REDIRECTOR__RATE_LIMIT__BURST
+admin.enabled             →  REDIRECTOR__ADMIN__ENABLED
+admin.session_ttl_hours   →  REDIRECTOR__ADMIN__SESSION_TTL_HOURS
+```
+
+#### デプロイプラットフォーム別の例
+
+**Railway / Render / Fly.io**（マネージドDBを持つPaaS）：
 
 ```bash
-# Encode
+# これらは通常プラットフォームによって自動設定されます：
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Base64で設定を指定：
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# または個別の値を上書き：
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+```
+
+**Docker / Docker Compose**：
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://user:pass@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+      # または設定ファイルの上に個別の値を上書き：
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # CONFIG_BASE64使用時はオプション
+    depends_on:
+      - postgres
+      - redis
+```
+
+**Kubernetes**：
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**プレーンDocker**：
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**最小構成（環境変数のみ、設定ファイルなし）**：
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Base64設定
+
+設定ファイルのマウントが実用的でない環境（PaaS、サーバーレス、CI/CD）では、設定全体をBase64エンコード文字列として渡します：
+
+```bash
+# エンコード
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# デコード（確認用）
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` は `CONFIG_PATH` より優先されます。環境変数のオーバーライド（`REDIRECTOR__*` とPaaS変数）はデコードされた設定の**上に**適用されます。
 
 ## 仕組み
 

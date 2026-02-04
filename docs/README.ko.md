@@ -111,17 +111,262 @@ services:
     image: redis:7-alpine
 ```
 
-#### Base64 설정
+## 설정
 
-설정 파일 마운트가 불가능한 환경(예: 서버리스, PaaS):
+`config.yaml`을 생성하세요:
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - ${HASHID_SALT}          # 기본 솔트
+    - ${HASHID_SALT_OLD}      # 선택: 마이그레이션용 이전 솔트
+  min_length: 6
+
+redis:
+  url: ${REDIS_URL}
+  cache_ttl_seconds: 86400    # 24시간
+
+database:
+  url: ${DATABASE_URL}
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+  query:
+    table: "dictionary.urls"    # 테이블 이름
+    id_column: "id"             # ID 컬럼
+    url_column: "name"          # URL 컬럼
+
+interstitial:
+  delay_seconds: 5            # 리다이렉트 전 카운트다운
+
+metrics:
+  basic_auth:
+    username: prometheus
+    password: ${METRICS_PASSWORD}
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100
+```
+
+### 설정 옵션
+
+#### 서버
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `host` | `0.0.0.0` | 바인드 주소 |
+| `port` | `8080` | HTTP 포트 |
+
+#### Hashids
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `salts` | *필수* | hashid 솔트 목록 (첫 번째 = 기본) |
+| `min_length` | `6` | 최소 hashid 길이 |
+
+#### Redis
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `url` | *필수* | Redis 연결 URL |
+| `cache_ttl_seconds` | `86400` | 캐시 TTL (초) |
+
+#### 데이터베이스
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `url` | *필수* | PostgreSQL 연결 URL |
+| `pool.max_connections` | `3` | 커넥션 풀 크기 |
+| `pool.connect_timeout_seconds` | `3` | 연결 타임아웃 |
+| `rate_limit.max_requests_per_second` | `50` | DB 속도 제한 |
+| `circuit_breaker.failure_threshold` | `3` | 오픈까지 실패 횟수 |
+| `circuit_breaker.reset_timeout_seconds` | `60` | 서킷 리셋 타임아웃 |
+
+#### 속도 제한 (글로벌)
+
+| 옵션 | 기본값 | 설명 |
+|------|--------|------|
+| `requests_per_second` | `1000` | 글로벌 속도 제한 |
+| `burst` | `100` | 버스트 허용량 |
+
+### 환경 변수
+
+서비스를 설정하는 **세 가지 방법**이 있으며, 우선순위 순으로 나열됩니다 (높은 순):
+
+| 우선순위 | 방법 | 사용 사례 |
+|----------|------|-----------|
+| 1 | `REDIRECTOR__*` 환경 변수 | 개별 값 오버라이드 |
+| 2 | 표준 PaaS 환경 변수 (`DATABASE_URL` 등) | PaaS 플랫폼 (Railway, Heroku, Render) |
+| 3 | 설정 파일 (`config.yaml` 또는 `CONFIG_BASE64`) | 기본 설정 |
+
+#### 특수 변수
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `CONFIG_PATH` | `config.yaml` | YAML 설정 파일 경로 |
+| `CONFIG_BASE64` | — | Base64로 인코딩된 YAML 설정 (`CONFIG_PATH`보다 우선) |
+
+#### 표준 PaaS 환경 변수
+
+이들은 자동으로 인식되고 적용됩니다. 대부분의 PaaS 플랫폼이 자동으로 설정합니다:
+
+| 변수 | 설정 경로 | 예시 |
+|------|-----------|------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+
+> **우선순위 규칙**: `DATABASE_URL`과 `REDIRECTOR__DATABASE__URL`이 모두 설정된 경우, `REDIRECTOR__` 프리픽스 버전이 우선합니다.
+
+#### 프리픽스 환경 변수 (`REDIRECTOR__*`)
+
+모든 설정 값은 `REDIRECTOR__` 프리픽스와 `__` (더블 언더스코어)를 중첩 구분자로 사용하여 오버라이드할 수 있습니다:
+
+```
+YAML 설정 경로               →  환경 변수
+─────────────────────────────────────────────────────
+server.port               →  REDIRECTOR__SERVER__PORT
+server.host               →  REDIRECTOR__SERVER__HOST
+database.url              →  REDIRECTOR__DATABASE__URL
+database.pool.max_connections → REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS
+redis.url                 →  REDIRECTOR__REDIS__URL
+redis.cache_ttl_seconds   →  REDIRECTOR__REDIS__CACHE_TTL_SECONDS
+interstitial.delay_seconds → REDIRECTOR__INTERSTITIAL__DELAY_SECONDS
+metrics.basic_auth.username → REDIRECTOR__METRICS__BASIC_AUTH__USERNAME
+metrics.basic_auth.password → REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+rate_limit.requests_per_second → REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND
+rate_limit.burst          →  REDIRECTOR__RATE_LIMIT__BURST
+admin.enabled             →  REDIRECTOR__ADMIN__ENABLED
+admin.session_ttl_hours   →  REDIRECTOR__ADMIN__SESSION_TTL_HOURS
+```
+
+#### 배포 플랫폼별 예시
+
+**Railway / Render / Fly.io** (관리형 데이터베이스를 가진 PaaS):
 
 ```bash
-# Encode
+# 이들은 보통 플랫폼에 의해 자동으로 설정됩니다:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Base64로 설정을 지정:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# 또는 개별 값을 오버라이드:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+```
+
+**Docker / Docker Compose**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://user:pass@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+      # 또는 설정 파일 위에 개별 값을 오버라이드:
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # CONFIG_BASE64 사용 시 선택사항
+    depends_on:
+      - postgres
+      - redis
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**일반 Docker**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**최소 설정 (환경 변수만, 설정 파일 없음)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Base64 설정
+
+설정 파일 마운트가 실용적이지 않은 환경(PaaS, 서버리스, CI/CD)에서는 전체 설정을 Base64 인코딩 문자열로 전달하세요:
+
+```bash
+# 인코딩
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# 디코딩 (확인용)
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64`는 `CONFIG_PATH`보다 우선합니다. 환경 변수 오버라이드 (`REDIRECTOR__*` 및 PaaS 변수)는 디코딩된 설정 **위에** 적용됩니다.
 
 ## 작동 방식
 

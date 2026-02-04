@@ -111,17 +111,317 @@ services:
     image: redis:7-alpine
 ```
 
+### Biến môi trường
+
+Có **ba cách** để cấu hình dịch vụ, được liệt kê theo thứ tự ưu tiên (cao nhất trước):
+
+| Ưu tiên | Phương thức | Trường hợp sử dụng |
+|---------|-------------|---------------------|
+| 1 | Biến môi trường `REDIRECTOR__*` | Ghi đè các giá trị riêng lẻ |
+| 2 | Biến PaaS tiêu chuẩn (`DATABASE_URL`, v.v.) | Nền tảng PaaS (Railway, Heroku, Render) |
+| 3 | File cấu hình (`config.yaml` hoặc `CONFIG_BASE64`) | Cấu hình cơ sở |
+
+#### Biến đặc biệt
+
+| Biến | Mặc định | Mô tả |
+|------|----------|-------|
+| `CONFIG_PATH` | `config.yaml` | Đường dẫn đến file cấu hình YAML |
+| `CONFIG_BASE64` | — | Cấu hình YAML mã hóa Base64 (ưu tiên hơn `CONFIG_PATH`) |
+
+#### Biến môi trường PaaS tiêu chuẩn
+
+Các biến này được tự động nhận diện và áp dụng. Hầu hết nền tảng PaaS thiết lập chúng cho bạn:
+
+| Biến | Đường dẫn cấu hình | Ví dụ |
+|------|---------------------|-------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+| `HASHIDS_SALTS` | `hashids.salts` | `new-salt,old-salt` (phân cách bằng dấu phẩy) |
+
+> **Quy tắc ưu tiên**: Nếu cả `DATABASE_URL` và `REDIRECTOR__DATABASE__URL` đều được thiết lập, phiên bản có tiền tố `REDIRECTOR__` sẽ được ưu tiên. Tương tự, `REDIRECTOR__HASHIDS__SALTS__0` có ưu tiên hơn `HASHIDS_SALTS`.
+
+#### Biến môi trường có tiền tố (`REDIRECTOR__*`)
+
+Bất kỳ giá trị cấu hình nào cũng có thể được ghi đè bằng tiền tố `REDIRECTOR__` với `__` (hai dấu gạch dưới) làm dấu phân cách lồng nhau. Dưới đây là **tham chiếu đầy đủ** của tất cả các biến có thể ghi đè:
+
+##### Server
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__SERVER__HOST` | `server.host` | `0.0.0.0` | Địa chỉ gắn kết |
+| `REDIRECTOR__SERVER__PORT` | `server.port` | `8080` | Cổng HTTP |
+
+##### Hashids
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__HASHIDS__SALTS__0` | `hashids.salts[0]` | *bắt buộc* | Salt hashid chính |
+| `REDIRECTOR__HASHIDS__SALTS__1` | `hashids.salts[1]` | — | Salt cũ (để di chuyển) |
+| `REDIRECTOR__HASHIDS__MIN_LENGTH` | `hashids.min_length` | `6` | Độ dài hashid tối thiểu |
+
+> **Mảng**: Các phần tử danh sách được đánh chỉ mục bằng `__0`, `__1`, `__2`, v.v. Để xoay vòng salt hashid, đặt `__0` cho salt mới và `__1` cho salt cũ.
+
+##### Redis / Cache
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__REDIS__URL` | `redis.url` | *bắt buộc* | URL kết nối Redis |
+| `REDIRECTOR__REDIS__CACHE_TTL_SECONDS` | `redis.cache_ttl_seconds` | `86400` | TTL cache (giây). `86400` = 24 giờ |
+
+##### Cơ sở dữ liệu
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__DATABASE__URL` | `database.url` | *bắt buộc* | URL kết nối PostgreSQL |
+| `REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS` | `database.pool.max_connections` | `3` | Kích thước pool kết nối |
+| `REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS` | `database.pool.connect_timeout_seconds` | `3` | Thời gian chờ kết nối (giây) |
+| `REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND` | `database.rate_limit.max_requests_per_second` | `50` | Số truy vấn DB tối đa mỗi giây |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD` | `database.circuit_breaker.failure_threshold` | `3` | Số lỗi liên tiếp trước khi mở mạch |
+| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS` | `database.circuit_breaker.reset_timeout_seconds` | `60` | Giây trước khi thử lại bán mở |
+| `REDIRECTOR__DATABASE__QUERY__TABLE` | `database.query.table` | `dictionary.urls` | Tên bảng tra cứu URL |
+| `REDIRECTOR__DATABASE__QUERY__ID_COLUMN` | `database.query.id_column` | `id` | Tên cột cho ID số |
+| `REDIRECTOR__DATABASE__QUERY__URL_COLUMN` | `database.query.url_column` | `name` | Tên cột cho URL đích |
+
+##### Trang trung gian
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__INTERSTITIAL__DELAY_SECONDS` | `interstitial.delay_seconds` | `5` | Đếm ngược trước chuyển hướng |
+
+##### Metrics
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__METRICS__BASIC_AUTH__USERNAME` | `metrics.basic_auth.username` | *bắt buộc* | Tên người dùng cho endpoint `/metrics` |
+| `REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD` | `metrics.basic_auth.password` | *bắt buộc* | Mật khẩu cho endpoint `/metrics` |
+
+##### Giới hạn tốc độ (Toàn cục)
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND` | `rate_limit.requests_per_second` | `1000` | Số yêu cầu tối đa mỗi giây |
+| `REDIRECTOR__RATE_LIMIT__BURST` | `rate_limit.burst` | `100` | Cho phép burst vượt giới hạn RPS |
+
+##### Bảng điều khiển Admin
+
+| Biến môi trường | Đường dẫn cấu hình | Mặc định | Mô tả |
+|-----------------|---------------------|----------|-------|
+| `REDIRECTOR__ADMIN__ENABLED` | `admin.enabled` | `false` | Bật bảng điều khiển admin |
+| `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | Bí mật ký phiên (tối thiểu 32 ký tự) |
+| `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Thời gian sống phiên tính bằng giờ |
+
+> **Lưu ý**: Người dùng admin (`admin.users`) với `username` và `password_hash` không thể thiết lập qua biến môi trường do cấu trúc phức tạp. Định nghĩa chúng trong file cấu hình hoặc `CONFIG_BASE64`.
+
+#### Ví dụ theo nền tảng triển khai
+
+**Railway / Render / Fly.io** (PaaS với cơ sở dữ liệu được quản lý):
+
+```bash
+# Các biến này thường được nền tảng tự động thiết lập:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Thiết lập cấu hình qua base64:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# Hoặc ghi đè các giá trị riêng lẻ:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__USERNAME=prometheus
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+REDIRECTOR__ADMIN__ENABLED=true
+REDIRECTOR__ADMIN__SESSION_SECRET=random-32-byte-secret-for-sessions
+```
+
+**Docker Compose (ví dụ đầy đủ với tất cả ghi đè)**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # --- URL kết nối (kiểu PaaS) ---
+      DATABASE_URL: "postgres://redirector:${DB_PASSWORD}@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+
+      # --- File cấu hình ---
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+
+      # --- Server ---
+      REDIRECTOR__SERVER__HOST: "0.0.0.0"
+      REDIRECTOR__SERVER__PORT: "8080"
+
+      # --- Salt hashid ---
+      REDIRECTOR__HASHIDS__SALTS__0: "${HASHID_SALT}"        # salt chính
+      REDIRECTOR__HASHIDS__SALTS__1: "${HASHID_SALT_OLD}"    # salt cũ để di chuyển
+      REDIRECTOR__HASHIDS__MIN_LENGTH: "6"
+
+      # --- Cache Redis ---
+      REDIRECTOR__REDIS__CACHE_TTL_SECONDS: "43200"          # 12 giờ
+
+      # --- Pool DB và khả năng phục hồi ---
+      REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS: "5"
+      REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS: "5"
+      REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND: "100"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD: "5"
+      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS: "30"
+
+      # --- Ánh xạ bảng tùy chỉnh ---
+      REDIRECTOR__DATABASE__QUERY__TABLE: "public.short_urls"
+      REDIRECTOR__DATABASE__QUERY__ID_COLUMN: "id"
+      REDIRECTOR__DATABASE__QUERY__URL_COLUMN: "target_url"
+
+      # --- Trang trung gian ---
+      REDIRECTOR__INTERSTITIAL__DELAY_SECONDS: "3"
+
+      # --- Xác thực metrics ---
+      REDIRECTOR__METRICS__BASIC_AUTH__USERNAME: "prometheus"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+
+      # --- Giới hạn tốc độ toàn cục ---
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__RATE_LIMIT__BURST: "200"
+
+      # --- Bảng điều khiển admin ---
+      REDIRECTOR__ADMIN__ENABLED: "true"
+      REDIRECTOR__ADMIN__SESSION_SECRET: "${SESSION_SECRET}"
+      REDIRECTOR__ADMIN__SESSION_TTL_HOURS: "8"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redirector
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: redirector
+
+  redis:
+    image: redis:7-alpine
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__HASHIDS__SALTS__0
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: hashid-salt
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: REDIRECTOR__ADMIN__SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: session-secret
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**Docker thuần (một lệnh)**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e REDIRECTOR__HASHIDS__SALTS__0="my-secret-salt" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__USERNAME="prometheus" \
+  -e REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD="strong-password" \
+  -e REDIRECTOR__INTERSTITIAL__DELAY_SECONDS="3" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**Cài đặt tối thiểu (chỉ biến môi trường, không file cấu hình)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Xoay vòng Salt qua biến môi trường
+
+Khi xoay vòng salt hashid, dịch vụ thử các salt theo thứ tự -- kết quả khớp đầu tiên thắng. Đặt salt mới trước để các liên kết mới sử dụng nó, và giữ salt cũ để tương thích ngược:
+
+**Tùy chọn 1: Một biến với dấu phẩy phân cách** (khuyến nghị):
+
+```bash
+# Trước khi xoay vòng
+HASHIDS_SALTS=original-salt
+
+# Sau khi xoay vòng -- salt mới trước, salt cũ cho các liên kết hiện tại
+HASHIDS_SALTS=new-salt,original-salt
+```
+
+**Tùy chọn 2: Biến có chỉ mục**:
+
+```bash
+# Trước khi xoay vòng
+REDIRECTOR__HASHIDS__SALTS__0=original-salt
+
+# Sau khi xoay vòng
+REDIRECTOR__HASHIDS__SALTS__0=new-salt
+REDIRECTOR__HASHIDS__SALTS__1=original-salt
+```
+
+> **Lưu ý**: Nếu `REDIRECTOR__HASHIDS__SALTS__0` được thiết lập, `HASHIDS_SALTS` sẽ bị bỏ qua.
+
 #### Cấu hình Base64
 
-Cho các môi trường không thể mount file cấu hình (ví dụ serverless, PaaS):
+Cho các môi trường không thể mount file cấu hình (PaaS, serverless, CI/CD), truyền toàn bộ cấu hình dưới dạng chuỗi mã hóa base64:
 
 ```bash
 # Encode
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# Decode (để xác minh)
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` có ưu tiên hơn `CONFIG_PATH`. Ghi đè biến môi trường (`REDIRECTOR__*` và biến PaaS) được áp dụng **lên trên** cấu hình đã giải mã.
 
 ## Cách hoạt động
 

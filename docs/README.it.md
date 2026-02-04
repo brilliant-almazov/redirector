@@ -111,17 +111,262 @@ services:
     image: redis:7-alpine
 ```
 
-#### Configurazione Base64
+## Configurazione
 
-Per ambienti dove il montaggio di file di configurazione non è possibile (es. serverless, PaaS):
+Creare `config.yaml`:
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+hashids:
+  salts:
+    - ${HASHID_SALT}          # Salt primario
+    - ${HASHID_SALT_OLD}      # Opzionale: vecchio salt per migrazione
+  min_length: 6
+
+redis:
+  url: ${REDIS_URL}
+  cache_ttl_seconds: 86400    # 24 ore
+
+database:
+  url: ${DATABASE_URL}
+  pool:
+    max_connections: 5
+    connect_timeout_seconds: 3
+  rate_limit:
+    max_requests_per_second: 50
+  circuit_breaker:
+    failure_threshold: 3
+    reset_timeout_seconds: 60
+  query:
+    table: "dictionary.urls"    # Nome della tabella
+    id_column: "id"             # Colonna ID
+    url_column: "name"          # Colonna URL
+
+interstitial:
+  delay_seconds: 5            # Conto alla rovescia prima del reindirizzamento
+
+metrics:
+  basic_auth:
+    username: prometheus
+    password: ${METRICS_PASSWORD}
+
+rate_limit:
+  requests_per_second: 1000
+  burst: 100
+```
+
+### Opzioni di configurazione
+
+#### Server
+
+| Opzione | Predefinito | Descrizione |
+|---------|-------------|-------------|
+| `host` | `0.0.0.0` | Indirizzo di binding |
+| `port` | `8080` | Porta HTTP |
+
+#### Hashids
+
+| Opzione | Predefinito | Descrizione |
+|---------|-------------|-------------|
+| `salts` | *obbligatorio* | Lista dei salt hashid (primo = primario) |
+| `min_length` | `6` | Lunghezza minima hashid |
+
+#### Redis
+
+| Opzione | Predefinito | Descrizione |
+|---------|-------------|-------------|
+| `url` | *obbligatorio* | URL di connessione Redis |
+| `cache_ttl_seconds` | `86400` | TTL cache in secondi |
+
+#### Database
+
+| Opzione | Predefinito | Descrizione |
+|---------|-------------|-------------|
+| `url` | *obbligatorio* | URL di connessione PostgreSQL |
+| `pool.max_connections` | `3` | Dimensione del pool di connessioni |
+| `pool.connect_timeout_seconds` | `3` | Timeout di connessione |
+| `rate_limit.max_requests_per_second` | `50` | Rate limit DB |
+| `circuit_breaker.failure_threshold` | `3` | Errori prima dell'apertura |
+| `circuit_breaker.reset_timeout_seconds` | `60` | Timeout reset circuit |
+
+#### Rate Limit (Globale)
+
+| Opzione | Predefinito | Descrizione |
+|---------|-------------|-------------|
+| `requests_per_second` | `1000` | Rate limit globale |
+| `burst` | `100` | Capacità burst |
+
+### Variabili d'ambiente
+
+Ci sono **tre modi** per configurare il servizio, elencati per priorità (più alta prima):
+
+| Priorità | Metodo | Caso d'uso |
+|----------|--------|------------|
+| 1 | Variabili `REDIRECTOR__*` | Sovrascrivere valori individuali |
+| 2 | Variabili PaaS standard (`DATABASE_URL`, ecc.) | Piattaforme PaaS (Railway, Heroku, Render) |
+| 3 | File di configurazione (`config.yaml` o `CONFIG_BASE64`) | Configurazione base |
+
+#### Variabili speciali
+
+| Variabile | Predefinito | Descrizione |
+|-----------|-------------|-------------|
+| `CONFIG_PATH` | `config.yaml` | Percorso al file di configurazione YAML |
+| `CONFIG_BASE64` | — | Configurazione YAML codificata in Base64 (priorità su `CONFIG_PATH`) |
+
+#### Variabili d'ambiente PaaS standard
+
+Queste vengono riconosciute e applicate automaticamente. La maggior parte delle piattaforme PaaS le imposta per te:
+
+| Variabile | Percorso configurazione | Esempio |
+|-----------|------------------------|---------|
+| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | `redis.url` | `redis://host:6379` |
+| `PORT` | `server.port` | `3000` |
+
+> **Regola di priorità**: Se sia `DATABASE_URL` che `REDIRECTOR__DATABASE__URL` sono impostati, la versione con prefisso `REDIRECTOR__` ha la precedenza.
+
+#### Variabili con prefisso (`REDIRECTOR__*`)
+
+Qualsiasi valore di configurazione può essere sovrascritto usando il prefisso `REDIRECTOR__` con `__` (doppio underscore) come separatore di annidamento:
+
+```
+Percorso YAML configurazione →  Variabile d'ambiente
+─────────────────────────────────────────────────────
+server.port               →  REDIRECTOR__SERVER__PORT
+server.host               →  REDIRECTOR__SERVER__HOST
+database.url              →  REDIRECTOR__DATABASE__URL
+database.pool.max_connections → REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS
+redis.url                 →  REDIRECTOR__REDIS__URL
+redis.cache_ttl_seconds   →  REDIRECTOR__REDIS__CACHE_TTL_SECONDS
+interstitial.delay_seconds → REDIRECTOR__INTERSTITIAL__DELAY_SECONDS
+metrics.basic_auth.username → REDIRECTOR__METRICS__BASIC_AUTH__USERNAME
+metrics.basic_auth.password → REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+rate_limit.requests_per_second → REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND
+rate_limit.burst          →  REDIRECTOR__RATE_LIMIT__BURST
+admin.enabled             →  REDIRECTOR__ADMIN__ENABLED
+admin.session_ttl_hours   →  REDIRECTOR__ADMIN__SESSION_TTL_HOURS
+```
+
+#### Esempi per piattaforma di deployment
+
+**Railway / Render / Fly.io** (PaaS con database gestiti):
 
 ```bash
-# Encode
+# Queste vengono solitamente impostate automaticamente dalla piattaforma:
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+PORT=3000
+
+# Imposta la configurazione via base64:
+CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+
+# O sovrascrivi valori individuali:
+REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
+REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
+```
+
+**Docker / Docker Compose**:
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://user:pass@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+      CONFIG_BASE64: "${CONFIG_BASE64}"
+      # O sovrascrivi valori individuali sopra il file di configurazione:
+      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
+      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
+    volumes:
+      - ./config.yaml:/app/config.yaml  # opzionale con CONFIG_BASE64
+    depends_on:
+      - postgres
+      - redis
+```
+
+**Kubernetes**:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: redirector
+          image: ghcr.io/brilliant-almazov/redirector:latest
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: redis-url
+            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redirector-secrets
+                  key: metrics-password
+            - name: CONFIG_BASE64
+              valueFrom:
+                configMapKeyRef:
+                  name: redirector-config
+                  key: config-base64
+```
+
+**Docker semplice**:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  ghcr.io/brilliant-almazov/redirector:latest
+```
+
+**Setup minimale (solo variabili d'ambiente, nessun file di configurazione)**:
+
+```bash
+export CONFIG_BASE64=$(cat <<'YAML' | base64
+hashids:
+  salts:
+    - "my-secret-salt"
+metrics:
+  basic_auth:
+    username: prometheus
+    password: change-me
+YAML
+)
+export DATABASE_URL=postgres://user:pass@localhost:5432/db
+export REDIS_URL=redis://localhost:6379
+export PORT=3000
+
+./redirector
+```
+
+#### Configurazione Base64
+
+Per ambienti dove il montaggio di file di configurazione non è pratico (PaaS, serverless, CI/CD), passare l'intera configurazione come stringa codificata in Base64:
+
+```bash
+# Codifica
 cat config.yaml | base64
 
-# Run with base64 config
-CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+# Decodifica (per verifica)
+echo "$CONFIG_BASE64" | base64 -d
 ```
+
+`CONFIG_BASE64` ha priorità su `CONFIG_PATH`. Le sovrascritture delle variabili d'ambiente (`REDIRECTOR__*` e variabili PaaS) vengono applicate **sopra** la configurazione decodificata.
 
 ## Come funziona
 
