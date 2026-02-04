@@ -111,6 +111,18 @@ services:
     image: redis:7-alpine
 ```
 
+#### Cấu hình Base64
+
+Cho các môi trường không thể mount file cấu hình (ví dụ Railway, serverless):
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Run with base64 config
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
+
 ## Cách hoạt động
 
 1. Người dùng truy cập `/r/{hashid}` (ví dụ: `/r/abc123`)

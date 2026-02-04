@@ -111,6 +111,18 @@ services:
     image: redis:7-alpine
 ```
 
+#### Base64 配置
+
+适用于无法挂载配置文件的环境（如 Railway、Serverless）：
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Run with base64 config
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
+
 ## 工作原理
 
 1. 用户访问 `/r/{hashid}`（例如 `/r/abc123`）
