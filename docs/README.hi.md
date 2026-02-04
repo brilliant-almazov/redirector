@@ -111,6 +111,18 @@ services:
     image: redis:7-alpine
 ```
 
+#### Base64 कॉन्फ़िगरेशन
+
+ऐसे वातावरण के लिए जहाँ कॉन्फ़िग फ़ाइलें माउंट करना संभव नहीं है (जैसे Railway, serverless):
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Run with base64 config
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
+
 ## यह कैसे काम करता है
 
 1. उपयोगकर्ता `/r/{hashid}` पर जाता है (जैसे `/r/abc123`)
