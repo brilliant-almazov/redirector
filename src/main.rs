@@ -6,11 +6,11 @@ use redirector::{
     admin::{admin_routes, AdminState},
     config::Config,
     db::MainStorage,
-    handlers::{index_handler, metrics_handler, redirect_handler, RedirectState},
+    handlers::{healthz_handler, index_handler, metrics_handler, redirect_handler, RedirectState},
     metrics as service_metrics,
     middleware::{
-        basic_auth::basic_auth_middleware, rate_limit::rate_limit_middleware, BasicAuthLayer,
-        RateLimitLayer,
+        basic_auth::basic_auth_middleware, rate_limit::rate_limit_middleware, set_version_header,
+        BasicAuthLayer, RateLimitLayer,
     },
     services::{CacheService, HashidService, UrlResolver},
 };
@@ -102,12 +102,14 @@ async fn main() -> anyhow::Result<()> {
     // Build main router
     let mut app = Router::new()
         .route("/", get(index_handler))
+        .route("/healthz", get(healthz_handler))
         .route("/r/{hashid}", get(redirect_handler))
         .route("/d/{hashid}", get(redirect_handler))
         .merge(metrics_router)
         .with_state(redirect_state)
         .layer(axum_middleware::from_fn(rate_limit_middleware))
         .layer(Extension(rate_limiter))
+        .layer(axum_middleware::map_response(set_version_header))
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http());
 
