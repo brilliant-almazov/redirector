@@ -30,11 +30,16 @@ async fn main() -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer().json())
         .init();
 
-    // Load configuration
-    let config_path = std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config.yaml".to_string());
-    let config = Config::load(&config_path)?;
-
-    tracing::info!(config_path = %config_path, "Configuration loaded");
+    // Load configuration: CONFIG_BASE64 takes priority over CONFIG_PATH
+    let config = if let Ok(encoded) = std::env::var("CONFIG_BASE64") {
+        tracing::info!("Loading configuration from CONFIG_BASE64");
+        Config::load_from_base64(&encoded)?
+    } else {
+        let config_path =
+            std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config.yaml".to_string());
+        tracing::info!(config_path = %config_path, "Loading configuration from file");
+        Config::load(&config_path)?
+    };
 
     // Initialize Prometheus metrics
     let prometheus_handle = PrometheusBuilder::new()

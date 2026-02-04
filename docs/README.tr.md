@@ -111,6 +111,18 @@ services:
     image: redis:7-alpine
 ```
 
+#### Base64 Yapılandırması
+
+Yapılandırma dosyalarının bağlanmasının mümkün olmadığı ortamlar için (örn. serverless, PaaS):
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Run with base64 config
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
+
 ## Nasıl Çalışır
 
 1. Kullanıcı `/r/{hashid}` ziyaret eder (örn. `/r/abc123`)

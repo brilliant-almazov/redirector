@@ -111,6 +111,18 @@ services:
     image: redis:7-alpine
 ```
 
+#### Base64設定
+
+設定ファイルのマウントができない環境（サーバーレス、PaaSなど）向け：
+
+```bash
+# Encode
+cat config.yaml | base64
+
+# Run with base64 config
+CONFIG_BASE64="c2VydmVyOgogIGhvc3Q6IC..." docker run ghcr.io/brilliant-almazov/redirector:latest
+```
+
 ## 仕組み
 
 1. ユーザーが `/r/{hashid}` にアクセス（例: `/r/abc123`）
