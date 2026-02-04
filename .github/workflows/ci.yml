@@ -50,11 +50,8 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   test-unit:
-    name: Unit Tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    name: Unit Tests
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -149,35 +146,36 @@ jobs:
           minColorRange: 0
 
   build:
-    name: Build (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
+    name: Build
+    runs-on: ubuntu-latest
     needs: [lint, test-unit]
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact: redirector-linux-amd64
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact: redirector-macos-arm64
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
         with:
-          targets: ${{ matrix.target }}
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-build-
 
       - name: Build release
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: target/${{ matrix.target }}/release/redirector
+          name: redirector-linux-amd64
+          path: target/release/redirector
           retention-days: 7
 
   benchmark:
