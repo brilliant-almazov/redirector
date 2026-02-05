@@ -48,6 +48,7 @@ Condividere URL lunghi è scomodo. Gli accorciatori di URL esistono ma spesso re
 - 🎨 **Pagine belle** - Pagine 404 e indice pulite con 4 temi
 - 🔑 **Salt multipli** - Supporto rotazione salt hashid per migrazione
 - 📱 **Dashboard admin** - Monitoraggio metriche in tempo reale con SSE
+- 📤 **Analisi eventi** - Pubblicazione opzionale di eventi su RabbitMQ con consumer PostgreSQL
 
 ## Screenshot
 
@@ -72,6 +73,7 @@ Condividere URL lunghi è scomodo. Gli accorciatori di URL esistono ma spesso re
 - **Cache**: Compatibile Redis (Redis, Dragonfly, Valkey, KeyDB, ecc.)
 - **Database**: PostgreSQL (layer di storage intercambiabile)
 - **Metriche**: Prometheus + metrics-rs
+- **Coda messaggi**: RabbitMQ (opzionale, per analisi eventi)
 - **Hash password**: Argon2
 
 > **Nota**: I layer di storage e cache sono astratti e possono essere sostituiti con qualsiasi fonte dati compatibile. Attualmente in sviluppo attivo.
@@ -427,6 +429,79 @@ Apri `http://localhost:8080/admin` e accedi con le tue credenziali.
 - Lista reindirizzamenti recenti
 - Simulazione carico per test
 - Tre temi: Chiaro, Scuro, Caldo
+
+## Analisi degli Eventi
+
+Il servizio include una **pipeline opzionale di analisi degli eventi** basata su RabbitMQ per la pubblicazione di eventi su un database PostgreSQL separato. Questo sistema consente di raccogliere, arricchire e analizzare i dati dei reindirizzamenti in tempo reale.
+
+Per una documentazione completa, vedi [EVENT_ANALYTICS.md](EVENT_ANALYTICS.md).
+
+### Funzionalità
+
+- **Fire-and-forget** - La pubblicazione degli eventi non influisce sulla latenza dei reindirizzamenti
+- **Batching** - Gli eventi vengono raggruppati per dimensione (100) o tempo (1 secondo)
+- **Parsing User-Agent** - Estrazione di browser, versione, sistema operativo e tipo di dispositivo
+- **Arricchimento GeoIP** - Paese e città dall'indirizzo IP (database MaxMind mmdb)
+- **Deduplicazione dei riferimenti** - Dedup basato su MD5 per referrer e user agent
+- **Partizionamento mensile** - Creazione automatica delle partizioni per `redirect_events`
+
+### Configurazione rapida
+
+#### 1. Abilita la pubblicazione degli eventi
+
+Aggiungi a `config.yaml`:
+
+```yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+    queue: redirector.events.analytics
+  publisher:
+    channel_buffer_size: 10000
+    batch_size: 100
+    flush_interval_ms: 1000
+```
+
+Oppure tramite variabile d'ambiente:
+
+```bash
+export REDIRECTOR__EVENTS__ENABLED=true
+export RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+```
+
+#### 2. Esegui il consumer degli eventi
+
+Il consumer è un binario separato:
+
+```bash
+# Con cargo
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f \
+DATABASE_URL=postgres://localhost/redirector_analytics \
+cargo run --bin event_consumer
+
+# Con Docker
+docker run -e RABBITMQ_URL=... -e DATABASE_URL=... \
+  ghcr.io/brilliant-almazov/redirector:latest \
+  /app/event_consumer
+```
+
+#### 3. (Opzionale) Abilita GeoIP
+
+Scarica il database GeoLite2-City da MaxMind e fornisci il percorso:
+
+```bash
+export GEOIP_DB_PATH=/path/to/GeoLite2-City.mmdb
+```
+
+### Metriche degli eventi
+
+Il sistema raccoglie le seguenti metriche:
+
+- `events_published` - Contatore degli eventi pubblicati con successo
+- `events_dropped` - Contatore degli eventi scartati (buffer pieno, nessuna connessione)
+- `events_serialize_errors` - Errori di serializzazione JSON
+- `rabbitmq_connected` - Indicatore di connessione a RabbitMQ (1 = connesso, 0 = disconnesso)
 
 ## Licenza
 

@@ -48,6 +48,7 @@
 - 🎨 **{BEAUTIFUL_PAGES_TITLE}** - {BEAUTIFUL_PAGES_DESC}
 - 🔑 **{MULTIPLE_SALTS_TITLE}** - {MULTIPLE_SALTS_DESC}
 - 📱 **{ADMIN_DASHBOARD_TITLE}** - {ADMIN_DASHBOARD_DESC}
+- 📤 **{EVENT_ANALYTICS_TITLE}** - {EVENT_ANALYTICS_DESC}
 
 ## {SCREENSHOTS_TITLE}
 
@@ -72,6 +73,7 @@
 - **{CACHE}**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB, {ETC})
 - **{DATABASE}**: PostgreSQL ({PLUGGABLE_STORAGE})
 - **{METRICS}**: Prometheus + metrics-rs
+- **{MESSAGE_QUEUE}**: RabbitMQ ({OPTIONAL_ANALYTICS})
 - **{PASSWORD_HASHING}**: Argon2
 
 > **{NOTE}**: {STORAGE_NOTE}

@@ -48,6 +48,7 @@
 - 🎨 **美观页面** - 简洁的 404 和索引页面，支持 4 种主题
 - 🔑 **多盐值** - 支持 hashid 盐值轮换以便迁移
 - 📱 **管理面板** - 通过 SSE 实时监控指标
+- 📤 **事件分析** - 可选的 RabbitMQ 事件发布与 PostgreSQL 消费者
 
 ## 截图
 
@@ -72,6 +73,7 @@
 - **缓存**: Redis 兼容（Redis、Dragonfly、Valkey、KeyDB 等）
 - **数据库**: PostgreSQL（可插拔存储层）
 - **指标**: Prometheus + metrics-rs
+- **消息队列**: RabbitMQ（可选，用于事件分析）
 - **密码哈希**: Argon2
 
 > **注意**: 存储和缓存层是抽象的，可以用任何兼容的数据源替换。目前正在积极开发中。
@@ -482,6 +484,151 @@ admin:
 - 最近重定向列表
 - 负载模拟测试
 - 三种主题：浅色、深色、暖色
+
+## 事件分析
+
+可选的重定向事件分析管道。启用后，每个重定向事件都会发布到 RabbitMQ，并由单独的二进制文件处理后写入 PostgreSQL。
+
+> **完整文档**: [EVENT_ANALYTICS.md](EVENT_ANALYTICS.md)
+
+### 功能
+
+- **Fire-and-forget 发布** — 重定向延迟不受队列可用性影响
+- **批处理** — 按大小（100条）或时间（1秒）分组事件
+- **User-Agent 解析** — 通过 woothee 解析浏览器、版本、操作系统、设备类型
+- **GeoIP 增强** — 从 IP 获取国家和城市（MaxMind mmdb 支持热重载）
+- **引用去重** — 基于 MD5 的 referers 和 user agents 去重
+- **月度分区** — 自动创建 `redirect_events` 表的分区
+- **域名规范化** — `WWW.Example.COM` → `example.com`
+
+### 架构
+
+```
+重定向处理器
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc 通道]
+    │   (非阻塞,                        │
+    │    fire-and-forget)               ▼
+    │                              后台任务
+    │                              (按大小/时间批处理)
+    │                                     │
+    │                                     ▼
+    │                              [RabbitMQ 队列]
+    │                                     │
+    │                                     ▼
+    │                              事件消费者
+    │                              (单独的二进制/容器)
+    │                                     │
+    │                                     ▼
+    │                              [PostgreSQL 分析]
+    │                              (月度分区)
+```
+
+### 快速开始
+
+```bash
+# 在 config.yaml 中启用
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# 或通过环境变量
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# 运行消费者
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Docker Compose 与事件分析
+
+```yaml
+services:
+  redirector:
+    build: .
+    environment:
+      - REDIRECTOR__EVENTS__ENABLED=true
+    depends_on: [redis, rabbitmq]
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://postgres:postgres@analytics-db:5432/analytics
+      - GEOIP_DB_PATH=/data/GeoLite2-City.mmdb  # 可选
+    depends_on: [rabbitmq, analytics-db]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+```
+
+### 关键设计决策
+
+- **不阻塞重定向**: 使用有界通道上的 `try_send()`，如果满则丢弃事件
+- **类型安全的事件批处理**: `EventBatch` 是按 `event_type` 标记的 Rust 枚举
+- **Snowflake 批 ID**: 自定义 epoch 2025-01-01，~69 年的唯一 ID
+- **优雅降级**: 如果 RabbitMQ 宕机，重定向继续；事件被丢弃并记录指标
+
+## 指标
+
+该服务在 `/metrics` 端点暴露全面的 Prometheus 指标（需要基本认证）：
+
+### 服务指标
+```
+redirector_up 1
+redirector_build_info{version="0.1.0"} 1
+redirector_uptime_seconds 3600.5
+```
+
+### 请求指标
+```
+redirect_requests_total 150000
+not_found_requests_total 50
+request_duration_seconds{quantile="0.5"} 0.040
+request_duration_seconds{quantile="0.99"} 0.081
+```
+
+### 缓存指标
+```
+cache_hits_total 140000
+cache_misses_total 10000
+cache_get_duration_seconds{quantile="0.5"} 0.002
+cache_set_duration_seconds{quantile="0.5"} 0.002
+```
+
+### 数据库指标
+```
+db_queries_total 10000
+db_hits_total 9950
+db_misses_total 50
+db_errors_total 0
+db_query_duration_seconds{quantile="0.5"} 0.035
+db_rate_limit_exceeded_total 0
+circuit_breaker_rejections_total 0
+```
+
+### 速率限制
+```
+rate_limit_exceeded_total 0
+```
+
+### 事件指标（启用时）
+```
+events_published 50000
+events_dropped 0
+events_publish_errors 0
+events_serialize_errors 0
+rabbitmq_connected 1
+geoip_reloads_total 0
+```
 
 ## 许可证
 

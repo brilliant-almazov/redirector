@@ -16,6 +16,7 @@
 #
 #   DATABASE_URL=postgres://user:pass@host/db
 #   REDIS_URL=redis://host:6379
+#   RABBITMQ_URL=amqp://guest:guest@host:5672/%2f
 #   PORT=3000
 # ---------------------------------------------------------------
 
@@ -55,3 +56,20 @@ metrics:
 rate_limit:
   requests_per_second: 1000
   burst: 100
+
+# Event publishing (optional)
+# When enabled, redirect events are published to RabbitMQ
+# for analytics processing by event_consumer binary.
+# Uses direct queue publishing (no exchange).
+events:
+  enabled: false
+  rabbitmq:
+    url: "amqp://guest:guest@localhost:5672/%2f"
+    queue: "events.analytics"
+  publisher:
+    channel_buffer_size: 10000    # mpsc channel capacity
+    batch_size: 100               # events per RabbitMQ message
+    flush_interval_ms: 1000       # max ms before sending partial batch
+  consumer:
+    prefetch_count: 10
+    database_url: "postgres://user:password@localhost:5432/redirector_analytics"

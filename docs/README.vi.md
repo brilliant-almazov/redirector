@@ -48,6 +48,7 @@ Chia sẻ URL dài rất bất tiện. Các công cụ rút gọn URL tồn tạ
 - 🎨 **Trang đẹp** - Trang 404 và index sạch với 4 chủ đề
 - 🔑 **Nhiều salt** - Hỗ trợ xoay vòng salt hashid để di chuyển
 - 📱 **Bảng điều khiển admin** - Giám sát metrics thời gian thực với SSE
+- 📤 **Phân tích sự kiện** - Xuất bản sự kiện RabbitMQ tùy chọn với consumer PostgreSQL
 
 ## Ảnh chụp màn hình
 
@@ -72,6 +73,7 @@ Chia sẻ URL dài rất bất tiện. Các công cụ rút gọn URL tồn tạ
 - **Cache**: Tương thích Redis (Redis, Dragonfly, Valkey, KeyDB, v.v.)
 - **Cơ sở dữ liệu**: PostgreSQL (lớp lưu trữ có thể thay thế)
 - **Metrics**: Prometheus + metrics-rs
+- **Hàng đợi tin nhắn**: RabbitMQ (tùy chọn, cho phân tích sự kiện)
 - **Hash mật khẩu**: Argon2
 
 > **Lưu ý**: Các lớp lưu trữ và cache được trừu tượng hóa và có thể thay thế bằng bất kỳ nguồn dữ liệu tương thích nào. Hiện đang trong giai đoạn phát triển tích cực.
@@ -482,6 +484,133 @@ Mở `http://localhost:8080/admin` và đăng nhập bằng thông tin xác th�
 - Danh sách chuyển hướng gần đây
 - Mô phỏng tải cho kiểm tra
 - Ba chủ đề: Sáng, Tối, Ấm
+
+## Phân tích sự kiện
+
+Đường ống xuất bản sự kiện tùy chọn cho phân tích chuyển hướng. Khi được bật, mỗi sự kiện chuyển hướng được xuất bản lên RabbitMQ và được một nhị phân riêng biệt tiêu thụ để ghi vào PostgreSQL với làm giàu dữ liệu.
+
+> **Tài liệu đầy đủ**: [docs/EVENT_ANALYTICS.md](../EVENT_ANALYTICS.md)
+
+### Tính năng
+
+- **Xuất bản Fire-and-forget** — độ trễ chuyển hướng không bị ảnh hưởng bởi sự khả dụng của hàng đợi
+- **Phân loại theo lô** — sự kiện được nhóm theo kích thước (100) hoặc thời gian (1 giây)
+- **Phân tích User-Agent** — trình duyệt, phiên bản, hệ điều hành, loại thiết bị qua woothee
+- **Làm giàu GeoIP** — quốc gia và thành phố từ IP (MaxMind mmdb với hot-reload)
+- **Khử trùng tham chiếu** — MD5-based dedup cho referer và user agent
+- **Phân chia hàng tháng** — tạo partition tự động cho `redirect_events`
+- **Chuẩn hóa miền** — `WWW.Example.COM` → `example.com`
+
+### Kiến trúc
+
+```
+Redirect Handler
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc channel]
+    │   (non-blocking,                    │
+    │    fire-and-forget)                 ▼
+    │                              Background Task
+    │                              (batch by size/time)
+    │                                     │
+    │                                     ▼
+    │                                [RabbitMQ Queue]
+    │                                     │
+    │                                     ▼
+    │                              Event Consumer
+    │                              (separate binary/container)
+    │                                     │
+    │                                     ▼
+    │                              [PostgreSQL Analytics]
+    │                              (monthly partitioned)
+```
+
+### Bắt đầu nhanh
+
+```bash
+# Bật trong config.yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# Hoặc qua biến môi trường
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# Chạy consumer
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Docker Compose với Events
+
+```yaml
+services:
+  redirector:
+    build: .
+    environment:
+      - REDIRECTOR__EVENTS__ENABLED=true
+    depends_on: [redis, rabbitmq]
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://postgres:postgres@analytics-db:5432/analytics
+      - GEOIP_DB_PATH=/data/GeoLite2-City.mmdb  # optional
+    depends_on: [rabbitmq, analytics-db]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+```
+
+### Quyết định thiết kế chính
+
+- **Không bao giờ chặn chuyển hướng**: `try_send()` trên bounded channel, bỏ sự kiện nếu đầy
+- **Sự kiện lô an toàn về kiểu**: `EventBatch` là enum Rust được gắn nhãn bằng `event_type`
+- **Snowflake batch IDs**: Epoch tùy chỉnh 2025-01-01, ~69 năm ID duy nhất
+- **Suy giảm Graceful**: Nếu RabbitMQ ngừng hoạt động, chuyển hướng tiếp tục; sự kiện bị bỏ với metrics
+
+## Metrics
+
+Dịch vụ hiển thị các metrics Prometheus toàn diện tại `/metrics` (yêu cầu Basic Auth):
+
+### Service Metrics
+```
+redirector_up 1
+redirector_build_info{version="0.1.0"} 1
+redirector_uptime_seconds 3600.5
+```
+
+### Request Metrics
+```
+redirect_requests_total 150000
+not_found_requests_total 50
+request_duration_seconds{quantile="0.5"} 0.040
+request_duration_seconds{quantile="0.99"} 0.081
+```
+
+### Cache Metrics
+```
+cache_hits_total 140000
+cache_misses_total 10000
+cache_get_duration_seconds{quantile="0.5"} 0.002
+cache_set_duration_seconds{quantile="0.5"} 0.002
+```
+
+### Database Metrics
+```
+db_queries_total 10000
+db_hits_total 9950
+db_misses_total 50
+db_errors_total 0
+```
 
 ## Giấy phép
 

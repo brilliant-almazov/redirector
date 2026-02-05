@@ -29,17 +29,29 @@
 - [ ] Structured JSON logging
 - [ ] Request tracing (OpenTelemetry)
 
-## v0.3.0 (Planned)
+## v0.3.0 (Released)
 
-### Analytics
-- [ ] Click counter per redirect
-- [ ] Referrer tracking
-- [ ] User-Agent tracking
-- [ ] Geographic data (country/city from IP)
-- [ ] Analytics dashboard endpoint
-- [ ] Export analytics to CSV/JSON
+### Event Analytics Pipeline
+- [x] RabbitMQ event publishing (optional, configurable)
+- [x] Non-blocking fire-and-forget event sending (bounded channel)
+- [x] Batching by size and time interval
+- [x] Type-safe `EventBatch` enum with `event_type` tag
+- [x] Separate `event_consumer` binary (own Docker container)
+- [x] PostgreSQL analytics with monthly table partitioning
+- [x] Auto-migration system with `schema_migrations` table
+- [x] Reference tables for User-Agent and Referer (MD5 dedup)
+- [x] PostgreSQL ENUM for data source, INET for IP
+- [x] RABBITMQ_URL PaaS environment variable support
+- [x] Graceful degradation (redirects work without RabbitMQ)
 
-### Link Features
+### Event Pipeline Abstraction (Planned)
+- [ ] `EventTransport` trait for pluggable message brokers (RabbitMQ, Kafka, Redis Streams)
+- [ ] `AnalyticsStorage` trait for pluggable storage backends (PostgreSQL, ClickHouse, MySQL, SQLite)
+- [ ] Configuration-driven transport/storage selection
+- [ ] Kafka transport implementation
+- [ ] ClickHouse storage implementation
+
+### Link Features (Planned)
 - [ ] Custom short codes (user-defined hashid)
 - [ ] TTL on redirects (expiring links)
 - [ ] Password-protected links

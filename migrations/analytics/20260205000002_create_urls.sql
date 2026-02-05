@@ -1,0 +1,25 @@
+-- URL reference table for analytics self-sufficiency.
+-- Stores target URLs independently from the main dictionary database.
+-- Partitioned by HASH(id) into 10 buckets for parallel scan performance.
+CREATE TABLE IF NOT EXISTS urls (
+    id BIGINT PRIMARY KEY,
+    url TEXT NOT NULL,
+    first_seen TIMESTAMP DEFAULT NOW()
+) PARTITION BY HASH (id);
+
+-- Create 10 hash partitions (modulus 10, remainder 0..9)
+CREATE TABLE IF NOT EXISTS urls_0 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 0);
+CREATE TABLE IF NOT EXISTS urls_1 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 1);
+CREATE TABLE IF NOT EXISTS urls_2 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 2);
+CREATE TABLE IF NOT EXISTS urls_3 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 3);
+CREATE TABLE IF NOT EXISTS urls_4 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 4);
+CREATE TABLE IF NOT EXISTS urls_5 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 5);
+CREATE TABLE IF NOT EXISTS urls_6 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 6);
+CREATE TABLE IF NOT EXISTS urls_7 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 7);
+CREATE TABLE IF NOT EXISTS urls_8 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 8);
+CREATE TABLE IF NOT EXISTS urls_9 PARTITION OF urls FOR VALUES WITH (MODULUS 10, REMAINDER 9);
+
+COMMENT ON TABLE urls IS 'URL reference table — local copy, hash-partitioned by id (mod 10)';
+COMMENT ON COLUMN urls.id IS 'URL ID (same as dictionary.urls.id in the main database)';
+COMMENT ON COLUMN urls.url IS 'Full target URL';
+COMMENT ON COLUMN urls.first_seen IS 'When this URL was first seen by the analytics pipeline';

@@ -48,6 +48,7 @@ Het delen van lange URL's is onhandig. URL-verkorters bestaan, maar leiden vaak 
 - 🎨 **Mooie pagina's** - Schone 404- en indexpagina's met 4 thema's
 - 🔑 **Meerdere salts** - Hashid salt-rotatie ondersteuning voor migratie
 - 📱 **Admin dashboard** - Realtime metrics monitoring met SSE
+- 📤 **Evenementenanalyse** - Optionele RabbitMQ-evenementpublicatie met PostgreSQL-consumer
 
 ## Screenshots
 
@@ -72,6 +73,7 @@ Het delen van lange URL's is onhandig. URL-verkorters bestaan, maar leiden vaak 
 - **Cache**: Redis-compatibel (Redis, Dragonfly, Valkey, KeyDB, etc.)
 - **Database**: PostgreSQL (verwisselbare opslaglaag)
 - **Metrics**: Prometheus + metrics-rs
+- **Berichtenwachtrij**: RabbitMQ (optioneel, voor evenementenanalyse)
 - **Wachtwoord hashing**: Argon2
 
 > **Opmerking**: De opslag- en cachelagen zijn geabstraheerd en kunnen worden vervangen door elke compatibele databron. Momenteel in actieve ontwikkeling.
@@ -482,6 +484,122 @@ Open `http://localhost:8080/admin` en log in met uw credentials.
 - Lijst van recente omleidingen
 - Belastingsimulatie voor tests
 - Drie thema's: Licht, Donker, Warm
+
+## Event Analyse
+
+**redirector** bevat een optionele event publishing en analytics pipeline. Alle omleidingen kunnen worden vastgelegd, verrijkt en opgeslagen voor geavanceerde analytics en rapportage.
+
+### Introductie
+
+De Event Analytics-module publiceert redirect-events als fire-and-forget berichten naar RabbitMQ, waarna een asynchroon consumer ze vastlegt in PostgreSQL. Elk event wordt verrijkt met:
+
+- **User-Agent parsing** - Browser, besturingssysteem en apparaattype
+- **GeoIP geolokalisatie** - Land en stad gebaseerd op client IP
+- **Referer-domein normalisatie** - Gegroepeerde referer analyse
+- **Verwijzing-deduplicatie** - Efficiënte opslag van herhaalde waarden via hash-based lookups
+- **Maandelijkse partitionering** - Tabellen per maand voor optimale query-prestaties
+
+Zie [EVENT_ANALYTICS.md](../EVENT_ANALYTICS.md) voor volledige technische details.
+
+### Features
+
+- **Fire-and-forget publishing** - Events verzonden met `try_send`, geen blocking
+- **Batching** - Events gebundeld in batches voor efficiënter verzenden
+- **User-Agent parsing** - Gestructureerde extractie van browser-, OS- en apparaatinformatie
+- **GeoIP enrichment** - Automatische geolocatie van IPs (MaxMind GeoLite2-ondersteuning)
+- **Reference deduplication** - Hashing en deduplicatie van referers, User-Agents en domeinen
+- **Monthly partitioning** - Automatische tabelpartitionering op maandbasis
+
+### Snel starten
+
+#### 1. Configuratie
+
+Voeg events-configuratie toe aan `config.yaml`:
+
+```yaml
+events:
+  enabled: true
+  publisher:
+    channel_buffer_size: 10000
+    batch_size: 100
+    flush_interval_ms: 5000
+  queue:
+    url: "amqp://guest:guest@localhost:5672/"
+    exchange: "redirector_events"
+    routing_key: "redirect.events"
+  storage:
+    url: "postgres://redirector:password@localhost:5432/redirector"
+    pool:
+      max_connections: 5
+      connect_timeout_seconds: 5
+    geoip_db_path: "/data/GeoLite2-City.mmdb"
+```
+
+#### 2. Omgevingsvariabelen
+
+Of configureer via omgevingsvariabelen:
+
+```bash
+# Enable events
+REDIRECTOR__EVENTS__ENABLED=true
+
+# Publisher settings
+REDIRECTOR__EVENTS__PUBLISHER__BATCH_SIZE=100
+REDIRECTOR__EVENTS__PUBLISHER__FLUSH_INTERVAL_MS=5000
+REDIRECTOR__EVENTS__PUBLISHER__CHANNEL_BUFFER_SIZE=10000
+
+# RabbitMQ queue
+REDIRECTOR__EVENTS__QUEUE__URL="amqp://guest:guest@rabbitmq:5672/"
+REDIRECTOR__EVENTS__QUEUE__EXCHANGE="redirector_events"
+REDIRECTOR__EVENTS__QUEUE__ROUTING_KEY="redirect.events"
+
+# PostgreSQL storage
+REDIRECTOR__EVENTS__STORAGE__URL="postgres://redirector:password@postgres:5432/redirector"
+REDIRECTOR__EVENTS__STORAGE__GEOIP_DB_PATH="/data/GeoLite2-City.mmdb"
+```
+
+#### 3. Database Setup
+
+Migraties worden automatisch bij startup uitgevoerd. Tabellen die worden aangemaakt:
+
+- `events_redirects_YYYY_MM` - Gepartitioneerde redirect events
+- `event_referers` - Unieke referers met MD5-hash
+- `event_referer_domains` - Genormaliseerde referer-domeinen
+- `event_user_agents` - Geparste User-Agents met device-info
+- `event_geo_locations` - GeoIP-gegevens per land/stad
+
+#### 4. Start Consumers
+
+Start de event consumer process:
+
+```bash
+cargo run --bin event_consumer --release -- --config config.yaml
+```
+
+Of via Docker:
+
+```bash
+docker run \
+  -e REDIRECTOR__EVENTS__ENABLED=true \
+  -e REDIRECTOR__EVENTS__QUEUE__URL="amqp://guest:guest@rabbitmq:5672/" \
+  -e REDIRECTOR__EVENTS__STORAGE__URL="postgres://redirector:password@postgres:5432/redirector" \
+  ghcr.io/brilliant-almazov/redirector:latest event_consumer
+```
+
+### Event Metrics
+
+De volgende metrics worden verzameld:
+
+| Metric | Type | Beschrijving |
+|--------|------|--------------|
+| `events_published` | Counter | Events succesvol gepubliceerd naar RabbitMQ |
+| `events_dropped` | Counter | Events verwijderd vanwege vol kanaal of gesloten verbinding |
+| `events_publish_errors` | Counter | RabbitMQ publish fouten |
+| `events_serialize_errors` | Counter | JSON serialisatiefouten |
+| `events_consumed` | Counter | Events succesvol verwerkt door consumer |
+| `events_store_errors` | Counter | Database-opslagfouten |
+
+Monitor deze metrics in Prometheus op het `/metrics`-endpoint.
 
 ## Licentie
 

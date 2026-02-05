@@ -48,6 +48,7 @@
 - 🎨 **सुंदर पेज** - 4 थीम के साथ साफ़ 404 और इंडेक्स पेज
 - 🔑 **मल्टीपल सॉल्ट** - माइग्रेशन के लिए hashid सॉल्ट रोटेशन सपोर्ट
 - 📱 **एडमिन डैशबोर्ड** - SSE के साथ रियल-टाइम मेट्रिक्स मॉनिटरिंग
+- 📤 **इवेंट एनालिटिक्स** - RabbitMQ इवेंट पब्लिशिंग और PostgreSQL कंज्यूमर (वैकल्पिक)
 
 ## स्क्रीनशॉट
 
@@ -72,6 +73,7 @@
 - **कैश**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB आदि)
 - **डेटाबेस**: PostgreSQL (प्लगेबल स्टोरेज लेयर)
 - **मेट्रिक्स**: Prometheus + metrics-rs
+- **मैसेज क्यू**: RabbitMQ (वैकल्पिक, इवेंट एनालिटिक्स के लिए)
 - **पासवर्ड हैशिंग**: Argon2
 
 > **नोट**: स्टोरेज और कैश लेयर्स एब्स्ट्रैक्टेड हैं और किसी भी संगत डेटा स्रोत से बदले जा सकते हैं। वर्तमान में सक्रिय विकास में।
@@ -427,6 +429,196 @@ admin:
 - हाल के रीडायरेक्ट्स की सूची
 - टेस्टिंग के लिए लोड सिमुलेशन
 - तीन थीम: लाइट, डार्क, वार्म
+
+## इवेंट एनालिटिक्स
+
+रीडायरेक्ट एनालिटिक्स के लिए वैकल्पिक इवेंट पब्लिशिंग पाइपलाइन। सक्षम करने पर, हर रीडायरेक्ट इवेंट को RabbitMQ को भेजा जाता है और एक अलग कंज्यूमर द्वारा समृद्ध डेटा के साथ PostgreSQL में लिखा जाता है।
+
+> **पूरा डॉक्यूमेंटेशन**: [docs/EVENT_ANALYTICS.md](EVENT_ANALYTICS.md)
+
+### विशेषताएं
+
+- **Fire-and-forget पब्लिशिंग** — रीडायरेक्ट विलंबता कतार उपलब्धता से प्रभावित नहीं होती
+- **बैचिंग** — आकार (100) या समय (1 सेकंड) के आधार पर इवेंट्स को समूहीकृत किया जाता है
+- **उपयोगकर्ता-एजेंट पार्सिंग** — woothee के माध्यम से ब्राउज़र, संस्करण, OS, डिवाइस प्रकार
+- **GeoIP संवर्धन** — IP से देश और शहर (MaxMind mmdb के साथ लाइव-रीलोड)
+- **संदर्भ डिडुप्लिकेशन** — रेफरर्स और उपयोगकर्ता-एजेंट्स के लिए MD5-आधारित डिडुप्लिकेशन
+- **मासिक विभाजन** — `redirect_events` के लिए स्वचालित विभाजन निर्माण
+- **डोमेन सामान्यीकरण** — `WWW.Example.COM` → `example.com`
+
+### आर्किटेक्चर
+
+```
+Redirect Handler
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc channel]
+    │   (non-blocking,                    │
+    │    fire-and-forget)                 ▼
+    │                              Background Task
+    │                              (batch by size/time)
+    │                                     │
+    │                                     ▼
+    │                                [RabbitMQ Queue]
+    │                                     │
+    │                                     ▼
+    │                              Event Consumer
+    │                              (separate binary/container)
+    │                                     │
+    │                                     ▼
+    │                              [PostgreSQL Analytics]
+    │                              (monthly partitioned)
+```
+
+### क्विक स्टार्ट
+
+**1. config.yaml में सक्षम करें:**
+
+```yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+    queue: redirector.events.analytics
+  publisher:
+    channel_buffer_size: 10000
+    batch_size: 100
+    flush_interval_ms: 1000
+```
+
+**2. पर्यावरण चर के माध्यम से:**
+
+```bash
+REDIRECTOR__EVENTS__ENABLED=true
+REDIRECTOR__EVENTS__RABBITMQ__URL=amqp://guest:guest@localhost:5672/%2f
+```
+
+**3. Event Consumer चलाएं:**
+
+```bash
+# Cargo के साथ
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f \
+DATABASE_URL=postgres://localhost/redirector_analytics \
+cargo run --bin event_consumer
+
+# Docker के साथ
+docker run -e RABBITMQ_URL=... -e DATABASE_URL=... \
+  ghcr.io/brilliant-almazov/redirector:latest \
+  /app/event_consumer
+```
+
+**4. (वैकल्पिक) GeoIP सक्षम करें:**
+
+```bash
+GEOIP_DB_PATH=/path/to/GeoLite2-City.mmdb
+```
+
+कंज्यूमर auto-reloads करता है यदि फ़ाइल बदलती है।
+
+### Docker Compose के साथ इवेंट्स
+
+```yaml
+services:
+  redirector:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    environment:
+      REDIRECTOR__EVENTS__ENABLED: "true"
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/%2f"
+    depends_on:
+      - rabbitmq
+
+  event_consumer:
+    image: ghcr.io/brilliant-almazov/redirector:latest
+    command: ["/app/event_consumer"]
+    environment:
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/%2f"
+      DATABASE_URL: "postgres://postgres:postgres@analytics-db:5432/analytics"
+      GEOIP_DB_PATH: "/data/GeoLite2-City.mmdb"
+    volumes:
+      - ./GeoLite2-City.mmdb:/data/GeoLite2-City.mmdb:ro
+    depends_on:
+      - rabbitmq
+      - analytics-db
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - analytics-data:/var/lib/postgresql/data
+
+volumes:
+  analytics-data:
+```
+
+### इवेंट मेट्रिक्स
+
+निम्नलिखित Prometheus मेट्रिक्स को ट्रैक किया जाता है:
+
+| मेट्रिक | प्रकार | विवरण |
+|---------|--------|--------|
+| `events_published` | Counter | सफलतापूर्वक प्रकाशित इवेंट्स |
+| `events_dropped` | Counter | छोड़े गए इवेंट्स (buffer full या कोई कनेक्शन नहीं) |
+| `events_serialize_errors` | Counter | JSON serialization विफलताएं |
+| `rabbitmq_connected` | Gauge | 1 यदि जुड़ा है, अन्यथा 0 |
+
+### उदाहरण क्वेरीज़
+
+**URL प्रति रीडायरेक्ट्स (पिछले 24 घंटे):**
+
+```sql
+SELECT url_id, COUNT(*) as redirects
+FROM redirect_events
+WHERE event_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY url_id
+ORDER BY redirects DESC
+LIMIT 10;
+```
+
+**कैश हिट रेट:**
+
+```sql
+SELECT
+  source,
+  COUNT(*) as count,
+  ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) as percent
+FROM redirect_events
+WHERE event_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY source;
+```
+
+**शीर्ष रेफरर डोमेन:**
+
+```sql
+SELECT rd.domain, COUNT(*) as visits
+FROM redirect_events re
+JOIN referer_domains rd ON re.referer_domain_id = rd.id
+WHERE re.event_timestamp > NOW() - INTERVAL '7 days'
+  AND rd.domain != '(unknown)'
+GROUP BY rd.domain
+ORDER BY visits DESC
+LIMIT 20;
+```
+
+**भौगोलिक वितरण:**
+
+```sql
+SELECT gl.country_code, gl.city, COUNT(*) as visits
+FROM redirect_events re
+JOIN geo_locations gl ON re.geo_location_id = gl.id
+WHERE re.event_timestamp > NOW() - INTERVAL '7 days'
+  AND gl.country_code != '--'
+GROUP BY gl.country_code, gl.city
+ORDER BY visits DESC
+LIMIT 50;
+```
 
 ## लाइसेंस
 

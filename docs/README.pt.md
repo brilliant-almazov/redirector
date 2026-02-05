@@ -48,6 +48,7 @@ Compartilhar URLs longas é inconveniente. Encurtadores de URL existem, mas freq
 - 🎨 **Páginas bonitas** - Páginas 404 e índice limpas com 4 temas
 - 🔑 **Múltiplos sais** - Suporte a rotação de sal hashid para migração
 - 📱 **Painel de administração** - Monitoramento de métricas em tempo real com SSE
+- 📤 **Análise de eventos** - Publicação opcional de eventos no RabbitMQ com consumidor PostgreSQL
 
 ## Capturas de tela
 
@@ -72,6 +73,7 @@ Compartilhar URLs longas é inconveniente. Encurtadores de URL existem, mas freq
 - **Cache**: Compatível com Redis (Redis, Dragonfly, Valkey, KeyDB, etc.)
 - **Banco de dados**: PostgreSQL (camada de armazenamento intercambiável)
 - **Métricas**: Prometheus + metrics-rs
+- **Fila de mensagens**: RabbitMQ (opcional, para análise de eventos)
 - **Hash de senhas**: Argon2
 
 > **Nota**: As camadas de armazenamento e cache são abstratas e podem ser substituídas por qualquer fonte de dados compatível. Atualmente em desenvolvimento ativo.
@@ -482,6 +484,110 @@ Abra `http://localhost:8080/admin` e faça login com suas credenciais.
 - Lista de redirecionamentos recentes
 - Simulação de carga para testes
 - Três temas: Claro, Escuro, Quente
+
+## Análise de Eventos
+
+Pipeline opcional de publicação de eventos para análise de redirecionamentos. Quando habilitado, cada evento de redirecionamento é publicado no RabbitMQ e consumido por um serviço separado que escreve em PostgreSQL com enriquecimento de dados.
+
+> **Documentação completa**: [docs/EVENT_ANALYTICS.md](EVENT_ANALYTICS.md)
+
+### Recursos
+
+- **Publicação fire-and-forget** — latência de redirecionamento não afetada pela disponibilidade da fila
+- **Agrupamento em lotes** — eventos agrupados por tamanho (100) ou tempo (1 segundo)
+- **Análise de User-Agent** — extração de navegador, versão, SO, tipo de dispositivo via woothee
+- **Enriquecimento GeoIP** — país e cidade a partir do IP (MaxMind mmdb com recarga automática)
+- **Deduplicação de referências** — dedup baseado em MD5 para referers e user-agents
+- **Particionamento mensal** — criação automática de partições para `redirect_events`
+- **Normalização de domínio** — `WWW.Example.COM` → `example.com`
+
+### Arquitetura
+
+```
+Manipulador de Redirecionamento
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc channel]
+    │   (não-bloqueante,               │
+    │    fire-and-forget)              ▼
+    │                           Tarefa em Segundo Plano
+    │                           (agrupar por tamanho/tempo)
+    │                                  │
+    │                                  ▼
+    │                            [Fila RabbitMQ]
+    │                                  │
+    │                                  ▼
+    │                           Consumidor de Eventos
+    │                           (serviço/container separado)
+    │                                  │
+    │                                  ▼
+    │                           [PostgreSQL Analytics]
+    │                           (particionado mensalmente)
+```
+
+### Início Rápido
+
+```bash
+# Habilitar em config.yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# Ou via variável de ambiente
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# Executar consumidor
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Docker Compose com Eventos
+
+```yaml
+services:
+  redirector:
+    build: .
+    environment:
+      - REDIRECTOR__EVENTS__ENABLED=true
+    depends_on: [redis, rabbitmq]
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://postgres:postgres@analytics-db:5432/analytics
+      - GEOIP_DB_PATH=/data/GeoLite2-City.mmdb  # opcional
+    depends_on: [rabbitmq, analytics-db]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+```
+
+### Decisões de Design Principais
+
+- **Nunca bloqueia redirecionamentos**: `try_send()` em canal limitado, descarta eventos se cheio
+- **Lotes de eventos type-safe**: `EventBatch` é um enum Rust marcado por `event_type`
+- **IDs de lote Snowflake**: Epoch customizado 2025-01-01, ~69 anos de IDs únicos
+- **Degradação graciosa**: Se RabbitMQ cair, os redirecionamentos continuam; eventos são descartados com métricas
+
+### Métricas de Eventos
+
+O serviço expõe métricas de eventos no endpoint `/metrics` (requer Basic Auth):
+
+```
+events_published 50000
+events_dropped 0
+events_publish_errors 0
+events_serialize_errors 0
+rabbitmq_connected 1
+```
 
 ## Licença
 

@@ -11,6 +11,25 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - redirector-network
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RUST_LOG=info,event_consumer=debug
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://redirector:redirector@postgres:5432/redirector_analytics
+      - GEOIP_DB_PATH=/app/data/GeoLite2-City.mmdb
+    volumes:
+      - ./data/GeoLite2-City.mmdb:/app/data/GeoLite2-City.mmdb:ro
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - redirector-network
@@ -30,8 +49,25 @@ services:
     networks:
       - redirector-network
 
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - redirector-network
+
 volumes:
   redis-data:
+  rabbitmq-data:
 
 networks:
   redirector-network:
