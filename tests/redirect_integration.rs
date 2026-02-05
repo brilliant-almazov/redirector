@@ -50,6 +50,7 @@ async fn setup_services(
     Arc::new(RedirectState {
         resolver: url_resolver,
         delay_seconds: 5,
+        dispatcher: redirector::events::dispatcher::EventDispatcher::noop(),
     })
 }
 
@@ -412,4 +413,74 @@ async fn test_redirect_interstitial_contains_countdown() {
     // Check interstitial page elements
     assert!(body_str.contains("countdown") || body_str.contains("Countdown"));
     assert!(body_str.contains("5")); // delay_seconds
+}
+
+#[tokio::test]
+async fn test_redirect_with_headers() {
+    // Start Redis
+    let redis = Redis::default()
+        .start()
+        .await
+        .expect("Failed to start Redis");
+    let redis_port = redis.get_host_port_ipv4(6379).await.unwrap();
+
+    // Start Postgres
+    let postgres = Postgres::default()
+        .with_db_name("redirector")
+        .with_user("redirector")
+        .with_password("password")
+        .start()
+        .await
+        .expect("Failed to start Postgres");
+    let postgres_port = postgres.get_host_port_ipv4(5432).await.unwrap();
+
+    // Create schema and insert test data
+    let db_url = format!(
+        "postgres://redirector:password@localhost:{}/redirector",
+        postgres_port
+    );
+    let pool = sqlx::PgPool::connect(&db_url)
+        .await
+        .expect("Failed to connect to Postgres");
+
+    setup_database(&pool).await;
+
+    sqlx::query("INSERT INTO dictionary.urls (id, name) VALUES (1, 'https://headers.test')")
+        .execute(&pool)
+        .await
+        .expect("Failed to insert data");
+
+    // Setup services
+    let state = setup_services(redis_port, postgres_port).await;
+    let app = create_app(state);
+
+    // Encode ID 1
+    let hashids = harsh::Harsh::builder()
+        .salt("test_salt")
+        .length(6)
+        .build()
+        .unwrap();
+    let hashid = hashids.encode(&[1]);
+
+    // Make request WITH headers
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri(format!("/r/{}", hashid))
+                .header("Referer", "https://google.com/search?q=test")
+                .header("User-Agent", "Mozilla/5.0 Test Browser")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("Failed to make request");
+
+    assert_eq!(response.status(), 200);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(body_str.contains("headers.test"));
 }

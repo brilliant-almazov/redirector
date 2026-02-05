@@ -134,14 +134,22 @@ mod tests {
 
     #[test]
     fn test_resolved_url_new() {
-        let resolved = ResolvedUrl::new("https://example.com/path".to_string());
+        let resolved = ResolvedUrl::new(
+            1,
+            "https://example.com/path".to_string(),
+            crate::events::DataSource::Cache,
+        );
         assert_eq!(resolved.full_url, "https://example.com/path");
         assert_eq!(resolved.domain, "example.com");
     }
 
     #[test]
     fn test_resolved_url_no_protocol() {
-        let resolved = ResolvedUrl::new("example.com/path".to_string());
+        let resolved = ResolvedUrl::new(
+            1,
+            "example.com/path".to_string(),
+            crate::events::DataSource::Cache,
+        );
         assert_eq!(resolved.full_url, "example.com/path");
         assert_eq!(resolved.domain, "example.com/path");
     }

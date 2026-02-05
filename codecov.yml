@@ -10,6 +10,7 @@ coverage:
 
 ignore:
   - "src/main.rs"
+  - "src/bin/**/*"
   - "tools/**/*"
   - "tests/**/*"
   - "src/**/*_test.rs"

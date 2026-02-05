@@ -48,6 +48,7 @@ Att dela långa URL:er är opraktiskt. URL-förkortare finns men omdirigerar oft
 - 🎨 **Vackra sidor** - Rena 404- och indexsidor med 4 teman
 - 🔑 **Multipla salts** - Stöd för hashid salt-rotation för migrering
 - 📱 **Adminpanel** - Realtidsövervakning av mätvärden med SSE
+- 📤 **Händelseanalys** - Valfri RabbitMQ-händelsepublicering med PostgreSQL-konsument
 
 ## Skärmdumpar
 
@@ -72,6 +73,7 @@ Att dela långa URL:er är opraktiskt. URL-förkortare finns men omdirigerar oft
 - **Cache**: Redis-kompatibel (Redis, Dragonfly, Valkey, KeyDB, etc.)
 - **Databas**: PostgreSQL (pluggbart lagringslager)
 - **Mätvärden**: Prometheus + metrics-rs
+- **Meddelandekö**: RabbitMQ (valfritt, för händelseanalys)
 - **Lösenordshashning**: Argon2
 
 > **Notera**: Lagrings- och cache-lagren är abstraherade och kan ersättas med vilken kompatibel datakälla som helst. För närvarande under aktiv utveckling.
@@ -482,6 +484,85 @@ Gå till `http://localhost:8080/admin` och logga in med dina uppgifter.
 - Lista över senaste omdirigeringar
 - Lastsimulering för testning
 - Tre teman: Ljus, Mörk, Varm
+
+## Händelseanalys
+
+Tjänsten stöder en valfri pipeline för händelsepublicering som fångar och berikar varje omdirigering i realtid. Med RabbitMQ som meddelandekö och PostgreSQL för lagringsanalytik kan du analysera användarnas beteende, geografiska fördelning, webbläsartyper och mycket mer.
+
+Fullständig dokumentation finns i [EVENT_ANALYTICS.md](EVENT_ANALYTICS.md).
+
+### Funktioner
+
+- **Fire-and-forget publicering** — omdirigeringslatenens påverkas inte av köns tillgänglighet
+- **Batchning** — händelser grupperas efter storlek (100) eller tid (1 sekund)
+- **Användaragent-analys** — automatisk extraktion av webbläsare, version, OS och enhetstyp
+- **GeoIP-berikning** — land och stad från IP-adress (MaxMind mmdb)
+- **Referensdeduplering** — MD5-baserad deduplering för refererare och användaragenter
+- **Månatlig partitionering** — automatisk partitionering av `redirect_events`-tabellen
+
+### Snabbstart
+
+#### 1. Aktivera händelsepublicering
+
+Lägg till i `config.yaml`:
+
+```yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+    queue: redirector.events.analytics
+  publisher:
+    channel_buffer_size: 10000
+    batch_size: 100
+    flush_interval_ms: 1000
+```
+
+Eller via miljövariabel:
+
+```bash
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+```
+
+#### 2. Kör händelsekonsumenten
+
+Konsumenten är ett separat binärprogram:
+
+```bash
+# Använd cargo
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f \
+DATABASE_URL=postgres://localhost/redirector_analytics \
+cargo run --bin event_consumer
+
+# Eller Docker
+docker run -e RABBITMQ_URL=... -e DATABASE_URL=... \
+  ghcr.io/brilliant-almazov/redirector:latest \
+  /app/event_consumer
+```
+
+#### 3. (Valfritt) Aktivera GeoIP-berikning
+
+Ladda ned MaxMind GeoLite2-City-databasen och ange sökvägen:
+
+```bash
+GEOIP_DB_PATH=/path/to/GeoLite2-City.mmdb
+```
+
+Konsumenten uppdateras automatiskt timmen om filen ändras.
+
+### Händelsemätvärden
+
+**Publisher (redirector)**:
+
+| Mätvärde | Typ | Beskrivning |
+|----------|-----|-------------|
+| `events_published` | Räknare | Händelser som publicerats |
+| `events_dropped` | Räknare | Händelser som förkastats (buffert full, ingen anslutning) |
+| `events_serialize_errors` | Räknare | JSON-serialiseringsfel |
+| `rabbitmq_connected` | Mätare | 1 om ansluten, 0 annars |
+
+Se [EVENT_ANALYTICS.md](EVENT_ANALYTICS.md) för fler exempel på SQL-frågor, schemat för analystabellerna och en fullständig Docker Compose-konfiguration.
 
 ## Licens
 

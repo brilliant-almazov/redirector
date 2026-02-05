@@ -48,6 +48,7 @@ Uzun URL'leri paylaşmak zahmetlidir. URL kısaltıcılar mevcut ancak çoğu za
 - 🎨 **Güzel sayfalar** - 4 tema ile temiz 404 ve dizin sayfaları
 - 🔑 **Çoklu salt** - Geçiş için hashid salt rotasyonu desteği
 - 📱 **Yönetim paneli** - SSE ile gerçek zamanlı metrik izleme
+- 📤 **Olay Analitiği** - İsteğe bağlı RabbitMQ olay yayını ve PostgreSQL tüketici
 
 ## Ekran Görüntüleri
 
@@ -72,6 +73,7 @@ Uzun URL'leri paylaşmak zahmetlidir. URL kısaltıcılar mevcut ancak çoğu za
 - **Önbellek**: Redis uyumlu (Redis, Dragonfly, Valkey, KeyDB vb.)
 - **Veritabanı**: PostgreSQL (değiştirilebilir depolama katmanı)
 - **Metrikler**: Prometheus + metrics-rs
+- **Mesaj Kuyruğu**: RabbitMQ (isteğe bağlı, olay analitiği için)
 - **Şifre Hash**: Argon2
 
 > **Not**: Depolama ve önbellek katmanları soyutlanmıştır ve herhangi bir uyumlu veri kaynağıyla değiştirilebilir. Şu anda aktif geliştirme aşamasındadır.
@@ -482,6 +484,126 @@ admin:
 - Son yönlendirmeler listesi
 - Test için yük simülasyonu
 - Üç tema: Açık, Koyu, Sıcak
+
+## Etkinlik Analitiği
+
+Servis, isteğe bağlı bir etkinlik yayını ve analitiği hattı içerir. Her yönlendirme etkinliğini yakala, zenginleştir ve gerçek zamanlı olarak analiz et.
+
+Ayrıntılar için bkz. [EVENT_ANALYTICS.md](EVENT_ANALYTICS.md)
+
+### Özellikler
+
+- **Ateş ve unut yayını** — kuyruk kullanılabilirliğinden etkilenmeyen yönlendirme gecikmesi
+- **Toplu işleme** — etkinlikler boyuta (100) veya zamana (1 saniye) göre gruplandırılır
+- **Kullanıcı-Aracı ayrıştırması** — tarayıcı, sürüm, İS, cihaz türü çıkarımı
+- **GeoIP zenginleştirmesi** — IP'den ülke ve şehir (MaxMind mmdb)
+- **Referans tekilleştirmesi** — referrer'ler ve user agent'lar için MD5 tabanlı tekilleştirme
+- **Aylık bölümleme** — `redirect_events` için otomatik bölüm oluşturma
+- **Snowflake ID'ler** — özel epoch (2025-01-01) ile benzersiz toplu tanımlayıcılar
+
+### Hızlı Başlangıç
+
+**1. Etkinlik Yayını Etkinleştir:**
+
+`config.yaml` dosyasına ekle:
+
+```yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+    queue: redirector.events.analytics
+  publisher:
+    channel_buffer_size: 10000
+    batch_size: 100
+    flush_interval_ms: 1000
+```
+
+Veya ortam değişkenleri aracılığıyla:
+
+```bash
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+```
+
+**2. Etkinlik Tüketicisi Çalıştır:**
+
+Tüketici ayrı bir ikili dosyadır:
+
+```bash
+# Cargo kullanarak
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f \
+DATABASE_URL=postgres://localhost/redirector_analytics \
+cargo run --bin event_consumer
+
+# Docker kullanarak
+docker run -e RABBITMQ_URL=... -e DATABASE_URL=... \
+  ghcr.io/brilliant-almazov/redirector:latest \
+  /app/event_consumer
+```
+
+**3. (İsteğe Bağlı) GeoIP Etkinleştir:**
+
+MaxMind GeoLite2-City veritabanını indirip yol sağla:
+
+```bash
+GEOIP_DB_PATH=/path/to/GeoLite2-City.mmdb
+```
+
+Tüketici dosya değişirse her saatte veritabanını otomatik olarak yeniden yükler.
+
+### Etkinlik Metrikleri
+
+#### Yayıncı (redirector)
+
+| Metrik | Tür | Açıklama |
+|--------|-----|----------|
+| `events_published` | Sayaç | Başarıyla yayımlanan etkinlikler |
+| `events_dropped` | Sayaç | Bırakılan etkinlikler (tampon dolu, bağlantı yok) |
+| `events_serialize_errors` | Sayaç | JSON serileştirme başarısızlıkları |
+| `rabbitmq_connected` | Gösterge | Bağlı ise 1, aksi halde 0 |
+
+#### Tüketici (event_consumer)
+
+Toplu işleme bilgisiyle yapılandırılmış JSON günlükleri. Prometheus metrikleri gelecek sürüm için planlanmıştır.
+
+### Örnek Sorgular
+
+**Son 24 saatte URL başına yönlendirmeler:**
+
+```sql
+SELECT url_id, COUNT(*) as redirects
+FROM redirect_events
+WHERE event_timestamp > NOW() - INTERVAL '24 hours'
+GROUP BY url_id
+ORDER BY redirects DESC
+LIMIT 10;
+```
+
+**Önbellek isabet oranı:**
+
+```sql
+SELECT
+  source,
+  COUNT(*) as count,
+  ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) as percent
+FROM redirect_events
+WHERE event_timestamp > NOW() - INTERVAL '1 hour'
+GROUP BY source;
+```
+
+**En çok ziyaret edilen referrer alanları:**
+
+```sql
+SELECT rd.domain, COUNT(*) as visits
+FROM redirect_events re
+JOIN referer_domains rd ON re.referer_domain_id = rd.id
+WHERE re.event_timestamp > NOW() - INTERVAL '7 days'
+  AND rd.domain != '(unknown)'
+GROUP BY rd.domain
+ORDER BY visits DESC
+LIMIT 20;
+```
 
 ## Lisans
 

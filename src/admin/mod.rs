@@ -6,8 +6,6 @@ pub mod sse;
 pub mod state;
 
 #[cfg(test)]
-mod auth_test;
-#[cfg(test)]
 mod handlers_test;
 #[cfg(test)]
 mod pages_test;

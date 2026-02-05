@@ -1,4 +1,5 @@
 use crate::error::{AppError, Result};
+use crate::events::DataSource;
 use crate::services::traits::{Cache, HashidDecoder, UrlStorage};
 use std::sync::Arc;
 
@@ -39,7 +40,7 @@ where
             tracing::debug!(id = %id, "Cache hit");
             metrics::counter!("cache_hits").increment(1);
             crate::metrics::record_cache_hit();
-            return Ok(ResolvedUrl::new(url));
+            return Ok(ResolvedUrl::new(id, url, DataSource::Cache));
         }
 
         tracing::debug!(id = %id, "Cache miss, querying storage");
@@ -56,20 +57,29 @@ where
             tracing::warn!(error = %e, "Failed to cache URL");
         }
 
-        Ok(ResolvedUrl::new(url))
+        Ok(ResolvedUrl::new(id, url, DataSource::Database))
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ResolvedUrl {
+    /// Decoded numeric URL ID
+    pub id: i64,
     pub full_url: String,
     pub domain: String,
+    /// Where the URL was resolved from
+    pub source: DataSource,
 }
 
 impl ResolvedUrl {
-    pub fn new(full_url: String) -> Self {
+    pub fn new(id: i64, full_url: String, source: DataSource) -> Self {
         let domain = extract_domain(&full_url).unwrap_or_else(|| full_url.clone());
-        Self { full_url, domain }
+        Self {
+            id,
+            full_url,
+            domain,
+            source,
+        }
     }
 }
 

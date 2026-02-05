@@ -10,27 +10,30 @@ WORKDIR /app
 # Copy manifests and build script
 COPY Cargo.toml Cargo.lock build.rs ./
 
-# Create dummy main.rs to build dependencies
-RUN mkdir src && \
+# Create dummy sources to build dependencies
+RUN mkdir -p src/bin && \
     echo "fn main() {}" > src/main.rs && \
-    echo "pub fn lib() {}" > src/lib.rs
+    echo "pub fn lib() {}" > src/lib.rs && \
+    echo "fn main() {}" > src/bin/event_consumer.rs
 
 # Build dependencies (this layer will be cached)
-RUN cargo build --release --bin redirector && \
+RUN cargo build --release --bin redirector --bin event_consumer && \
     rm -rf src
 
 # Copy source code
 COPY src ./src
 COPY templates ./templates
 COPY static ./static
+COPY migrations ./migrations
 
-# Build the application with git commit hash
-RUN touch src/main.rs src/lib.rs && \
-    GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT} cargo build --release --bin redirector
+# Build both binaries with git commit hash
+RUN touch src/main.rs src/lib.rs src/bin/event_consumer.rs && \
+    GIT_COMMIT_SHORT=${GIT_COMMIT_SHORT} cargo build --release --bin redirector --bin event_consumer
 
 # Compress with UPX
 RUN apk add --no-cache upx && \
-    upx --best --lzma /app/target/release/redirector
+    upx --best --lzma /app/target/release/redirector && \
+    upx --best --lzma /app/target/release/event_consumer
 
 # Runtime stage
 FROM alpine:3.20
@@ -39,8 +42,9 @@ RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
-# Copy binary and static assets from builder
+# Copy binaries and static assets from builder
 COPY --from=builder /app/target/release/redirector /app/redirector
+COPY --from=builder /app/target/release/event_consumer /app/event_consumer
 COPY --from=builder /app/static /app/static
 
 # Copy config example (actual config should be mounted)

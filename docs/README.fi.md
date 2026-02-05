@@ -48,6 +48,7 @@ Pitkien URL-osoitteiden jakaminen on epäkäytännöllistä. URL-lyhentäjiä on
 - 🎨 **Kauniit sivut** - Siistit 404- ja hakemistosivut 4 teemalla
 - 🔑 **Useita suoloja** - Hashid-suolan kiertotuuki migraatiota varten
 - 📱 **Ylläpitopaneeli** - Reaaliaikainen mittareiden seuranta SSE:llä
+- 📤 **Tapahtumaanalytiikka** - Valinnainen RabbitMQ-tapahtumajulkaisu PostgreSQL-kuluttajalla
 
 ## Kuvakaappaukset
 
@@ -72,6 +73,7 @@ Pitkien URL-osoitteiden jakaminen on epäkäytännöllistä. URL-lyhentäjiä on
 - **Välimuisti**: Redis-yhteensopiva (Redis, Dragonfly, Valkey, KeyDB jne.)
 - **Tietokanta**: PostgreSQL (vaihdettava tallennuskerros)
 - **Mittarit**: Prometheus + metrics-rs
+- **Viestijono**: RabbitMQ (valinnainen, tapahtumaanalytiikkaan)
 - **Salasanan hajautus**: Argon2
 
 > **Huomautus**: Tallennus- ja välimuistikerrokset on abstrahoitu ja ne voidaan korvata millä tahansa yhteensopivalla tietolähteellä. Tällä hetkellä aktiivisessa kehityksessä.
@@ -427,6 +429,103 @@ Mene osoitteeseen `http://localhost:8080/admin` ja kirjaudu tunnuksillasi.
 - Viimeaikaisten uudelleenohjausten lista
 - Kuormitussimulaatio testaukseen
 - Kolme teemaa: Vaalea, Tumma, Lämmin
+
+## Tapahtuma-analytiikka
+
+Valinnainen tapahtumajulkaisun putkilinja uudelleenohjauksien analytiikkaa varten. Kun funktio on käytössä, jokainen uudelleenohjaustapahtumaoletus julkaistaan RabbitMQ:hun ja kulutetaan erillisen binäärin kautta, joka kirjoittaa PostgreSQL:ään rikastettujen tietojen kanssa.
+
+> **Täydellinen dokumentaatio**: [docs/EVENT_ANALYTICS.md](EVENT_ANALYTICS.md)
+
+### Ominaisuudet
+
+- **Fire-and-forget-julkaisu** — uudelleenohjauksen latenssi ei kärsi jonon saatavuudesta
+- **Erätöyntö** — tapahtumat ryhmitelty koon (100) tai ajan (1 sekunti) mukaan
+- **User-Agent-jäsennys** — selain, versio, käyttöjärjestelmä, laitteen tyyppi wootheen kautta
+- **GeoIP-rikastaminen** — maa ja kaupunki IP-osoitteesta (MaxMind mmdb ja kuuman lataamisen kanssa)
+- **Viitteen poistaminen kaksinkertaistumisesta** — MD5-pohjainen deduplikaatio viitteille ja käyttäjän agenteille
+- **Kuukausittain osiointi** — automaattinen osiointien luominen `redirect_events`-taulukossa
+- **Verkkotunnuksen normalisointi** — `WWW.Example.COM` → `example.com`
+
+### Arkkitehtuuri
+
+```
+Uudelleenohjaus-käsittelijä
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc-kanava]
+    │   (ei-estävä,                    │
+    │    fire-and-forget)                 ▼
+    │                              Taustatehtävä
+    │                              (erätöyntö koon/ajan mukaan)
+    │                                     │
+    │                                     ▼
+    │                                [RabbitMQ-jono]
+    │                                     │
+    │                                     ▼
+    │                              Tapahtumien kuluttaja
+    │                              (erillinen binääri/säilö)
+    │                                     │
+    │                                     ▼
+    │                              [PostgreSQL-analytiikka]
+    │                              (kuukausittain osioitu)
+```
+
+### Pikaopas
+
+```bash
+# Ota käyttöön config.yaml:issa
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# Tai ympäristömuuttujan kautta
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# Suorita kuluttaja
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Docker Compose tapahtumien kanssa
+
+```yaml
+services:
+  redirector:
+    build: .
+    environment:
+      - REDIRECTOR__EVENTS__ENABLED=true
+    depends_on: [redis, rabbitmq]
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://postgres:postgres@analytics-db:5432/analytics
+      - GEOIP_DB_PATH=/data/GeoLite2-City.mmdb  # valinnainen
+    depends_on: [rabbitmq, analytics-db]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+```
+
+### Tapahtumien mittarit
+
+Kun tapahtumajulkaisu on käytössä, palvelu paljastaa lisämittareita osoitteessa `/metrics`:
+
+```
+events_published 50000
+events_dropped 0
+events_publish_errors 0
+events_serialize_errors 0
+rabbitmq_connected 1
+```
 
 ## Lisenssi
 
