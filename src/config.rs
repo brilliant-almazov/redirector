@@ -14,6 +14,8 @@ pub struct Config {
     pub rate_limit: RateLimitConfig,
     #[serde(default)]
     pub admin: AdminConfig,
+    #[serde(default)]
+    pub events: EventsConfig,
 }
 
 pub type AppConfig = Config;
@@ -270,12 +272,111 @@ pub struct AdminUser {
     pub password_hash: String,
 }
 
+// ---------------------------------------------------------------
+// Events / RabbitMQ configuration
+// ---------------------------------------------------------------
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct EventsConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub rabbitmq: RabbitMqConnectionConfig,
+    #[serde(default)]
+    pub publisher: PublisherConfig,
+    #[serde(default)]
+    pub consumer: ConsumerConfig,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RabbitMqConnectionConfig {
+    #[serde(default = "default_rabbitmq_url")]
+    pub url: String,
+    #[serde(default = "default_queue")]
+    pub queue: String,
+}
+
+impl Default for RabbitMqConnectionConfig {
+    fn default() -> Self {
+        Self {
+            url: default_rabbitmq_url(),
+            queue: default_queue(),
+        }
+    }
+}
+
+fn default_rabbitmq_url() -> String {
+    "amqp://guest:guest@localhost:5672/%2f".to_string()
+}
+
+fn default_queue() -> String {
+    "events.analytics".to_string()
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct PublisherConfig {
+    #[serde(default = "default_channel_buffer")]
+    pub channel_buffer_size: usize,
+    #[serde(default = "default_batch_size")]
+    pub batch_size: usize,
+    #[serde(default = "default_flush_interval_ms")]
+    pub flush_interval_ms: u64,
+}
+
+impl Default for PublisherConfig {
+    fn default() -> Self {
+        Self {
+            channel_buffer_size: default_channel_buffer(),
+            batch_size: default_batch_size(),
+            flush_interval_ms: default_flush_interval_ms(),
+        }
+    }
+}
+
+fn default_channel_buffer() -> usize {
+    10_000
+}
+
+fn default_batch_size() -> usize {
+    100
+}
+
+fn default_flush_interval_ms() -> u64 {
+    1_000
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ConsumerConfig {
+    #[serde(default = "default_prefetch_count")]
+    pub prefetch_count: u16,
+    #[serde(default = "default_consumer_db_url")]
+    pub database_url: String,
+}
+
+impl Default for ConsumerConfig {
+    fn default() -> Self {
+        Self {
+            prefetch_count: default_prefetch_count(),
+            database_url: default_consumer_db_url(),
+        }
+    }
+}
+
+fn default_prefetch_count() -> u16 {
+    10
+}
+
+fn default_consumer_db_url() -> String {
+    "postgres://localhost/redirector_analytics".to_string()
+}
+
 /// Standard PaaS environment variable mappings.
 /// Each entry: (PaaS env var, corresponding REDIRECTOR__ prefixed var).
 const PAAS_ENV_MAPPINGS: &[(&str, &str)] = &[
     ("DATABASE_URL", "REDIRECTOR__DATABASE__URL"),
     ("REDIS_URL", "REDIRECTOR__REDIS__URL"),
     ("PORT", "REDIRECTOR__SERVER__PORT"),
+    ("RABBITMQ_URL", "REDIRECTOR__EVENTS__RABBITMQ__URL"),
 ];
 
 impl Config {
@@ -324,6 +425,7 @@ impl Config {
                 match paas_var {
                     "DATABASE_URL" => self.database.url = val,
                     "REDIS_URL" => self.redis.url = val,
+                    "RABBITMQ_URL" => self.events.rabbitmq.url = val,
                     "PORT" => {
                         if let Ok(port) = val.parse::<u16>() {
                             self.server.port = port;

@@ -48,6 +48,7 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 - 🎨 **Beautiful pages** - Clean 404 and index pages with 4 themes
 - 🔑 **Multiple salts** - Hashid salt rotation support for migration
 - 📱 **Admin Dashboard** - Real-time metrics monitoring with SSE
+- 📤 **Event Analytics** - Optional RabbitMQ event publishing with PostgreSQL consumer
 
 ## Screenshots
 
@@ -72,6 +73,7 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 - **Cache**: Redis-compatible (Redis, Dragonfly, Valkey, KeyDB, etc.)
 - **Database**: PostgreSQL (pluggable storage layer)
 - **Metrics**: Prometheus + metrics-rs
+- **Message Queue**: RabbitMQ (optional, for event analytics)
 - **Password Hashing**: Argon2
 
 > **Note**: The storage and cache layers are abstracted and can be replaced with any compatible data source. Currently in active development.
@@ -156,6 +158,20 @@ metrics:
 rate_limit:
   requests_per_second: 1000
   burst: 100
+
+# Optional: Event analytics via RabbitMQ
+events:
+  enabled: false
+  rabbitmq:
+    url: ${RABBITMQ_URL}
+    queue: "redirector.events.analytics"
+  publisher:
+    channel_buffer_size: 10000
+    batch_size: 100
+    flush_interval_ms: 1000
+  consumer:
+    prefetch_count: 10
+    database_url: ${ANALYTICS_DATABASE_URL}
 ```
 
 ### Configuration Options
@@ -225,6 +241,7 @@ These are automatically recognized and applied. Most PaaS platforms set them for
 | `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
 | `REDIS_URL` | `redis.url` | `redis://host:6379` |
 | `PORT` | `server.port` | `3000` |
+| `RABBITMQ_URL` | `events.rabbitmq.url` | `amqp://guest:guest@host:5672/%2f` |
 | `HASHIDS_SALTS` | `hashids.salts` | `new-salt,old-salt` (comma-separated) |
 
 > **Priority rule**: If both `DATABASE_URL` and `REDIRECTOR__DATABASE__URL` are set, the `REDIRECTOR__` prefixed version wins. Similarly, `REDIRECTOR__HASHIDS__SALTS__0` takes priority over `HASHIDS_SALTS`.
@@ -300,6 +317,19 @@ Any config value can be overridden using the `REDIRECTOR__` prefix with `__` (do
 | `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Session lifetime in hours |
 
 > **Note**: Admin users (`admin.users`) with `username` and `password_hash` cannot be set via env vars due to their complex structure. Define them in the config file or `CONFIG_BASE64`.
+
+##### Events / Analytics (Optional)
+
+| Environment Variable | Config Path | Default | Description |
+|---------------------|-------------|---------|-------------|
+| `REDIRECTOR__EVENTS__ENABLED` | `events.enabled` | `false` | Enable event publishing to RabbitMQ |
+| `REDIRECTOR__EVENTS__RABBITMQ__URL` | `events.rabbitmq.url` | `amqp://...localhost...` | RabbitMQ connection URL |
+| `REDIRECTOR__EVENTS__RABBITMQ__QUEUE` | `events.rabbitmq.queue` | `redirector.events.analytics` | Queue name |
+| `REDIRECTOR__EVENTS__PUBLISHER__CHANNEL_BUFFER_SIZE` | `events.publisher.channel_buffer_size` | `10000` | Internal event buffer |
+| `REDIRECTOR__EVENTS__PUBLISHER__BATCH_SIZE` | `events.publisher.batch_size` | `100` | Events per batch |
+| `REDIRECTOR__EVENTS__PUBLISHER__FLUSH_INTERVAL_MS` | `events.publisher.flush_interval_ms` | `1000` | Max batch delay (ms) |
+| `REDIRECTOR__EVENTS__CONSUMER__PREFETCH_COUNT` | `events.consumer.prefetch_count` | `10` | RabbitMQ prefetch |
+| `REDIRECTOR__EVENTS__CONSUMER__DATABASE_URL` | `events.consumer.database_url` | `postgres://...analytics` | Analytics DB URL |
 
 #### Examples by Deployment Platform
 
@@ -592,6 +622,98 @@ Open `http://localhost:8080/admin` and login with your credentials.
 - Load simulation for testing
 - Four themes: Light, Dark, Gray, Warm
 
+## Event Analytics
+
+Optional event publishing pipeline for redirect analytics. When enabled, every redirect event is published to RabbitMQ and consumed by a separate binary that writes to PostgreSQL with rich enrichment.
+
+> **Full documentation**: [docs/EVENT_ANALYTICS.md](docs/EVENT_ANALYTICS.md)
+
+### Features
+
+- **Fire-and-forget publishing** — redirect latency unaffected by queue availability
+- **Batching** — events grouped by size (100) or time (1 second)
+- **User-Agent parsing** — browser, version, OS, device type via woothee
+- **GeoIP enrichment** — country and city from IP (MaxMind mmdb with hot-reload)
+- **Reference deduplication** — MD5-based dedup for referers and user agents
+- **Monthly partitioning** — automatic partition creation for `redirect_events`
+- **Domain normalization** — `WWW.Example.COM` → `example.com`
+
+### Architecture
+
+```
+Redirect Handler
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc channel]
+    │   (non-blocking,                    │
+    │    fire-and-forget)                 ▼
+    │                              Background Task
+    │                              (batch by size/time)
+    │                                     │
+    │                                     ▼
+    │                                [RabbitMQ Queue]
+    │                                     │
+    │                                     ▼
+    │                              Event Consumer
+    │                              (separate binary/container)
+    │                                     │
+    │                                     ▼
+    │                              [PostgreSQL Analytics]
+    │                              (monthly partitioned)
+```
+
+### Quick Start
+
+```bash
+# Enable in config.yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# Or via environment
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# Run consumer
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Docker Compose with Events
+
+```yaml
+services:
+  redirector:
+    build: .
+    environment:
+      - REDIRECTOR__EVENTS__ENABLED=true
+    depends_on: [redis, rabbitmq]
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://postgres:postgres@analytics-db:5432/analytics
+      - GEOIP_DB_PATH=/data/GeoLite2-City.mmdb  # optional
+    depends_on: [rabbitmq, analytics-db]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+```
+
+### Key Design Decisions
+
+- **Never blocks redirects**: `try_send()` on bounded channel, drops events if full
+- **Type-safe event batches**: `EventBatch` is a Rust enum tagged by `event_type`
+- **Snowflake batch IDs**: Custom epoch 2025-01-01, ~69 years of unique IDs
+- **Graceful degradation**: If RabbitMQ is down, redirects continue; events are dropped with metrics
+
 ## Metrics
 
 The service exposes comprehensive Prometheus metrics at `/metrics` (requires Basic Auth):
@@ -635,6 +757,15 @@ circuit_breaker_rejections_total 0
 rate_limit_exceeded_total 0
 ```
 
+### Events (when enabled)
+```
+events_published 50000
+events_dropped 0
+events_publish_errors 0
+events_serialize_errors 0
+rabbitmq_connected 1
+```
+
 ## How It Works
 
 1. User visits `/r/{hashid}` (e.g., `/r/abc123`)
@@ -649,12 +780,17 @@ rate_limit_exceeded_total 0
 ┌──────┐     ┌───────────┐     ┌───────┐     ┌──────────┐
 │Client│────▶│Redirector │────▶│ Redis │────▶│PostgreSQL│
 └──────┘     └───────────┘     └───────┘     └──────────┘
-                  │
-                  ▼
-           ┌─────────────┐
-           │ Interstitial│
-           │    Page     │
-           └─────────────┘
+                  │  │
+                  │  └──────────────────┐ (optional)
+                  ▼                     ▼
+           ┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+           │ Interstitial│     │   RabbitMQ   │────▶│Event Consumer│
+           │    Page     │     └──────────────┘     └──────┬───────┘
+           └─────────────┘                                 │
+                                                    ┌──────▼───────┐
+                                                    │  Analytics   │
+                                                    │  PostgreSQL  │
+                                                    └──────────────┘
 ```
 
 ## Building

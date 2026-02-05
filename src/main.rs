@@ -60,9 +60,22 @@ async fn main() -> anyhow::Result<()> {
         main_storage,
     ));
 
+    // Start event dispatcher
+    let dispatcher = if config.events.enabled {
+        tracing::info!(
+            queue = %config.events.rabbitmq.queue,
+            "Event publishing enabled"
+        );
+        let sender = redirector::events::publisher::start_publisher(&config.events);
+        redirector::events::dispatcher::EventDispatcher::new(sender)
+    } else {
+        redirector::events::dispatcher::EventDispatcher::noop()
+    };
+
     let redirect_state = Arc::new(RedirectState {
         resolver: url_resolver,
         delay_seconds: config.interstitial.delay_seconds,
+        dispatcher,
     });
 
     // Build rate limiter

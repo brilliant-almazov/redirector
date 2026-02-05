@@ -48,6 +48,7 @@ Berbagi URL panjang tidak praktis. Pemendek URL ada tetapi sering langsung menga
 - 🎨 **Halaman indah** - Halaman 404 dan indeks yang bersih dengan 4 tema
 - 🔑 **Multiple salt** - Dukungan rotasi salt hashid untuk migrasi
 - 📱 **Dasbor admin** - Pemantauan metrik real-time dengan SSE
+- 📤 **Analitik Peristiwa** - Penerbitan peristiwa RabbitMQ opsional dengan konsumer PostgreSQL
 
 ## Tangkapan Layar
 
@@ -72,6 +73,7 @@ Berbagi URL panjang tidak praktis. Pemendek URL ada tetapi sering langsung menga
 - **Cache**: Kompatibel Redis (Redis, Dragonfly, Valkey, KeyDB, dll.)
 - **Database**: PostgreSQL (lapisan penyimpanan yang dapat ditukar)
 - **Metrik**: Prometheus + metrics-rs
+- **Antrean Pesan**: RabbitMQ (opsional, untuk analitik peristiwa)
 - **Hashing Password**: Argon2
 
 > **Catatan**: Lapisan penyimpanan dan cache diabstraksikan dan dapat diganti dengan sumber data yang kompatibel. Saat ini dalam pengembangan aktif.
@@ -427,6 +429,110 @@ Buka `http://localhost:8080/admin` dan login dengan kredensial Anda.
 - Daftar pengalihan terbaru
 - Simulasi beban untuk pengujian
 - Tiga tema: Terang, Gelap, Hangat
+
+## Analitik Event
+
+Saluran penerbitan event opsional untuk analitik pengalihan. Ketika diaktifkan, setiap event pengalihan diterbitkan ke RabbitMQ dan dikonsumsi oleh biner terpisah yang menulis ke PostgreSQL dengan pengayaan yang kaya.
+
+> **Dokumentasi lengkap**: [docs/EVENT_ANALYTICS.md](../EVENT_ANALYTICS.md)
+
+### Fitur
+
+- **Fire-and-forget publishing** — latensi pengalihan tidak terpengaruh oleh ketersediaan antrian
+- **Batching** — event dikelompokkan berdasarkan ukuran (100) atau waktu (1 detik)
+- **User-Agent parsing** — browser, versi, OS, tipe perangkat melalui woothee
+- **Pengayaan GeoIP** — negara dan kota dari IP (MaxMind mmdb dengan hot-reload)
+- **Deduplikasi referensi** — deduplikasi berbasis MD5 untuk referer dan user agent
+- **Partisi bulanan** — pembuatan partisi otomatis untuk `redirect_events`
+- **Normalisasi domain** — `WWW.Example.COM` → `example.com`
+
+### Arsitektur
+
+```
+Redirect Handler
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc channel]
+    │   (non-blocking,                    │
+    │    fire-and-forget)                 ▼
+    │                              Background Task
+    │                              (batch by size/time)
+    │                                     │
+    │                                     ▼
+    │                                [RabbitMQ Queue]
+    │                                     │
+    │                                     ▼
+    │                              Event Consumer
+    │                              (separate binary/container)
+    │                                     │
+    │                                     ▼
+    │                              [PostgreSQL Analytics]
+    │                              (monthly partitioned)
+```
+
+### Mulai Cepat
+
+```bash
+# Aktifkan dalam config.yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# Atau melalui variabel lingkungan
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# Jalankan consumer
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Docker Compose dengan Event
+
+```yaml
+services:
+  redirector:
+    build: .
+    environment:
+      - REDIRECTOR__EVENTS__ENABLED=true
+    depends_on: [redis, rabbitmq]
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://postgres:postgres@analytics-db:5432/analytics
+      - GEOIP_DB_PATH=/data/GeoLite2-City.mmdb  # optional
+    depends_on: [rabbitmq, analytics-db]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+```
+
+### Keputusan Desain Utama
+
+- **Tidak pernah memblokir pengalihan**: `try_send()` pada channel terbatas, drop event jika penuh
+- **Batch event yang type-safe**: `EventBatch` adalah enum Rust yang ditandai oleh `event_type`
+- **ID batch Snowflake**: Epoch kustom 2025-01-01, ~69 tahun ID unik
+- **Degradasi yang anggun**: Jika RabbitMQ down, pengalihan tetap berjalan; event dijatuhkan dengan metrik
+
+### Metrik Event
+
+Layanan mengekspos metrik Prometheus untuk event analytics di `/metrics`:
+
+```
+events_published 50000
+events_dropped 0
+events_publish_errors 0
+events_serialize_errors 0
+rabbitmq_connected 1
+```
 
 ## Lisensi
 

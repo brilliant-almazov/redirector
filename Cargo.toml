@@ -1,6 +1,6 @@
 [package]
 name = "redirector"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2021"
 authors = ["Anton Brilliantov"]
 description = "Safe redirect service with hashid decoding and caching"
@@ -26,7 +26,7 @@ config = { version = "0.14", features = ["yaml"] }
 serde = { version = "1", features = ["derive"] }
 
 # Database
-sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "tls-rustls", "postgres", "chrono"] }
 deadpool-redis = "0.22"
 redis = { version = "1", features = ["tokio-comp"] }
 
@@ -55,6 +55,23 @@ once_cell = "1"
 subtle = "2"
 base64 = "0.22"
 async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+md5 = "0.7"
+
+# RabbitMQ event publishing
+lapin = "2"
+tokio-executor-trait = "2"
+tokio-reactor-trait = "1"
+
+# Snowflake ID generation
+snowflaked = { version = "1", features = ["sync"] }
+
+# Event enrichment
+woothee = "0.13"
+maxminddb = "0.27"
+
+# HTTP client (for load testing tool)
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 
 # Admin dashboard
 argon2 = "0.5"
@@ -69,7 +86,7 @@ serde_json = "1"
 [dev-dependencies]
 # Testing
 testcontainers = "0.26"
-testcontainers-modules = { version = "0.14", features = ["postgres", "redis"] }
+testcontainers-modules = { version = "0.14", features = ["postgres", "redis", "rabbitmq"] }
 
 [[bin]]
 name = "gen_hashids"
@@ -82,6 +99,14 @@ path = "tools/hash_password.rs"
 [[bin]]
 name = "gen_simulation_data"
 path = "tools/gen_simulation_data.rs"
+
+[[bin]]
+name = "load_test"
+path = "tools/load_test.rs"
+
+[[bin]]
+name = "event_consumer"
+path = "src/bin/event_consumer.rs"
 
 [profile.release]
 lto = true

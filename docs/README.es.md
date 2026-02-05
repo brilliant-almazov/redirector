@@ -48,6 +48,7 @@ Compartir URLs largas es inconveniente. Los acortadores de URL existen, pero a m
 - 🎨 **Páginas hermosas** - Páginas 404 e índice limpias con 4 temas
 - 🔑 **Múltiples sales** - Soporte de rotación de sal hashid para migración
 - 📱 **Panel de administración** - Monitoreo de métricas en tiempo real con SSE
+- 📤 **Análisis de eventos** - Publicación opcional de eventos en RabbitMQ con consumidor PostgreSQL
 
 ## Capturas de pantalla
 
@@ -72,6 +73,7 @@ Compartir URLs largas es inconveniente. Los acortadores de URL existen, pero a m
 - **Caché**: Compatible con Redis (Redis, Dragonfly, Valkey, KeyDB, etc.)
 - **Base de datos**: PostgreSQL (capa de almacenamiento intercambiable)
 - **Métricas**: Prometheus + metrics-rs
+- **Cola de mensajes**: RabbitMQ (opcional, para análisis de eventos)
 - **Hash de contraseñas**: Argon2
 
 > **Nota**: Las capas de almacenamiento y caché son abstractas y pueden ser reemplazadas por cualquier fuente de datos compatible. Actualmente en desarrollo activo.
@@ -378,6 +380,24 @@ echo "$CONFIG_BASE64" | base64 -d
 6. Muestra página intersticial con cuenta regresiva
 7. Después de la cuenta regresiva, redirige a la URL de destino
 
+```
+┌──────┐     ┌───────────┐     ┌───────┐     ┌──────────┐
+│Client│────▶│Redirector │────▶│ Redis │────▶│PostgreSQL│
+└──────┘     └───────────┘     └───────┘     └──────────┘
+                 │  │
+                 │  └──────────────────┐ (opcional)
+                 ▼                     ▼
+          ┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+          │Página       │     │  RabbitMQ    │────▶│Consumidor    │
+          │intersticial │     └──────────────┘     │de eventos    │
+          └─────────────┘                          └──────┬───────┘
+                                                    │
+                                            ┌──────▼───────────┐
+                                            │PostgreSQL        │
+                                            │Analítica         │
+                                            └──────────────────┘
+```
+
 ## Endpoints
 
 | Endpoint | Auth | Descripción |
@@ -427,6 +447,150 @@ Abra `http://localhost:8080/admin` e inicie sesión con sus credenciales.
 - Lista de redirecciones recientes
 - Simulación de carga para pruebas
 - Tres temas: Claro, Oscuro, Cálido
+
+## Análisis de eventos
+
+Pipeline opcional de publicación de eventos para análisis de redirecciones. Cuando está habilitado, cada evento de redirección se publica en RabbitMQ y es procesado por un binario separado que escribe en PostgreSQL con enriquecimiento detallado.
+
+> **Documentación completa**: [docs/EVENT_ANALYTICS.md](../docs/EVENT_ANALYTICS.md)
+
+### Características
+
+- **Publicación fire-and-forget** — La latencia de redirección no se ve afectada por la disponibilidad de la cola
+- **Batching** — Eventos agrupados por tamaño (100) o tiempo (1 segundo)
+- **Análisis de User-Agent** — Navegador, versión, SO, tipo de dispositivo vía woothee
+- **Enriquecimiento GeoIP** — País y ciudad desde IP (MaxMind mmdb con recarga en caliente)
+- **Deduplicación de referencias** — Deduplicación basada en MD5 para referers y user agents
+- **Particionamiento mensual** — Creación automática de particiones para `redirect_events`
+- **Normalización de dominios** — `WWW.Example.COM` → `example.com`
+
+### Arquitectura
+
+```
+Manejador de redirección
+    │
+    ├── try_send(RedirectEvent) ──► [canal tokio::mpsc]
+    │   (no bloqueante,                 │
+    │    fire-and-forget)               ▼
+    │                             Tarea en segundo plano
+    │                             (agrupar por tamaño/tiempo)
+    │                                     │
+    │                                     ▼
+    │                              [Cola RabbitMQ]
+    │                                     │
+    │                                     ▼
+    │                              Consumidor de eventos
+    │                              (binario/contenedor separado)
+    │                                     │
+    │                                     ▼
+    │                            [PostgreSQL Analítica]
+    │                            (particionado mensualmente)
+```
+
+### Inicio rápido
+
+```bash
+# Habilitar en config.yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# O mediante variables de entorno
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# Ejecutar consumidor
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Docker Compose con eventos
+
+```yaml
+services:
+  redirector:
+    build: .
+    environment:
+      - REDIRECTOR__EVENTS__ENABLED=true
+    depends_on: [redis, rabbitmq]
+
+  event_consumer:
+    build: .
+    command: ["./event_consumer"]
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/%2f
+      - DATABASE_URL=postgres://postgres:postgres@analytics-db:5432/analytics
+      - GEOIP_DB_PATH=/data/GeoLite2-City.mmdb  # opcional
+    depends_on: [rabbitmq, analytics-db]
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports: ["5672:5672", "15672:15672"]
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+```
+
+### Decisiones de diseño clave
+
+- **Nunca bloquea redirecciones**: `try_send()` en canal acotado, descarta eventos si está lleno
+- **Lotes de eventos con tipos seguros**: `EventBatch` es un enum Rust marcado por `event_type`
+- **IDs de lote Snowflake**: Época personalizada 2025-01-01, ~69 años de IDs únicos
+- **Degradación elegante**: Si RabbitMQ está caído, las redirecciones continúan; los eventos se descartan con métricas
+
+## Métricas
+
+El servicio expone métricas completas de Prometheus en `/metrics` (requiere autenticación básica):
+
+### Métricas de servicio
+```
+redirector_up 1
+redirector_build_info{version="0.1.0"} 1
+redirector_uptime_seconds 3600.5
+```
+
+### Métricas de solicitud
+```
+redirect_requests_total 150000
+not_found_requests_total 50
+request_duration_seconds{quantile="0.5"} 0.040
+request_duration_seconds{quantile="0.99"} 0.081
+```
+
+### Métricas de caché
+```
+cache_hits_total 140000
+cache_misses_total 10000
+cache_get_duration_seconds{quantile="0.5"} 0.002
+cache_set_duration_seconds{quantile="0.5"} 0.002
+```
+
+### Métricas de base de datos
+```
+db_queries_total 10000
+db_hits_total 9950
+db_misses_total 50
+db_errors_total 0
+db_query_duration_seconds{quantile="0.5"} 0.035
+db_rate_limit_exceeded_total 0
+circuit_breaker_rejections_total 0
+```
+
+### Limitación de velocidad
+```
+rate_limit_exceeded_total 0
+```
+
+### Eventos (cuando está habilitado)
+```
+events_published 50000
+events_dropped 0
+events_publish_errors 0
+events_serialize_errors 0
+rabbitmq_connected 1
+```
 
 ## Licencia
 

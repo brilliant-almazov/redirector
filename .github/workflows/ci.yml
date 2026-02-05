@@ -77,7 +77,9 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: 🧪 Run tests with coverage
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        run: |
+          cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info \
+            --ignore-filename-regex '(tools/|/bin/|main\.rs$)'
 
       - name: 📊 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -90,7 +92,9 @@ jobs:
       - name: 📊 Extract coverage percentage
         id: coverage
         run: |
-          COVERAGE=$(cargo llvm-cov --all-features --workspace --json | jq '.data[0].totals.lines.percent' | cut -d. -f1)
+          COVERAGE=$(cargo llvm-cov --all-features --workspace --json \
+            --ignore-filename-regex '(tools/|/bin/|main\.rs$)' \
+            | jq '.data[0].totals.lines.percent' | cut -d. -f1)
           echo "percent=$COVERAGE" >> $GITHUB_OUTPUT
 
       - name: 📊 Update coverage badge

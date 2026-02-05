@@ -48,6 +48,7 @@ Partager de longues URLs est peu pratique. Les raccourcisseurs d'URL existent ma
 - 🎨 **Belles pages** - Pages 404 et index propres avec 4 thèmes
 - 🔑 **Sels multiples** - Support de rotation de sel hashid pour migration
 - 📱 **Tableau de bord admin** - Surveillance des métriques en temps réel avec SSE
+- 📤 **Analytique d'événements** - Publication optionnelle d'événements vers RabbitMQ avec consommateur PostgreSQL
 
 ## Captures d'écran
 
@@ -72,6 +73,7 @@ Partager de longues URLs est peu pratique. Les raccourcisseurs d'URL existent ma
 - **Cache**: Compatible Redis (Redis, Dragonfly, Valkey, KeyDB, etc.)
 - **Base de données**: PostgreSQL (couche de stockage interchangeable)
 - **Métriques**: Prometheus + metrics-rs
+- **File de messages**: RabbitMQ (optionnel, pour l'analytique d'événements)
 - **Hachage de mots de passe**: Argon2
 
 > **Note**: Les couches de stockage et de cache sont abstraites et peuvent être remplacées par n'importe quelle source de données compatible. Actuellement en développement actif.
@@ -427,6 +429,75 @@ Ouvrez `http://localhost:8080/admin` et connectez-vous avec vos identifiants.
 - Liste des redirections récentes
 - Simulation de charge pour tests
 - Trois thèmes: Clair, Sombre, Chaud
+
+## Analyse d'événements
+
+Pipeline optionnel de publication d'événements pour l'analyse des redirections. Lorsqu'il est activé, chaque événement de redirection est publié sur RabbitMQ et traité par un binaire séparé qui écrit dans PostgreSQL.
+
+> **Documentation complète**: [EVENT_ANALYTICS.md](EVENT_ANALYTICS.md)
+
+### Fonctionnalités
+
+- **Publication fire-and-forget** — La latence de redirection n'est pas affectée par la disponibilité de la file
+- **Batching** — Événements groupés par taille (100) ou temps (1 sec)
+- **Analyse User-Agent** — Navigateur, version, OS, type d'appareil via woothee
+- **Enrichissement GeoIP** — Pays et ville depuis l'IP (MaxMind mmdb avec rechargement à chaud)
+- **Déduplication des références** — Déduplication basée sur MD5 pour les referers et user agents
+- **Partitionnement mensuel** — Création automatique des partitions pour `redirect_events`
+
+### Démarrage rapide
+
+```bash
+# Activer dans config.yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# Ou via variables d'environnement
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# Lancer le consommateur
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### Métriques d'événements
+
+Accédez à `/metrics` pour surveiller :
+
+- `redirector_events_published_total` - Nombre total d'événements publiés
+- `redirector_events_published_errors_total` - Nombre total d'erreurs de publication
+- `redirector_events_batched_total` - Nombre total de batches traités
+- `redirector_events_batch_size` - Taille des batches (histogramme)
+- `redirector_events_batch_latency_ms` - Latence de batching en millisecondes
+
+### Configuration
+
+Ajoutez à `config.yaml` :
+
+```yaml
+events:
+  enabled: true
+  rabbitmq:
+    url: ${RABBITMQ_URL}
+    queue: "redirect_events"
+    exchange: "redirector"
+  batch:
+    max_size: 100
+    timeout_ms: 1000
+  geoip:
+    database_path: "/path/to/GeoLite2-City.mmdb"
+    reload_interval_hours: 24
+```
+
+Variables d'environnement :
+
+```
+REDIRECTOR__EVENTS__ENABLED          → Activer l'analyse d'événements
+REDIRECTOR__EVENTS__RABBITMQ__URL    → URL de connexion RabbitMQ
+RABBITMQ_URL                         → Alternative pour compatibilité PaaS
+```
 
 ## Licence
 

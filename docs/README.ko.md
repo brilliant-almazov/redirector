@@ -48,6 +48,7 @@
 - 🎨 **아름다운 페이지** - 4가지 테마가 있는 깔끔한 404 및 인덱스 페이지
 - 🔑 **다중 솔트** - 마이그레이션을 위한 hashid 솔트 로테이션 지원
 - 📱 **관리 대시보드** - SSE를 통한 실시간 메트릭 모니터링
+- 📤 **이벤트 분석** - RabbitMQ 이벤트 퍼블리싱과 PostgreSQL 컨슈머 (선택사항)
 
 ## 스크린샷
 
@@ -72,6 +73,7 @@
 - **캐시**: Redis 호환 (Redis, Dragonfly, Valkey, KeyDB 등)
 - **데이터베이스**: PostgreSQL (플러그 가능한 스토리지 레이어)
 - **메트릭**: Prometheus + metrics-rs
+- **메시지 큐**: RabbitMQ (선택사항, 이벤트 분석용)
 - **비밀번호 해싱**: Argon2
 
 > **참고**: 스토리지 및 캐시 레이어는 추상화되어 있으며 호환되는 모든 데이터 소스로 교체할 수 있습니다. 현재 활발히 개발 중입니다.
@@ -427,6 +429,73 @@ admin:
 - 최근 리다이렉트 목록
 - 테스트용 부하 시뮬레이션
 - 세 가지 테마: 라이트, 다크, 웜
+
+## 이벤트 분석
+
+리다이렉트 분석을 위한 선택적 이벤트 퍼블리싱 파이프라인. 활성화하면 각 리다이렉트 이벤트가 RabbitMQ에 게시되고 별도의 바이너리에서 PostgreSQL에 기록합니다.
+
+> **전체 문서**: [EVENT_ANALYTICS.md](EVENT_ANALYTICS.md)
+
+### 기능
+
+- **Fire-and-forget 게시** — 리다이렉트 지연 시간이 큐 가용성에 영향받지 않음
+- **배치 처리** — 크기(100개) 또는 시간(1초)별로 이벤트 그룹화
+- **User-Agent 분석** — woothee를 통한 브라우저, 버전, OS, 장치 유형
+- **GeoIP 보강** — IP에서 국가 및 도시 (MaxMind mmdb, 핫 리로드 지원)
+- **참조 중복 제거** — referer 및 user agent의 MD5 기반 중복 제거
+- **월별 파티셔닝** — `redirect_events` 테이블 자동 파티션 생성
+
+### 아키텍처
+
+```
+리다이렉트 핸들러
+    │
+    ├── try_send(RedirectEvent) ──► [tokio::mpsc 채널]
+    │   (비블로킹,                      │
+    │    fire-and-forget)              ▼
+    │                             백그라운드 태스크
+    │                             (크기/시간별 배치)
+    │                                     │
+    │                                     ▼
+    │                             [RabbitMQ 큐]
+    │                                     │
+    │                                     ▼
+    │                             이벤트 컨슈머
+    │                             (별도 바이너리/컨테이너)
+    │                                     │
+    │                                     ▼
+    │                             [PostgreSQL 분석]
+    │                             (월별 파티션)
+```
+
+### 빠른 시작
+
+```bash
+# config.yaml에서 활성화
+events:
+  enabled: true
+  rabbitmq:
+    url: amqp://guest:guest@localhost:5672/%2f
+
+# 또는 환경 변수로
+REDIRECTOR__EVENTS__ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2f
+
+# 컨슈머 실행
+RABBITMQ_URL=amqp://... DATABASE_URL=postgres://... cargo run --bin event_consumer
+```
+
+### 이벤트 메트릭
+
+선택적 이벤트 분석은 다음 메트릭을 제공합니다:
+
+| 메트릭 | 설명 |
+|--------|------|
+| `events_published_total` | 게시된 총 리다이렉트 이벤트 |
+| `events_consumed_total` | 컨슈된 총 리다이렉트 이벤트 |
+| `events_consume_lag_seconds` | 컨슈 레그 (대기 중인 메시지) |
+| `events_duplicate_referers` | 기록된 중복 참조 개수 |
+| `geoip_lookups_total` | GeoIP 조회 총 개수 |
 
 ## 라이선스
 
