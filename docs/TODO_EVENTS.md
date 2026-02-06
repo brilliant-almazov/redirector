@@ -1,6 +1,6 @@
 # TODO: Event Analytics Pipeline
 
-Planned improvements for the Event Analytics Pipeline
+Список улучшений для v0.4.0+
 
 ---
 
