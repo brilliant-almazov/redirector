@@ -30,22 +30,11 @@ async fn main() -> anyhow::Result<()> {
         .with(tracing_subscriber::fmt::layer().json())
         .init();
 
-    // Load configuration: CONFIG_BASE64 > CONFIG_PATH/config.yaml > environment variables only
-    let config = if let Ok(encoded) = std::env::var("CONFIG_BASE64") {
-        tracing::info!("Loading configuration from CONFIG_BASE64");
-        Config::load_from_base64(&encoded)?
-    } else if std::env::var("CONFIG_PATH").is_ok() || std::path::Path::new("config.yaml").exists() {
-        let config_path =
-            std::env::var("CONFIG_PATH").unwrap_or_else(|_| "config.yaml".to_string());
-        tracing::info!(config_path = %config_path, "Loading configuration from file");
-        Config::load(&config_path)?
-    } else {
-        tracing::info!("Loading configuration from environment variables");
-        Config::load_from_env().map_err(|e| {
-            tracing::error!(error = %e, "Failed to load configuration from environment variables");
-            anyhow::anyhow!("{}", e)
-        })?
-    };
+    tracing::info!("Loading configuration from environment variables");
+    let config = Config::load_from_env().map_err(|e| {
+        tracing::error!(error = %e, "Failed to load configuration from environment variables");
+        anyhow::anyhow!("{}", e)
+    })?;
 
     // Initialize Prometheus metrics
     let prometheus_handle = PrometheusBuilder::new()
