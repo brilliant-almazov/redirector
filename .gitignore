@@ -37,3 +37,4 @@ coverage/
 # AI Tools
 .serena/
 .claude/
+.secret
