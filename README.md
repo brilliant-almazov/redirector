@@ -228,7 +228,7 @@ There are **four ways** to configure the service, listed by priority (highest fi
 
 #### Environment Variables Only Mode (No Config File)
 
-Since **v0.1.0**, the service can run with **only environment variables** — no config file or `CONFIG_BASE64` required.
+Since **v0.4.0**, the service can run with **only environment variables** — no config file or `CONFIG_BASE64` required.
 
 **Required variables:**
 
@@ -352,7 +352,7 @@ Any config value can be overridden using the `REDIRECTOR__` prefix with `__` (do
 | `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | Session signing secret (min 32 chars) |
 | `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Session lifetime in hours |
 
-> **Admin users via environment variable** (v0.1.0+): Use JSON format with `ADMIN_USERS`:
+> **Admin users via environment variable** (v0.4.0+): Use JSON format with `ADMIN_USERS`:
 > ```bash
 > ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$v=19$m=19456,t=2,p=1$..."}]'
 > ```
@@ -381,7 +381,7 @@ DATABASE_URL=postgres://user:pass@host:5432/db
 REDIS_URL=redis://host:6379
 PORT=3000
 
-# Required (no config file needed since v0.1.0):
+# Required (no config file needed since v0.4.0):
 HASHIDS_SALTS=my-secret-salt,old-salt-for-migration
 METRICS_USERNAME=prometheus
 METRICS_PASSWORD=strong-password
