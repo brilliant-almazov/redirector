@@ -84,7 +84,11 @@ Sharing long URLs is inconvenient. URL shorteners exist but often redirect immed
 
 ```bash
 docker run -p 8080:8080 \
-  -v $(pwd)/config.yaml:/config.yaml \
+  -e DATABASE_URL="postgres://user:pass@host:5432/db" \
+  -e REDIS_URL="redis://host:6379" \
+  -e HASHIDS_SALTS="my-secret-salt" \
+  -e METRICS_USERNAME="prometheus" \
+  -e METRICS_PASSWORD="strong-password" \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
@@ -96,8 +100,12 @@ services:
     image: ghcr.io/brilliant-almazov/redirector:latest
     ports:
       - "8080:8080"
-    volumes:
-      - ./config.yaml:/config.yaml
+    environment:
+      DATABASE_URL: "postgres://redirector:${POSTGRES_PASSWORD}@postgres:5432/redirector"
+      REDIS_URL: "redis://redis:6379"
+      HASHIDS_SALTS: "${HASHID_SALT}"
+      METRICS_USERNAME: "prometheus"
+      METRICS_PASSWORD: "${METRICS_PASSWORD}"
     depends_on:
       - postgres
       - redis
@@ -115,132 +123,96 @@ services:
 
 ## Configuration
 
-Create `config.yaml`:
+The service is configured **exclusively via environment variables**. No config files are required.
 
-```yaml
-server:
-  host: "0.0.0.0"
-  port: 8080
-
-hashids:
-  salts:
-    - ${HASHID_SALT}          # Primary salt
-    - ${HASHID_SALT_OLD}      # Optional: old salt for migration
-  min_length: 6
-
-redis:
-  url: ${REDIS_URL}
-  cache_ttl_seconds: 86400    # 24 hours
-
-database:
-  url: ${DATABASE_URL}
-  pool:
-    max_connections: 5
-    connect_timeout_seconds: 3
-  rate_limit:
-    max_requests_per_second: 50
-  circuit_breaker:
-    failure_threshold: 3
-    reset_timeout_seconds: 60
-  query:
-    table: "dictionary.urls"    # Your table name
-    id_column: "id"             # ID column
-    url_column: "name"          # URL column
-
-interstitial:
-  delay_seconds: 5            # Countdown before redirect
-
-metrics:
-  basic_auth:
-    username: prometheus
-    password: ${METRICS_PASSWORD}
-
-rate_limit:
-  requests_per_second: 1000
-  burst: 100
-
-# Optional: Event analytics via RabbitMQ
-events:
-  enabled: false
-  rabbitmq:
-    url: ${RABBITMQ_URL}
-    queue: "redirector.events.analytics"
-  publisher:
-    channel_buffer_size: 10000
-    batch_size: 100
-    flush_interval_ms: 1000
-  consumer:
-    prefetch_count: 10
-    database_url: ${ANALYTICS_DATABASE_URL}
-```
-
-### Configuration Options
-
-#### Server
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `host` | `0.0.0.0` | Bind address |
-| `port` | `8080` | HTTP port |
-
-#### Hashids
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `salts` | *required* | List of hashid salts (first = primary) |
-| `min_length` | `6` | Minimum hashid length |
-
-#### Redis
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `url` | *required* | Redis connection URL |
-| `cache_ttl_seconds` | `86400` | Cache TTL in seconds |
-
-#### Database
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `url` | *required* | PostgreSQL connection URL |
-| `pool.max_connections` | `3` | Connection pool size |
-| `pool.connect_timeout_seconds` | `3` | Connection timeout |
-| `rate_limit.max_requests_per_second` | `50` | DB rate limit |
-| `circuit_breaker.failure_threshold` | `3` | Failures before opening |
-| `circuit_breaker.reset_timeout_seconds` | `60` | Circuit reset timeout |
-
-#### Rate Limit (Global)
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `requests_per_second` | `1000` | Global rate limit |
-| `burst` | `100` | Burst allowance |
-
-### Environment Variables
-
-There are **four ways** to configure the service, listed by priority (highest first):
-
-| Priority | Method | Use Case |
-|----------|--------|----------|
-| 1 | `CONFIG_BASE64` | Base64-encoded YAML for K8s secrets |
-| 2 | `CONFIG_PATH` / `config.yaml` | Traditional file-based config |
-| 3 | **Environment variables only** | PaaS platforms (Railway, Heroku, Render) |
-| 4 | `REDIRECTOR__*` overrides | Override values from any method above |
-
-#### Environment Variables Only Mode (No Config File)
-
-Since **v0.1.0**, the service can run with **only environment variables** — no config file or `CONFIG_BASE64` required.
-
-**Required variables:**
+### Required Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection | `postgres://user:pass@host:5432/db` |
-| `REDIS_URL` | Redis connection | `redis://host:6379` |
-| `HASHIDS_SALTS` | Comma-separated salts | `primary-salt,fallback-salt` |
-| `METRICS_USERNAME` | Basic auth for /metrics | `prometheus` |
-| `METRICS_PASSWORD` | Basic auth for /metrics | `strong-password` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | Redis connection string | `redis://host:6379` |
+| `HASHIDS_SALTS` | Comma-separated hashid salts | `primary-salt,fallback-salt` |
+| `METRICS_USERNAME` | Basic auth username for `/metrics` | `prometheus` |
+| `METRICS_PASSWORD` | Basic auth password for `/metrics` | `strong-password` |
 
-**Example (Railway/Render/Heroku):**
+### Optional Environment Variables
+
+#### Server
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HOST` | `0.0.0.0` | Bind address |
+| `PORT` | `8080` | HTTP port |
+
+#### Hashids
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HASHIDS_MIN_LENGTH` | `6` | Minimum hashid length |
+
+#### Database
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_TABLE` | `dictionary.urls` | Table name for URL lookups |
+| `DB_ID_COLUMN` | `id` | Column name for numeric ID |
+| `DB_URL_COLUMN` | `name` | Column name for target URL |
+
+#### Events / Analytics
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EVENTS_ENABLED` | `false` | Enable event publishing to RabbitMQ |
+| `RABBITMQ_URL` | *required if EVENTS_ENABLED=true* | RabbitMQ connection URL |
+| `RABBITMQ_QUEUE` | `events.analytics` | Queue name for events |
+
+#### Admin Dashboard
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ADMIN_ENABLED` | `false` | Enable admin dashboard |
+| `ADMIN_SESSION_SECRET` | *required if ADMIN_ENABLED=true* | Session signing secret (min 32 chars) |
+| `ADMIN_USERS` | `[]` | JSON array of admin users |
+
+> **Admin users format**: `ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$v=19$m=19456,t=2,p=1$..."}]'`
+>
+> Generate password hashes with: `cargo run --bin hash_password -- "your-password"`
+
+### Full Environment Variables Reference
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | *required* | PostgreSQL connection URL |
+| `REDIS_URL` | *required* | Redis connection URL |
+| `HASHIDS_SALTS` | *required* | Comma-separated hashid salts |
+| `METRICS_USERNAME` | *required* | Username for `/metrics` endpoint |
+| `METRICS_PASSWORD` | *required* | Password for `/metrics` endpoint |
+| `HOST` | `0.0.0.0` | Server bind address |
+| `PORT` | `8080` | Server HTTP port |
+| `HASHIDS_MIN_LENGTH` | `6` | Minimum hashid length |
+| `REDIS_CACHE_TTL` | `86400` | Cache TTL in seconds (default: 24h) |
+| `DB_MAX_CONNECTIONS` | `3` | Database connection pool size |
+| `DB_CONNECT_TIMEOUT` | `3` | Database connection timeout (seconds) |
+| `DB_RPS` | `50` | Max database queries per second |
+| `CB_FAILURE_THRESHOLD` | `3` | Circuit breaker failure threshold |
+| `CB_RESET_TIMEOUT` | `60` | Circuit breaker reset timeout (seconds) |
+| `DB_TABLE` | `dictionary.urls` | Database table name |
+| `DB_ID_COLUMN` | `id` | ID column name |
+| `DB_URL_COLUMN` | `name` | URL column name |
+| `INTERSTITIAL_DELAY` | `5` | Interstitial countdown (seconds) |
+| `RATE_LIMIT_RPS` | `1000` | Global rate limit (requests/second) |
+| `RATE_LIMIT_BURST` | `100` | Rate limit burst allowance |
+| `EVENTS_ENABLED` | `false` | Enable RabbitMQ event publishing |
+| `RABBITMQ_URL` | `amqp://guest:guest@localhost:5672/%2f` | RabbitMQ connection URL |
+| `RABBITMQ_QUEUE` | `events.analytics` | RabbitMQ queue name |
+| `ADMIN_ENABLED` | `false` | Enable admin dashboard |
+| `ADMIN_SESSION_SECRET` | `change-me-in-production-32-bytes!` | Session signing secret |
+| `ADMIN_SESSION_TTL_HOURS` | `24` | Session lifetime (hours) |
+| `ADMIN_USERS` | `[]` | Admin users JSON array |
+
+### Deployment Examples
+
+#### Railway / Render / Fly.io
 
 ```bash
 # Required
@@ -252,147 +224,15 @@ METRICS_PASSWORD=strong-password
 
 # Optional - enable admin dashboard
 ADMIN_ENABLED=true
-ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$v=19$m=19456,t=2,p=1$..."}]'
+ADMIN_SESSION_SECRET=random-32-byte-secret-for-sessions
+ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$..."}]'
 
 # Optional - enable event analytics
 EVENTS_ENABLED=true
 RABBITMQ_URL=amqp://guest:guest@host:5672/%2f
 ```
 
-> **Note**: All optional variables have sensible defaults. See the full reference below.
-
-#### Special Variables (File-Based Config)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CONFIG_PATH` | `config.yaml` | Path to YAML config file |
-| `CONFIG_BASE64` | — | Base64-encoded YAML config (takes priority over `CONFIG_PATH`) |
-
-#### Standard PaaS Environment Variables
-
-These are automatically recognized and applied. Most PaaS platforms set them for you:
-
-| Variable | Config Path | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | `database.url` | `postgres://user:pass@host:5432/db` |
-| `REDIS_URL` | `redis.url` | `redis://host:6379` |
-| `PORT` | `server.port` | `3000` |
-| `RABBITMQ_URL` | `events.rabbitmq.url` | `amqp://guest:guest@host:5672/%2f` |
-| `HASHIDS_SALTS` | `hashids.salts` | `new-salt,old-salt` (comma-separated) |
-
-> **Priority rule**: If both `DATABASE_URL` and `REDIRECTOR__DATABASE__URL` are set, the `REDIRECTOR__` prefixed version wins. Similarly, `REDIRECTOR__HASHIDS__SALTS__0` takes priority over `HASHIDS_SALTS`.
-
-#### Prefixed Environment Variables (`REDIRECTOR__*`)
-
-Any config value can be overridden using the `REDIRECTOR__` prefix with `__` (double underscore) as the nesting separator. Below is the **complete reference** of all overridable variables:
-
-##### Server
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__SERVER__HOST` | `server.host` | `0.0.0.0` | Bind address |
-| `REDIRECTOR__SERVER__PORT` | `server.port` | `8080` | HTTP port |
-
-##### Hashids
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__HASHIDS__SALTS__0` | `hashids.salts[0]` | *required* | Primary hashid salt |
-| `REDIRECTOR__HASHIDS__SALTS__1` | `hashids.salts[1]` | — | Old salt (for migration) |
-| `REDIRECTOR__HASHIDS__MIN_LENGTH` | `hashids.min_length` | `6` | Minimum hashid length |
-
-> **Arrays**: List items are indexed with `__0`, `__1`, `__2`, etc. For hashid salt rotation, set `__0` for the new salt and `__1` for the old one.
-
-##### Redis / Cache
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__REDIS__URL` | `redis.url` | *required* | Redis connection URL |
-| `REDIRECTOR__REDIS__CACHE_TTL_SECONDS` | `redis.cache_ttl_seconds` | `86400` | Cache TTL (seconds). `86400` = 24h |
-
-##### Database
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__DATABASE__URL` | `database.url` | *required* | PostgreSQL connection URL |
-| `REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS` | `database.pool.max_connections` | `3` | Connection pool size |
-| `REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS` | `database.pool.connect_timeout_seconds` | `3` | Connection timeout (seconds) |
-| `REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND` | `database.rate_limit.max_requests_per_second` | `50` | Max DB queries per second |
-| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD` | `database.circuit_breaker.failure_threshold` | `3` | Consecutive failures before circuit opens |
-| `REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS` | `database.circuit_breaker.reset_timeout_seconds` | `60` | Seconds before half-open retry |
-| `REDIRECTOR__DATABASE__QUERY__TABLE` | `database.query.table` | `dictionary.urls` | Table name for URL lookups |
-| `REDIRECTOR__DATABASE__QUERY__ID_COLUMN` | `database.query.id_column` | `id` | Column name for numeric ID |
-| `REDIRECTOR__DATABASE__QUERY__URL_COLUMN` | `database.query.url_column` | `name` | Column name for target URL |
-
-##### Interstitial Page
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__INTERSTITIAL__DELAY_SECONDS` | `interstitial.delay_seconds` | `5` | Countdown before redirect |
-
-##### Metrics
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__METRICS__BASIC_AUTH__USERNAME` | `metrics.basic_auth.username` | *required* | Username for `/metrics` endpoint |
-| `REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD` | `metrics.basic_auth.password` | *required* | Password for `/metrics` endpoint |
-
-##### Rate Limiting (Global)
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND` | `rate_limit.requests_per_second` | `1000` | Max requests per second |
-| `REDIRECTOR__RATE_LIMIT__BURST` | `rate_limit.burst` | `100` | Burst allowance above RPS limit |
-
-##### Admin Dashboard
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__ADMIN__ENABLED` | `admin.enabled` | `false` | Enable admin dashboard |
-| `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | Session signing secret (min 32 chars) |
-| `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Session lifetime in hours |
-
-> **Admin users via environment variable** (v0.1.0+): Use JSON format with `ADMIN_USERS`:
-> ```bash
-> ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$v=19$m=19456,t=2,p=1$..."}]'
-> ```
-> Generate password hashes with: `cargo run --bin hash_password -- "your-password"`
-
-##### Events / Analytics (Optional)
-
-| Environment Variable | Config Path | Default | Description |
-|---------------------|-------------|---------|-------------|
-| `REDIRECTOR__EVENTS__ENABLED` | `events.enabled` | `false` | Enable event publishing to RabbitMQ |
-| `REDIRECTOR__EVENTS__RABBITMQ__URL` | `events.rabbitmq.url` | `amqp://...localhost...` | RabbitMQ connection URL |
-| `REDIRECTOR__EVENTS__RABBITMQ__QUEUE` | `events.rabbitmq.queue` | `redirector.events.analytics` | Queue name |
-| `REDIRECTOR__EVENTS__PUBLISHER__CHANNEL_BUFFER_SIZE` | `events.publisher.channel_buffer_size` | `10000` | Internal event buffer |
-| `REDIRECTOR__EVENTS__PUBLISHER__BATCH_SIZE` | `events.publisher.batch_size` | `100` | Events per batch |
-| `REDIRECTOR__EVENTS__PUBLISHER__FLUSH_INTERVAL_MS` | `events.publisher.flush_interval_ms` | `1000` | Max batch delay (ms) |
-| `REDIRECTOR__EVENTS__CONSUMER__PREFETCH_COUNT` | `events.consumer.prefetch_count` | `10` | RabbitMQ prefetch |
-| `REDIRECTOR__EVENTS__CONSUMER__DATABASE_URL` | `events.consumer.database_url` | `postgres://...analytics` | Analytics DB URL |
-
-#### Examples by Deployment Platform
-
-**Railway / Render / Fly.io** (PaaS with managed databases):
-
-```bash
-# These are usually set automatically by the platform:
-DATABASE_URL=postgres://user:pass@host:5432/db
-REDIS_URL=redis://host:6379
-PORT=3000
-
-# Required (no config file needed since v0.1.0):
-HASHIDS_SALTS=my-secret-salt,old-salt-for-migration
-METRICS_USERNAME=prometheus
-METRICS_PASSWORD=strong-password
-
-# Optional - enable admin dashboard:
-ADMIN_ENABLED=true
-ADMIN_SESSION_SECRET=random-32-byte-secret-for-sessions
-ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$..."}]'
-```
-
-**Docker Compose (full example with all overrides)**:
+#### Docker Compose
 
 ```yaml
 services:
@@ -401,52 +241,14 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # --- Connection URLs (PaaS-style) ---
       DATABASE_URL: "postgres://redirector:${DB_PASSWORD}@postgres:5432/redirector"
       REDIS_URL: "redis://redis:6379"
-
-      # --- Config file ---
-      CONFIG_BASE64: "${CONFIG_BASE64}"
-
-      # --- Server ---
-      REDIRECTOR__SERVER__HOST: "0.0.0.0"
-      REDIRECTOR__SERVER__PORT: "8080"
-
-      # --- Hashid salts ---
-      REDIRECTOR__HASHIDS__SALTS__0: "${HASHID_SALT}"        # primary salt
-      REDIRECTOR__HASHIDS__SALTS__1: "${HASHID_SALT_OLD}"    # old salt for migration
-      REDIRECTOR__HASHIDS__MIN_LENGTH: "6"
-
-      # --- Redis cache ---
-      REDIRECTOR__REDIS__CACHE_TTL_SECONDS: "43200"          # 12 hours
-
-      # --- Database pool & resilience ---
-      REDIRECTOR__DATABASE__POOL__MAX_CONNECTIONS: "5"
-      REDIRECTOR__DATABASE__POOL__CONNECT_TIMEOUT_SECONDS: "5"
-      REDIRECTOR__DATABASE__RATE_LIMIT__MAX_REQUESTS_PER_SECOND: "100"
-      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__FAILURE_THRESHOLD: "5"
-      REDIRECTOR__DATABASE__CIRCUIT_BREAKER__RESET_TIMEOUT_SECONDS: "30"
-
-      # --- Custom table mapping ---
-      REDIRECTOR__DATABASE__QUERY__TABLE: "public.short_urls"
-      REDIRECTOR__DATABASE__QUERY__ID_COLUMN: "id"
-      REDIRECTOR__DATABASE__QUERY__URL_COLUMN: "target_url"
-
-      # --- Interstitial ---
-      REDIRECTOR__INTERSTITIAL__DELAY_SECONDS: "3"
-
-      # --- Metrics auth ---
-      REDIRECTOR__METRICS__BASIC_AUTH__USERNAME: "prometheus"
-      REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD: "${METRICS_PASSWORD}"
-
-      # --- Global rate limit ---
-      REDIRECTOR__RATE_LIMIT__REQUESTS_PER_SECOND: "2000"
-      REDIRECTOR__RATE_LIMIT__BURST: "200"
-
-      # --- Admin dashboard ---
-      REDIRECTOR__ADMIN__ENABLED: "true"
-      REDIRECTOR__ADMIN__SESSION_SECRET: "${SESSION_SECRET}"
-      REDIRECTOR__ADMIN__SESSION_TTL_HOURS: "8"
+      HASHIDS_SALTS: "${HASHID_SALT}"
+      METRICS_USERNAME: "prometheus"
+      METRICS_PASSWORD: "${METRICS_PASSWORD}"
+      ADMIN_ENABLED: "true"
+      ADMIN_SESSION_SECRET: "${SESSION_SECRET}"
+      ADMIN_USERS: '[{"username":"admin","password_hash":"${ADMIN_PASSWORD_HASH}"}]'
     depends_on:
       - postgres
       - redis
@@ -462,7 +264,7 @@ services:
     image: redis:7-alpine
 ```
 
-**Kubernetes**:
+#### Kubernetes
 
 ```yaml
 apiVersion: apps/v1
@@ -484,67 +286,42 @@ spec:
                 secretKeyRef:
                   name: redirector-secrets
                   key: redis-url
-            - name: REDIRECTOR__HASHIDS__SALTS__0
+            - name: HASHIDS_SALTS
               valueFrom:
                 secretKeyRef:
                   name: redirector-secrets
-                  key: hashid-salt
-            - name: REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD
+                  key: hashid-salts
+            - name: METRICS_USERNAME
+              value: "prometheus"
+            - name: METRICS_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: redirector-secrets
                   key: metrics-password
-            - name: REDIRECTOR__ADMIN__SESSION_SECRET
+            - name: ADMIN_ENABLED
+              value: "true"
+            - name: ADMIN_SESSION_SECRET
               valueFrom:
                 secretKeyRef:
                   name: redirector-secrets
                   key: session-secret
-            - name: CONFIG_BASE64
-              valueFrom:
-                configMapKeyRef:
-                  name: redirector-config
-                  key: config-base64
 ```
 
-**Plain Docker (single command)**:
+#### Plain Docker
 
 ```bash
 docker run -p 8080:8080 \
   -e DATABASE_URL="postgres://user:pass@host:5432/db" \
   -e REDIS_URL="redis://host:6379" \
-  -e REDIRECTOR__HASHIDS__SALTS__0="my-secret-salt" \
-  -e REDIRECTOR__METRICS__BASIC_AUTH__USERNAME="prometheus" \
-  -e REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD="strong-password" \
-  -e REDIRECTOR__INTERSTITIAL__DELAY_SECONDS="3" \
-  -e CONFIG_BASE64="$(cat config.yaml | base64)" \
+  -e HASHIDS_SALTS="my-secret-salt" \
+  -e METRICS_USERNAME="prometheus" \
+  -e METRICS_PASSWORD="strong-password" \
   ghcr.io/brilliant-almazov/redirector:latest
 ```
 
-**Minimal setup (env vars only, no config file)**:
+### Salt Rotation
 
-```bash
-export CONFIG_BASE64=$(cat <<'YAML' | base64
-hashids:
-  salts:
-    - "my-secret-salt"
-metrics:
-  basic_auth:
-    username: prometheus
-    password: change-me
-YAML
-)
-export DATABASE_URL=postgres://user:pass@localhost:5432/db
-export REDIS_URL=redis://localhost:6379
-export PORT=3000
-
-./redirector
-```
-
-#### Salt Rotation via Environment Variables
-
-When rotating hashid salts, the service tries salts in order — the first match wins. Set the new salt first so new links use it, and keep the old salt for backward compatibility:
-
-**Option 1: Single variable with comma separator** (recommended):
+When rotating hashid salts, the service tries salts in order. Set the new salt first:
 
 ```bash
 # Before rotation
@@ -553,33 +330,6 @@ HASHIDS_SALTS=original-salt
 # After rotation — new salt first, old salt for existing links
 HASHIDS_SALTS=new-salt,original-salt
 ```
-
-**Option 2: Indexed variables**:
-
-```bash
-# Before rotation
-REDIRECTOR__HASHIDS__SALTS__0=original-salt
-
-# After rotation
-REDIRECTOR__HASHIDS__SALTS__0=new-salt
-REDIRECTOR__HASHIDS__SALTS__1=original-salt
-```
-
-> **Note**: If `REDIRECTOR__HASHIDS__SALTS__0` is set, `HASHIDS_SALTS` is ignored.
-
-#### Base64 Configuration
-
-For environments where mounting config files is not practical (PaaS, serverless, CI/CD), pass the entire config as a base64-encoded string:
-
-```bash
-# Encode
-cat config.yaml | base64
-
-# Decode (to verify)
-echo "$CONFIG_BASE64" | base64 -d
-```
-
-`CONFIG_BASE64` takes priority over `CONFIG_PATH`. Environment variable overrides (`REDIRECTOR__*` and PaaS vars) are applied **on top** of the decoded config.
 
 ## Database
 
