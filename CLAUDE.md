@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Important Rules
+
+- **NEVER add Co-Authored-By or any attribution to Claude/AI in commits**
+- **NEVER mention yourself as contributor or author anywhere**
+- All work is attributed solely to the repository owner
+
 ## Build & Test Commands
 
 ```bash
