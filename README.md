@@ -217,15 +217,51 @@ events:
 
 ### Environment Variables
 
-There are **three ways** to configure the service, listed by priority (highest first):
+There are **four ways** to configure the service, listed by priority (highest first):
 
 | Priority | Method | Use Case |
 |----------|--------|----------|
-| 1 | `REDIRECTOR__*` env vars | Override individual values |
-| 2 | Standard PaaS env vars (`DATABASE_URL`, etc.) | PaaS platforms (Railway, Heroku, Render) |
-| 3 | Config file (`config.yaml` or `CONFIG_BASE64`) | Base configuration |
+| 1 | `CONFIG_BASE64` | Base64-encoded YAML for K8s secrets |
+| 2 | `CONFIG_PATH` / `config.yaml` | Traditional file-based config |
+| 3 | **Environment variables only** | PaaS platforms (Railway, Heroku, Render) |
+| 4 | `REDIRECTOR__*` overrides | Override values from any method above |
 
-#### Special Variables
+#### Environment Variables Only Mode (No Config File)
+
+Since **v0.4.0**, the service can run with **only environment variables** — no config file or `CONFIG_BASE64` required.
+
+**Required variables:**
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection | `postgres://user:pass@host:5432/db` |
+| `REDIS_URL` | Redis connection | `redis://host:6379` |
+| `HASHIDS_SALTS` | Comma-separated salts | `primary-salt,fallback-salt` |
+| `METRICS_USERNAME` | Basic auth for /metrics | `prometheus` |
+| `METRICS_PASSWORD` | Basic auth for /metrics | `strong-password` |
+
+**Example (Railway/Render/Heroku):**
+
+```bash
+# Required
+DATABASE_URL=postgres://user:pass@host:5432/db
+REDIS_URL=redis://host:6379
+HASHIDS_SALTS=my-secret-salt
+METRICS_USERNAME=prometheus
+METRICS_PASSWORD=strong-password
+
+# Optional - enable admin dashboard
+ADMIN_ENABLED=true
+ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$v=19$m=19456,t=2,p=1$..."}]'
+
+# Optional - enable event analytics
+EVENTS_ENABLED=true
+RABBITMQ_URL=amqp://guest:guest@host:5672/%2f
+```
+
+> **Note**: All optional variables have sensible defaults. See the full reference below.
+
+#### Special Variables (File-Based Config)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -316,7 +352,11 @@ Any config value can be overridden using the `REDIRECTOR__` prefix with `__` (do
 | `REDIRECTOR__ADMIN__SESSION_SECRET` | `admin.session_secret` | `change-me-...` | Session signing secret (min 32 chars) |
 | `REDIRECTOR__ADMIN__SESSION_TTL_HOURS` | `admin.session_ttl_hours` | `24` | Session lifetime in hours |
 
-> **Note**: Admin users (`admin.users`) with `username` and `password_hash` cannot be set via env vars due to their complex structure. Define them in the config file or `CONFIG_BASE64`.
+> **Admin users via environment variable** (v0.4.0+): Use JSON format with `ADMIN_USERS`:
+> ```bash
+> ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$v=19$m=19456,t=2,p=1$..."}]'
+> ```
+> Generate password hashes with: `cargo run --bin hash_password -- "your-password"`
 
 ##### Events / Analytics (Optional)
 
@@ -341,15 +381,15 @@ DATABASE_URL=postgres://user:pass@host:5432/db
 REDIS_URL=redis://host:6379
 PORT=3000
 
-# Set your config via base64:
-CONFIG_BASE64=c2VydmVyOgogIGhvc3Q6IC...
+# Required (no config file needed since v0.4.0):
+HASHIDS_SALTS=my-secret-salt,old-salt-for-migration
+METRICS_USERNAME=prometheus
+METRICS_PASSWORD=strong-password
 
-# Or override individual values:
-REDIRECTOR__HASHIDS__SALTS__0=my-secret-salt
-REDIRECTOR__METRICS__BASIC_AUTH__USERNAME=prometheus
-REDIRECTOR__METRICS__BASIC_AUTH__PASSWORD=strong-password
-REDIRECTOR__ADMIN__ENABLED=true
-REDIRECTOR__ADMIN__SESSION_SECRET=random-32-byte-secret-for-sessions
+# Optional - enable admin dashboard:
+ADMIN_ENABLED=true
+ADMIN_SESSION_SECRET=random-32-byte-secret-for-sessions
+ADMIN_USERS='[{"username":"admin","password_hash":"$argon2id$..."}]'
 ```
 
 **Docker Compose (full example with all overrides)**:
