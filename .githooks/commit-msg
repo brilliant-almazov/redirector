@@ -1,0 +1,8 @@
+#!/bin/bash
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+if echo "$COMMIT_MSG" | grep -iE "(claude|anthropic|co-authored-by.*claude|co-authored-by.*anthropic|AI-generated|chatgpt|openai|gemini|copilot)" > /dev/null; then
+    echo "❌ ERROR: Commit message contains AI mentions!"
+    exit 1
+fi
+exit 0
