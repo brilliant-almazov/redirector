@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-02-06
+
+### Added
+- **Environment Variable Only Configuration** - Full configuration via env vars without requiring config files
+  - New `Config::load_from_env()` method for pure environment variable configuration
+  - Required vars: `DATABASE_URL`, `REDIS_URL`, `HASHIDS_SALTS`, `METRICS_USERNAME`, `METRICS_PASSWORD`
+  - JSON array support for `ADMIN_USERS`: `[{"username":"x","password_hash":"y"}]`
+  - Clear error messages listing all missing required variables
+  - Loading priority: `CONFIG_BASE64` > `CONFIG_PATH`/`config.yaml` > env vars only
+  - PaaS-friendly: works with Railway, Heroku, Render without config files
+
+### Changed
+- Configuration loading now auto-detects available sources and falls back gracefully
+
 ## [0.3.0] - 2026-02-05
 
 ### Added

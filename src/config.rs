@@ -1,6 +1,40 @@
 use base64::Engine;
 use serde::Deserialize;
+use std::fmt;
 use std::path::Path;
+
+// ---------------------------------------------------------------
+// Configuration Error Type
+// ---------------------------------------------------------------
+
+#[derive(Debug)]
+pub enum ConfigError {
+    MissingEnvVars(Vec<String>),
+    InvalidJson { var: String, message: String },
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConfigError::MissingEnvVars(vars) => {
+                write!(
+                    f,
+                    "Missing required environment variables: {}",
+                    vars.join(", ")
+                )
+            }
+            ConfigError::InvalidJson { var, message } => {
+                write!(
+                    f,
+                    "Invalid JSON in environment variable {}: {}",
+                    var, message
+                )
+            }
+        }
+    }
+}
+
+impl std::error::Error for ConfigError {}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -451,6 +485,215 @@ impl Config {
             }
         }
     }
+
+    /// Load configuration purely from environment variables.
+    ///
+    /// Required variables:
+    /// - `DATABASE_URL` - PostgreSQL connection string
+    /// - `REDIS_URL` - Redis connection string
+    /// - `HASHIDS_SALTS` - Comma-separated salts (e.g., `salt1,salt2`)
+    /// - `METRICS_USERNAME` - Basic auth username for /metrics
+    /// - `METRICS_PASSWORD` - Basic auth password for /metrics
+    ///
+    /// Optional variables (with defaults):
+    /// - `HOST` (default: 0.0.0.0)
+    /// - `PORT` (default: 8080)
+    /// - `ADMIN_ENABLED` (default: false)
+    /// - `ADMIN_USERS` - JSON array: `[{"username":"x","password_hash":"y"}]`
+    /// - `EVENTS_ENABLED` (default: false)
+    /// - `RABBITMQ_URL` (default: amqp://guest:guest@localhost:5672/%2f)
+    ///
+    /// See docs/CONFIGURATION.md for full list of environment variables.
+    pub fn load_from_env() -> Result<Self, ConfigError> {
+        // Collect all missing required vars for better error messages
+        let mut missing_vars = Vec::new();
+
+        let database_url = std::env::var("DATABASE_URL");
+        let redis_url = std::env::var("REDIS_URL");
+        let metrics_username = std::env::var("METRICS_USERNAME");
+        let metrics_password = std::env::var("METRICS_PASSWORD");
+        let hashids_salts = Self::parse_hashids_salts_from_env();
+
+        if database_url.is_err() {
+            missing_vars.push("DATABASE_URL".to_string());
+        }
+        if redis_url.is_err() {
+            missing_vars.push("REDIS_URL".to_string());
+        }
+        if metrics_username.is_err() {
+            missing_vars.push("METRICS_USERNAME".to_string());
+        }
+        if metrics_password.is_err() {
+            missing_vars.push("METRICS_PASSWORD".to_string());
+        }
+        if hashids_salts.is_empty() {
+            missing_vars.push("HASHIDS_SALTS".to_string());
+        }
+
+        if !missing_vars.is_empty() {
+            return Err(ConfigError::MissingEnvVars(missing_vars));
+        }
+
+        // Parse admin users from JSON
+        let admin_users = Self::parse_admin_users_from_env()?;
+
+        let config = Config {
+            server: ServerConfig {
+                host: env_or_default("HOST", &default_host()),
+                port: env_parse_or_default("PORT", default_port()),
+            },
+            hashids: HashidsConfig {
+                salts: hashids_salts,
+                min_length: env_parse_or_default("HASHIDS_MIN_LENGTH", default_min_length()),
+            },
+            redis: RedisConfig {
+                url: redis_url.unwrap(),
+                cache_ttl_seconds: env_parse_or_default("REDIS_CACHE_TTL", default_cache_ttl()),
+            },
+            database: DatabaseConfig {
+                url: database_url.unwrap(),
+                pool: PoolConfig {
+                    max_connections: env_parse_or_default(
+                        "DB_MAX_CONNECTIONS",
+                        default_max_connections(),
+                    ),
+                    connect_timeout_seconds: env_parse_or_default(
+                        "DB_CONNECT_TIMEOUT",
+                        default_connect_timeout(),
+                    ),
+                },
+                rate_limit: DbRateLimitConfig {
+                    max_requests_per_second: env_parse_or_default("DB_RPS", default_db_rps()),
+                },
+                circuit_breaker: CircuitBreakerConfig {
+                    failure_threshold: env_parse_or_default(
+                        "CB_FAILURE_THRESHOLD",
+                        default_failure_threshold(),
+                    ),
+                    reset_timeout_seconds: env_parse_or_default(
+                        "CB_RESET_TIMEOUT",
+                        default_reset_timeout(),
+                    ),
+                },
+                query: QueryConfig {
+                    table: env_or_default("DB_TABLE", &default_table()),
+                    id_column: env_or_default("DB_ID_COLUMN", &default_id_column()),
+                    url_column: env_or_default("DB_URL_COLUMN", &default_url_column()),
+                },
+            },
+            interstitial: InterstitialConfig {
+                delay_seconds: env_parse_or_default("INTERSTITIAL_DELAY", default_delay()),
+            },
+            metrics: MetricsConfig {
+                basic_auth: BasicAuthConfig {
+                    username: metrics_username.unwrap(),
+                    password: metrics_password.unwrap(),
+                },
+            },
+            rate_limit: RateLimitConfig {
+                requests_per_second: env_parse_or_default("RATE_LIMIT_RPS", default_rps()),
+                burst: env_parse_or_default("RATE_LIMIT_BURST", default_burst()),
+            },
+            admin: AdminConfig {
+                enabled: env_parse_bool("ADMIN_ENABLED", false),
+                session_secret: env_or_default("ADMIN_SESSION_SECRET", &default_session_secret()),
+                session_ttl_hours: env_parse_or_default(
+                    "ADMIN_SESSION_TTL_HOURS",
+                    default_session_ttl(),
+                ),
+                users: admin_users,
+            },
+            events: EventsConfig {
+                enabled: env_parse_bool("EVENTS_ENABLED", false),
+                rabbitmq: RabbitMqConnectionConfig {
+                    url: env_or_default("RABBITMQ_URL", &default_rabbitmq_url()),
+                    queue: env_or_default("RABBITMQ_QUEUE", &default_queue()),
+                },
+                publisher: PublisherConfig {
+                    channel_buffer_size: env_parse_or_default(
+                        "PUBLISHER_BUFFER_SIZE",
+                        default_channel_buffer(),
+                    ),
+                    batch_size: env_parse_or_default("PUBLISHER_BATCH_SIZE", default_batch_size()),
+                    flush_interval_ms: env_parse_or_default(
+                        "PUBLISHER_FLUSH_INTERVAL_MS",
+                        default_flush_interval_ms(),
+                    ),
+                },
+                consumer: ConsumerConfig {
+                    prefetch_count: env_parse_or_default(
+                        "CONSUMER_PREFETCH_COUNT",
+                        default_prefetch_count(),
+                    ),
+                    database_url: env_or_default(
+                        "CONSUMER_DATABASE_URL",
+                        &default_consumer_db_url(),
+                    ),
+                },
+            },
+        };
+
+        Ok(config)
+    }
+
+    /// Parse hashids salts from environment.
+    /// Supports comma-separated format: `HASHIDS_SALTS=salt1,salt2,salt3`
+    fn parse_hashids_salts_from_env() -> Vec<String> {
+        if let Ok(salts_str) = std::env::var("HASHIDS_SALTS") {
+            let salts: Vec<String> = salts_str
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            if !salts.is_empty() {
+                return salts;
+            }
+        }
+        vec![]
+    }
+
+    /// Parse admin users from JSON environment variable.
+    /// Expected format: `ADMIN_USERS='[{"username":"admin","password_hash":"$argon2..."}]'`
+    fn parse_admin_users_from_env() -> Result<Vec<AdminUser>, ConfigError> {
+        match std::env::var("ADMIN_USERS") {
+            Ok(json_str) if !json_str.is_empty() => {
+                serde_json::from_str(&json_str).map_err(|e| ConfigError::InvalidJson {
+                    var: "ADMIN_USERS".to_string(),
+                    message: e.to_string(),
+                })
+            }
+            _ => Ok(vec![]),
+        }
+    }
+}
+
+// ---------------------------------------------------------------
+// Environment variable helper functions
+// ---------------------------------------------------------------
+
+/// Get an environment variable or return a default value.
+fn env_or_default(name: &str, default: &str) -> String {
+    std::env::var(name).unwrap_or_else(|_| default.to_string())
+}
+
+/// Parse an environment variable as a number, or return a default.
+fn env_parse_or_default<T>(name: &str, default: T) -> T
+where
+    T: std::str::FromStr,
+{
+    std::env::var(name)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(default)
+}
+
+/// Parse an environment variable as a boolean.
+/// Recognizes: "true", "1", "yes" (case-insensitive) as true.
+fn env_parse_bool(name: &str, default: bool) -> bool {
+    std::env::var(name)
+        .ok()
+        .map(|v| matches!(v.to_lowercase().as_str(), "true" | "1" | "yes"))
+        .unwrap_or(default)
 }
 
 #[cfg(test)]

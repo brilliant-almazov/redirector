@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::config::*;
+    use serial_test::serial;
 
     #[test]
     fn test_default_server_host() {
@@ -207,6 +208,7 @@ metrics:
     }
 
     #[test]
+    #[serial]
     fn test_paas_database_url_override() {
         let mut guard = EnvGuard::new();
         guard.set("DATABASE_URL", "postgres://paas/mydb");
@@ -219,6 +221,7 @@ metrics:
     }
 
     #[test]
+    #[serial]
     fn test_paas_redis_url_override() {
         let mut guard = EnvGuard::new();
         guard.set("REDIS_URL", "redis://paas-redis:6379");
@@ -231,6 +234,7 @@ metrics:
     }
 
     #[test]
+    #[serial]
     fn test_paas_port_override() {
         let mut guard = EnvGuard::new();
         guard.set("PORT", "3000");
@@ -243,6 +247,7 @@ metrics:
     }
 
     #[test]
+    #[serial]
     fn test_paas_port_invalid_ignored() {
         let mut guard = EnvGuard::new();
         guard.set("PORT", "not-a-number");
@@ -256,6 +261,7 @@ metrics:
     }
 
     #[test]
+    #[serial]
     fn test_prefixed_var_takes_priority_over_paas() {
         let mut guard = EnvGuard::new();
         guard.set("DATABASE_URL", "postgres://paas/mydb");
@@ -269,6 +275,7 @@ metrics:
     }
 
     #[test]
+    #[serial]
     fn test_no_paas_vars_keeps_original() {
         let mut guard = EnvGuard::new();
         guard.remove("DATABASE_URL");
@@ -301,6 +308,7 @@ metrics:
     }
 
     #[test]
+    #[serial]
     fn test_hashids_salts_env_override() {
         // All HASHIDS_SALTS tests in one function to avoid env var race conditions.
         let mut guard = EnvGuard::new();
@@ -330,5 +338,315 @@ metrics:
         let mut config = make_test_config();
         config.apply_paas_overrides();
         assert_ne!(config.hashids.salts, vec!["comma-salt".to_string()]);
+    }
+
+    // ---------------------------------------------------------------
+    // Tests for load_from_env()
+    // ---------------------------------------------------------------
+
+    fn setup_required_env_vars(guard: &mut EnvGuard) {
+        guard.set("DATABASE_URL", "postgres://localhost/test");
+        guard.set("REDIS_URL", "redis://localhost:6379");
+        guard.set("HASHIDS_SALTS", "test-salt");
+        guard.set("METRICS_USERNAME", "admin");
+        guard.set("METRICS_PASSWORD", "secret");
+    }
+
+    fn clear_all_env_vars(guard: &mut EnvGuard) {
+        // Clear required vars
+        guard.remove("DATABASE_URL");
+        guard.remove("REDIS_URL");
+        guard.remove("HASHIDS_SALTS");
+        guard.remove("METRICS_USERNAME");
+        guard.remove("METRICS_PASSWORD");
+        // Clear optional vars
+        guard.remove("HOST");
+        guard.remove("PORT");
+        guard.remove("ADMIN_ENABLED");
+        guard.remove("ADMIN_USERS");
+        guard.remove("ADMIN_SESSION_SECRET");
+        guard.remove("ADMIN_SESSION_TTL_HOURS");
+        guard.remove("EVENTS_ENABLED");
+        guard.remove("RABBITMQ_URL");
+        guard.remove("RABBITMQ_QUEUE");
+        guard.remove("REDIS_CACHE_TTL");
+        guard.remove("DB_MAX_CONNECTIONS");
+        guard.remove("DB_CONNECT_TIMEOUT");
+        guard.remove("DB_RPS");
+        guard.remove("DB_TABLE");
+        guard.remove("DB_ID_COLUMN");
+        guard.remove("DB_URL_COLUMN");
+        guard.remove("CB_FAILURE_THRESHOLD");
+        guard.remove("CB_RESET_TIMEOUT");
+        guard.remove("INTERSTITIAL_DELAY");
+        guard.remove("RATE_LIMIT_RPS");
+        guard.remove("RATE_LIMIT_BURST");
+        guard.remove("HASHIDS_MIN_LENGTH");
+        guard.remove("PUBLISHER_BUFFER_SIZE");
+        guard.remove("PUBLISHER_BATCH_SIZE");
+        guard.remove("PUBLISHER_FLUSH_INTERVAL_MS");
+        guard.remove("CONSUMER_PREFETCH_COUNT");
+        guard.remove("CONSUMER_DATABASE_URL");
+        // Clear REDIRECTOR__ prefixed vars that may interfere
+        guard.remove("REDIRECTOR__DATABASE__URL");
+        guard.remove("REDIRECTOR__REDIS__URL");
+        guard.remove("REDIRECTOR__SERVER__PORT");
+        guard.remove("REDIRECTOR__HASHIDS__SALTS__0");
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_all_required() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        let config = Config::load_from_env().unwrap();
+
+        assert_eq!(config.database.url, "postgres://localhost/test");
+        assert_eq!(config.redis.url, "redis://localhost:6379");
+        assert_eq!(config.hashids.salts, vec!["test-salt"]);
+        assert_eq!(config.metrics.basic_auth.username, "admin");
+        assert_eq!(config.metrics.basic_auth.password, "secret");
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_missing_required() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+
+        let result = Config::load_from_env();
+        assert!(result.is_err());
+
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("DATABASE_URL"));
+        assert!(err.contains("REDIS_URL"));
+        assert!(err.contains("METRICS_USERNAME"));
+        assert!(err.contains("METRICS_PASSWORD"));
+        assert!(err.contains("HASHIDS_SALTS"));
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_missing_partial() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+
+        // Only set some required vars
+        guard.set("DATABASE_URL", "postgres://localhost/test");
+        guard.set("REDIS_URL", "redis://localhost:6379");
+
+        let result = Config::load_from_env();
+        assert!(result.is_err());
+
+        let err = result.unwrap_err().to_string();
+        assert!(!err.contains("DATABASE_URL")); // Not missing
+        assert!(!err.contains("REDIS_URL")); // Not missing
+        assert!(err.contains("METRICS_USERNAME")); // Missing
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_admin_users_json() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        guard.set("ADMIN_ENABLED", "true");
+        guard.set(
+            "ADMIN_USERS",
+            r#"[{"username":"admin","password_hash":"$argon2id$test"}]"#,
+        );
+
+        let config = Config::load_from_env().unwrap();
+
+        assert!(config.admin.enabled);
+        assert_eq!(config.admin.users.len(), 1);
+        assert_eq!(config.admin.users[0].username, "admin");
+        assert_eq!(config.admin.users[0].password_hash, "$argon2id$test");
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_admin_users_multiple() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        guard.set("ADMIN_ENABLED", "true");
+        guard.set(
+            "ADMIN_USERS",
+            r#"[{"username":"admin","password_hash":"hash1"},{"username":"user2","password_hash":"hash2"}]"#,
+        );
+
+        let config = Config::load_from_env().unwrap();
+
+        assert_eq!(config.admin.users.len(), 2);
+        assert_eq!(config.admin.users[0].username, "admin");
+        assert_eq!(config.admin.users[1].username, "user2");
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_invalid_admin_users_json() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        guard.set("ADMIN_USERS", "not valid json");
+
+        let result = Config::load_from_env();
+        assert!(result.is_err());
+
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Invalid JSON"));
+        assert!(err.contains("ADMIN_USERS"));
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_defaults() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        let config = Config::load_from_env().unwrap();
+
+        // Check defaults are applied
+        assert_eq!(config.server.host, "0.0.0.0");
+        assert_eq!(config.server.port, 8080);
+        assert_eq!(config.redis.cache_ttl_seconds, 86400);
+        assert_eq!(config.database.pool.max_connections, 3);
+        assert!(!config.admin.enabled);
+        assert!(!config.events.enabled);
+        assert_eq!(config.rate_limit.requests_per_second, 1000);
+        assert_eq!(config.rate_limit.burst, 100);
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_custom_values() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        // Override defaults
+        guard.set("HOST", "127.0.0.1");
+        guard.set("PORT", "3000");
+        guard.set("REDIS_CACHE_TTL", "3600");
+        guard.set("DB_MAX_CONNECTIONS", "10");
+        guard.set("RATE_LIMIT_RPS", "500");
+
+        let config = Config::load_from_env().unwrap();
+
+        assert_eq!(config.server.host, "127.0.0.1");
+        assert_eq!(config.server.port, 3000);
+        assert_eq!(config.redis.cache_ttl_seconds, 3600);
+        assert_eq!(config.database.pool.max_connections, 10);
+        assert_eq!(config.rate_limit.requests_per_second, 500);
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_bool_parsing() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        // Test different bool formats
+        guard.set("ADMIN_ENABLED", "true");
+        let config = Config::load_from_env().unwrap();
+        assert!(config.admin.enabled);
+
+        guard.set("ADMIN_ENABLED", "1");
+        let config = Config::load_from_env().unwrap();
+        assert!(config.admin.enabled);
+
+        guard.set("ADMIN_ENABLED", "yes");
+        let config = Config::load_from_env().unwrap();
+        assert!(config.admin.enabled);
+
+        guard.set("ADMIN_ENABLED", "false");
+        let config = Config::load_from_env().unwrap();
+        assert!(!config.admin.enabled);
+
+        guard.set("ADMIN_ENABLED", "0");
+        let config = Config::load_from_env().unwrap();
+        assert!(!config.admin.enabled);
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_events_config() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        guard.set("EVENTS_ENABLED", "true");
+        guard.set("RABBITMQ_URL", "amqp://user:pass@host:5672/%2f");
+        guard.set("RABBITMQ_QUEUE", "my-queue");
+
+        let config = Config::load_from_env().unwrap();
+
+        assert!(config.events.enabled);
+        assert_eq!(config.events.rabbitmq.url, "amqp://user:pass@host:5672/%2f");
+        assert_eq!(config.events.rabbitmq.queue, "my-queue");
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_hashids_multiple_salts() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+
+        guard.set("DATABASE_URL", "postgres://localhost/test");
+        guard.set("REDIS_URL", "redis://localhost:6379");
+        guard.set("HASHIDS_SALTS", "salt1, salt2, salt3");
+        guard.set("METRICS_USERNAME", "admin");
+        guard.set("METRICS_PASSWORD", "secret");
+
+        let config = Config::load_from_env().unwrap();
+
+        assert_eq!(config.hashids.salts, vec!["salt1", "salt2", "salt3"]);
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_hashids_salts_empty_values() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+
+        // Set all required vars except use empty salts
+        guard.set("DATABASE_URL", "postgres://localhost/test");
+        guard.set("REDIS_URL", "redis://localhost:6379");
+        guard.set("METRICS_USERNAME", "admin");
+        guard.set("METRICS_PASSWORD", "secret");
+        // HASHIDS_SALTS with only empty values after split/trim
+        guard.set("HASHIDS_SALTS", " , , ");
+
+        // Should fail because no valid salts
+        let result = Config::load_from_env();
+        assert!(result.is_err());
+
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("HASHIDS_SALTS"));
+    }
+
+    #[test]
+    #[serial]
+    fn test_load_from_env_empty_admin_users() {
+        let mut guard = EnvGuard::new();
+        clear_all_env_vars(&mut guard);
+        setup_required_env_vars(&mut guard);
+
+        // ADMIN_USERS not set - should default to empty
+        let config = Config::load_from_env().unwrap();
+        assert!(config.admin.users.is_empty());
+
+        // ADMIN_USERS set to empty string - should default to empty
+        guard.set("ADMIN_USERS", "");
+        let config = Config::load_from_env().unwrap();
+        assert!(config.admin.users.is_empty());
     }
 }
