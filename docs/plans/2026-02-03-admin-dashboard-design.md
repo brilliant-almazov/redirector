@@ -1,11 +1,5 @@
 # Admin Dashboard Design
 
-> **Status: Implemented in v0.1.0**
->
-> This design document was fully implemented. See the live dashboard at `/admin/`.
-
----
-
 ## Overview
 
 Real-time admin dashboard for monitoring redirector service. Built with Leptos (Rust), SSE for live updates, and Chart.js for graphs.
