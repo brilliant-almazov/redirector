@@ -4,14 +4,12 @@ on:
   push:
     branches: [master, feature/*]
     paths-ignore:
-      - '.github/**'
       - 'docs/**'
       - '*.md'
       - 'LICENSE'
   pull_request:
     branches: [master]
     paths-ignore:
-      - '.github/**'
       - 'docs/**'
       - '*.md'
       - 'LICENSE'
@@ -199,49 +197,32 @@ jobs:
             redis-cli SET "url:$i" "https://example.com/page$i" EX 3600
           done
 
-      - name: ⚙️ Create config
-        run: |
-          cat > config.yaml << 'EOF'
-          server:
-            host: "0.0.0.0"
-            port: 8080
-          hashids:
-            salts:
-              - "test-salt-for-load-testing"
-            min_length: 6
-          redis:
-            url: "redis://localhost:6379"
-            cache_ttl_seconds: 3600
-          database:
-            url: "postgresql://postgres:postgres@localhost:5432/test"
-            pool:
-              max_connections: 5
-              connect_timeout_seconds: 5
-            rate_limit:
-              max_requests_per_second: 10000
-            circuit_breaker:
-              failure_threshold: 5
-              reset_timeout_seconds: 30
-            query:
-              table: "dictionary.urls"
-              id_column: "id"
-              url_column: "name"
-          interstitial:
-            delay_seconds: 5
-          metrics:
-            basic_auth:
-              username: prometheus
-              password: secret
-          rate_limit:
-            requests_per_second: 50000
-            burst: 1000
-          EOF
-
       - name: 🚀 Start service
         run: |
           chmod +x ./bin/redirector
           ./bin/redirector &
           sleep 3
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/test"
+          REDIS_URL: "redis://localhost:6379"
+          HASHIDS_SALTS: "test-salt-for-load-testing"
+          METRICS_USERNAME: "prometheus"
+          METRICS_PASSWORD: "secret"
+          HOST: "0.0.0.0"
+          PORT: "8080"
+          HASHIDS_MIN_LENGTH: "6"
+          REDIS_CACHE_TTL: "3600"
+          DB_MAX_CONNECTIONS: "5"
+          DB_CONNECT_TIMEOUT: "5"
+          DB_RPS: "10000"
+          CB_FAILURE_THRESHOLD: "5"
+          CB_RESET_TIMEOUT: "30"
+          DB_TABLE: "dictionary.urls"
+          DB_ID_COLUMN: "id"
+          DB_URL_COLUMN: "name"
+          INTERSTITIAL_DELAY: "5"
+          RATE_LIMIT_RPS: "50000"
+          RATE_LIMIT_BURST: "1000"
 
       - name: 🔗 Generate test hashids
         run: |
