@@ -29,4 +29,3 @@ pub fn minify_html_str(html: &str) -> String {
 #[cfg(test)]
 #[path = "lib_test.rs"]
 mod lib_test;
-// ci trigger 1770390019
