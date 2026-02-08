@@ -34,4 +34,5 @@ logs/
 lcov.info
 coverage/
 
+# Secrets
 .secret
